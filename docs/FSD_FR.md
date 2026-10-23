@@ -2,7 +2,7 @@
 
 *[English version](FSD_EN.md)*
 
-> **Version en cours** — Ce document décrit l'**étape 1** de Solid Procedural 1.0.0 (cœur des groupes paramétriques, testé dans SketchUp 2021 Pro le 2026-10-23). La table des opérations (étape 2) et l'imbrication (étape 3) sont prévues : voir `PRD.md`.
+> **Version en cours** — Ce document décrit l'**étape 1** de Solid Procedural 1.0.0 (cœur des groupes procéduraux, testé dans SketchUp 2021 Pro le 2026-10-23). La table des opérations (étape 2) et l'imbrication (étape 3) sont prévues : voir `PRD.md`.
 
 **Version :** 1.0.0 (en développement)
 **Date :** 2026-10-23
@@ -12,7 +12,7 @@
 
 ## 1. Objectif
 
-Solid Procedural est un plugin SketchUp Pro de **solides paramétriques non destructifs**. Un *groupe paramétrique* contient ses volumes sources (à ajouter ou à soustraire) et leur combinaison, le **Result** :
+Solid Procedural est un plugin SketchUp Pro de **solides procéduraux non destructifs**. Un *groupe procédural* contient ses volumes sources (à ajouter ou à soustraire) et leur combinaison, le **Result** :
 
 - **dans le groupe** (édition) : les sources sont visibles et modifiables, le Result est caché ;
 - **hors du groupe** : seul le Result est visible ; il est recalculé automatiquement à la sortie si les sources ont changé.
@@ -25,7 +25,7 @@ Solid Procedural est issu de **Solid Batch v2.3.0** et s'installe **à côté** 
 
 ### Inclus (étape 1)
 
-- Create, Rebuild et Finalize Parametric Solid
+- Create, Rebuild et Finalize Procedural Solid
 - Bascule automatique de l'affichage sources / Result à l'entrée et à la sortie du groupe
 - Recalcul automatique à la sortie, seulement si l'empreinte des sources a changé
 - Ordre des opérations et opération par volume (`union`, `outer_shell`, `subtract`) stockés dans les attributs ; à l'étape 1, l'opération suit la couleur de soustraction
@@ -35,13 +35,13 @@ Solid Procedural est issu de **Solid Batch v2.3.0** et s'installe **à côté** 
 
 ### Prévu
 
-- Étape 2 : **Parametric Table** (ordre, On, couleur, nom, opération par ligne, état, formule, Unions first, glisser-déposer, sélection dans les deux sens)
-- Étape 3 : **imbrication** (un groupe paramétrique source d'un autre)
+- Étape 2 : **Procedural Table** (ordre, On, couleur, nom, opération par ligne, état, formule, Unions first, glisser-déposer, sélection dans les deux sens)
+- Étape 3 : **imbrication** (un groupe procédural source d'un autre)
 
 ### Exclu
 
 - Combine All (reste dans Solid Batch v2)
-- Composants comme conteneurs paramétriques (acceptés comme sources)
+- Composants comme conteneurs procéduraux (acceptés comme sources)
 - Intersect, recalcul en direct pendant l'édition, moteur booléen custom
 - SketchUp Make et versions sans booléens natifs
 
@@ -59,14 +59,14 @@ Solid Procedural est issu de **Solid Batch v2.3.0** et s'installe **à côté** 
 
 Tout est stocké dans le modèle, dictionnaire d'attributs **`SolidProcedural`**.
 
-### 4.1 Groupe paramétrique
+### 4.1 Groupe procédural
 
 | Attribut | Valeur |
 |----------|--------|
-| `role` | `parametric` |
+| `role` | `procedural` |
 | `signature` | Empreinte MD5 des sources au dernier calcul (§ 7.3) |
 
-### 4.2 Source (groupe ou composant dans le groupe paramétrique)
+### 4.2 Source (groupe ou composant dans le groupe procédural)
 
 | Attribut | Valeur |
 |----------|--------|
@@ -87,15 +87,15 @@ La géométrie libre (arêtes et faces hors des sous-groupes) n'est **pas** un v
 
 ## 5. Exigences fonctionnelles
 
-#### EF-07 : Create Parametric Solid
+#### EF-07 : Create Procedural Solid
 
 | Champ | Description |
 |-------|-------------|
 | **Entrée** | Sélection d'un ou plusieurs groupes/composants solides |
-| **Préconditions** | SketchUp Pro (`respond_to?(:union)`) ; aucun groupe paramétrique dans la sélection (imbrication : étape 3) ; tous `manifold?` (sinon message listant les objets non solides) ; au moins un volume sans la couleur de soustraction |
-| **Traitement** | `add_group(volumes)`, nom `Parametric Solid`, `role=parametric` ; attributs `SolidProcedural` des volumes effacés ; `rank` : tous les volumes « + » puis tous les « − » ; calcul (EF-14) |
-| **Sortie** | Groupe paramétrique sélectionné, Result visible, sources cachées |
-| **Annulation** | Une seule opération « Solid Procedural — Create Parametric Solid » |
+| **Préconditions** | SketchUp Pro (`respond_to?(:union)`) ; aucun groupe procédural dans la sélection (imbrication : étape 3) ; tous `manifold?` (sinon message listant les objets non solides) ; au moins un volume sans la couleur de soustraction |
+| **Traitement** | `add_group(volumes)`, nom `Procedural Solid`, `role=procedural` ; attributs `SolidProcedural` des volumes effacés ; `rank` : tous les volumes « + » puis tous les « − » ; calcul (EF-14) |
+| **Sortie** | Groupe procédural sélectionné, Result visible, sources cachées |
+| **Annulation** | Une seule opération « Solid Procedural — Create Procedural Solid » |
 | **Erreur** | `abort_operation`, message « Nothing was changed. » |
 
 #### EF-08 : Bascule de l'affichage
@@ -116,17 +116,17 @@ Les repères, textes et cotes ne sont pas touchés. Un groupe copié partage sa 
 | **Opération** | Une seule opération « Solid Procedural — Rebuild », **transparente** : fusionnée avec la dernière modification (option B, `MERGE_REBUILD_WITH_LAST_EDIT = true`). Avec `false`, le recalcul devient une étape d'annulation séparée (option A) ; les bascules seules restent transparentes |
 | **Erreur** | L'opération est toujours validée (jamais d'`abort_operation` sur une opération transparente) ; l'ancien Result est conservé ; message « Rebuild failed — the former result is kept. » avec le volume en cause |
 
-#### EF-10 : Rebuild Parametric Solid
+#### EF-10 : Rebuild Procedural Solid
 
-Recalcul forcé des groupes paramétriques **sélectionnés** (fermés), en une seule opération non transparente. Si le groupe est ouvert, un message invite à le fermer (il est recalculé à la sortie). Erreur : `abort_operation`, rien n'est modifié.
+Recalcul forcé des groupes procéduraux **sélectionnés** (fermés), en une seule opération non transparente. Si le groupe est ouvert, un message invite à le fermer (il est recalculé à la sortie). Erreur : `abort_operation`, rien n'est modifié.
 
-#### EF-11 : Finalize Parametric Solid
+#### EF-11 : Finalize Procedural Solid
 
 | Champ | Description |
 |-------|-------------|
-| **Entrée** | Groupes paramétriques sélectionnés |
+| **Entrée** | Groupes procéduraux sélectionnés |
 | **Traitement** | Recalcul si l'empreinte a changé ou s'il n'y a pas de Result ; effacement de tout sauf le Result (avant l'éclatement : la géométrie libre ne fusionne pas avec l'extérieur) ; `explode` du groupe ; attributs effacés, Result visible, **nom et balise du groupe** reportés |
-| **Sortie** | Un groupe solide simple par groupe paramétrique, sélectionné |
+| **Sortie** | Un groupe solide simple par groupe procédural, sélectionné |
 | **Annulation** | Une seule opération |
 
 #### EF-13 : Couleur → opération (`sync_op_with_color`)
@@ -141,7 +141,7 @@ Changer la couleur de soustraction (Set Subtract Color) ou ouvrir le modèle sur
 #### EF-14 : Calcul ordonné (`rebuild_in_operation`)
 
 1. `make_unique` du groupe ; normalisation des sources (`role`, `rank` 1..n, `enabled`, couleur → opération).
-2. Validation des sources actives : au moins une ; aucune paramétrique (étape 3) ; toutes `manifold?` ; la première n'est pas `subtract`.
+2. Validation des sources actives : au moins une ; aucune procédurale (étape 3) ; toutes `manifold?` ; la première n'est pas `subtract`.
 3. Calcul de l'empreinte.
 4. **Combinaison sur des copies** (§ 7.4) dans l'ordre `rank` : `acc = copie(1)`, puis pour chaque source suivante `acc.union(copie)`, `acc.outer_shell(copie)` ou `copie.subtract(acc)`. Progression dans la barre d'état (`Solid Procedural — Subtract 2/3 (67%)`).
 5. Matériau du résultat = matériau de la base ; faces ayant hérité de la couleur de soustraction repeintes (`nil`).
@@ -158,11 +158,11 @@ En cas d'échec à l'étape 4, toutes les copies sont effacées dans un `ensure`
 | Source non solide | `Volume #2 Cylinder is not a solid.` |
 | Première source Subtract | `The first volume #1 … has the subtract color: the first volume must be added.` |
 | Booléen natif en échec | `Subtract of volume #3 … failed.` |
-| Groupe paramétrique imbriqué | `… nested parametric solids are not supported yet.` |
+| Groupe procédural imbriqué | `… nested procedural solids are not supported yet.` |
 
 #### EF-17 : Copies indépendantes
 
-Un groupe paramétrique copié partage la définition de l'original : `make_unique` avant tout calcul ou changement d'affichage. Les copies de sources faites pour le calcul sont aussi rendues uniques (un booléen modifierait sinon la source).
+Un groupe procédural copié partage la définition de l'original : `make_unique` avant tout calcul ou changement d'affichage. Les copies de sources faites pour le calcul sont aussi rendues uniques (un booléen modifierait sinon la source).
 
 #### EF-18 : Restauration des cercles et arcs
 
@@ -201,7 +201,7 @@ Couleur du matériau du premier groupe/composant sélectionné qui en a un, enre
 | NF-06 | Libellés à l'écran en anglais ; nom « Solid Procedural » identique partout (extension, menu, barre d'outils, registre, dictionnaire, logs) |
 | NF-08 | Plugin autonome, aucune dépendance à un autre plugin |
 | NF-09 | Coexistence avec Solid Batch v2 : modules, dossiers, registre et attributs distincts |
-| NF-10 | Données paramétriques dans le modèle, options dans le registre `SolidProcedural`, repli sur `SolidBatch` |
+| NF-10 | Données procédurales dans le modèle, options dans le registre `SolidProcedural`, repli sur `SolidBatch` |
 | NF-11 | Un `.skp` ouvert sans le plugin montre le Result (sources cachées) |
 | NF-12 | Une source non solide, supprimée ou un groupe vide ne provoquent jamais d'exception non gérée |
 
@@ -214,17 +214,17 @@ solid_procedural.rb             # Point d'entrée — enregistrement de l'extens
 solid_procedural/
   version.rb                    # VERSION = '1.0.0'
   main.rb                       # Menu, barre d'outils, options (registre), Set Subtract Color, Set Repair Options
-  parametric.rb                 # Groupes paramétriques : données, empreinte, affichage, calcul, commandes, synchronisation
-  parametric_observer.rb        # ModelObserver / AppObserver, synchronisation différée
+  procedural.rb                 # Groupes procéduraux : données, empreinte, affichage, calcul, commandes, synchronisation
+  procedural_observer.rb        # ModelObserver / AppObserver, synchronisation différée
   circle_restore.rb             # Point d'entrée de la restauration des cercles
   circle_restore/               # Copie du moteur de Re-Cercle v2.0.0
     detector.rb
     rebuilder.rb
     volume.rb
   icons/
-    create_parametric_16/24.png
-    rebuild_parametric_16/24.png
-    finalize_parametric_16/24.png
+    create_procedural_16/24.png
+    rebuild_procedural_16/24.png
+    finalize_procedural_16/24.png
     setcolor_16/24.png
     repair_circles_16/24.png
 ```
@@ -240,9 +240,9 @@ SolidProcedural
   color_match?, is_subtract_solid?
   do_set_subtract_color, do_set_repair_options
 
-SolidProcedural::Parametric
+SolidProcedural::Procedural
   DICT, ROLE_*, OP_LABELS, MERGE_REBUILD_WITH_LAST_EDIT, RebuildError
-  role, parametric?, result_of, sources_of, op_of, enabled?, label, open_groups, all_groups
+  role, procedural?, result_of, sources_of, op_of, enabled?, label, open_groups, all_groups
   signature, geometry_digest, stale?
   display_entities, hidden_wanted?, display_changes, apply_display, loose_geometry?
   normalize_sources, sync_op_with_color, validate
@@ -299,9 +299,9 @@ Ctrl+Z / Ctrl+Y (onTransactionUndo/Redo → timer)
 
 ### 8.1 Menu **Extensions > Solid Procedural**
 
-1. Create Parametric Solid
-2. Rebuild Parametric Solid
-3. Finalize Parametric Solid
+1. Create Procedural Solid
+2. Rebuild Procedural Solid
+3. Finalize Procedural Solid
 4. *(séparateur)*
 5. Set Subtract Color
 6. Set Repair Options (SketchUp 2020.1+)
@@ -322,22 +322,22 @@ Create, Rebuild, Finalize, *(séparateur)*, Set Subtract Color, Set Repair Optio
 | Réparation des gros objets | Registre | `SolidProcedural/auto_repair_large` | `Yes` |
 | Seuil « gros objet » | Registre | `SolidProcedural/large_threshold` | `10000` |
 | Segments minimum d'un arc | Registre | `SolidProcedural/min_arc_segments` | `6` |
-| Données paramétriques | Modèle | Dictionnaire `SolidProcedural` (§ 4) | — |
+| Données procédurales | Modèle | Dictionnaire `SolidProcedural` (§ 4) | — |
 
 Un réglage absent de `SolidProcedural` est lu dans `SolidBatch` (réglages de Solid Batch v2 repris). Les écritures vont toujours dans `SolidProcedural`.
 
 ## 10. Limitations connues (étape 1)
 
 - L'ordre et l'opération par volume ne sont modifiables que par la couleur (table à l'étape 2) ; un volume ne peut passer en Shell que par l'attribut `op`.
-- Groupes paramétriques imbriqués refusés (étape 3).
+- Groupes procéduraux imbriqués refusés (étape 3).
 - Le recalcul a lieu à la sortie du groupe, pas pendant l'édition.
-- La géométrie libre dans un groupe paramétrique n'est pas utilisée (il faut en faire un groupe).
+- La géométrie libre dans un groupe procédural n'est pas utilisée (il faut en faire un groupe).
 - Export STL d'un groupe non finalisé : comportement des sources cachées à confirmer (Q-1 du PRD) ; Finalize avant l'export est recommandé.
 
 ## 11. Historique des versions
 
 | Version | Date | Changements |
 |---------|------|-------------|
-| 1.0.0 | en cours | Nouveau plugin issu de Solid Batch v2.3.0. Étape 1 (2026-10-23) : Create / Rebuild / Finalize Parametric Solid, bascule automatique sources / Result, recalcul automatique à la sortie par empreinte MD5, option B pour Ctrl+Z, couleur → opération, restauration des cercles sur chaque Result, réglages repris de Solid Batch. Combine All retiré |
+| 1.0.0 | en cours | Nouveau plugin issu de Solid Batch v2.3.0. Étape 1 (2026-10-23) : Create / Rebuild / Finalize Procedural Solid, bascule automatique sources / Result, recalcul automatique à la sortie par empreinte MD5, option B pour Ctrl+Z, couleur → opération, restauration des cercles sur chaque Result, réglages repris de Solid Batch. Combine All retiré |
 
 Historique de Solid Batch (v1.0.0 à v2.3.0) : `JOURNAL.md` et dépôt `sketchup-solid-batch`.

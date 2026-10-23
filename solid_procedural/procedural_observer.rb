@@ -1,33 +1,33 @@
 # encoding: UTF-8
 
 module SolidProcedural
-  module Parametric
+  module Procedural
     # Observers of the edit state. The API forbids changing the model inside
     # an observer callback: every change is deferred with UI.start_timer and
-    # runs once SketchUp is idle (Parametric.sync_path / sync_all).
+    # runs once SketchUp is idle (Procedural.sync_path / sync_all).
     class ModelObserver < Sketchup::ModelObserver
       # The user opened or closed a group or component for editing.
       def onActivePathChanged(model)
-        Parametric.defer(model, :path)
+        Procedural.defer(model, :path)
       end
 
       def onTransactionUndo(model)
-        Parametric.defer(model, :all)
+        Procedural.defer(model, :all)
       end
 
       def onTransactionRedo(model)
-        Parametric.defer(model, :all)
+        Procedural.defer(model, :all)
       end
     end
 
     # Attaches the model observer to the models created or opened.
     class AppObserver < Sketchup::AppObserver
       def onNewModel(model)
-        Parametric.attach(model)
+        Procedural.attach(model)
       end
 
       def onOpenModel(model)
-        Parametric.attach(model)
+        Procedural.attach(model)
       end
 
       # Also notified for the models open at startup.
@@ -47,7 +47,7 @@ module SolidProcedural
       model.add_observer(@model_observer)
       @attached[model] = true
       @synced_paths[model] = open_groups(model)
-      # A model saved while a parametric solid was open shows its sources.
+      # A model saved while a procedural solid was open shows its sources.
       defer(model, :all)
     end
 

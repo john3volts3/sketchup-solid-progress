@@ -6,7 +6,7 @@ module SolidProcedural
   PLUGIN_NAME = 'Solid Procedural'.freeze
 
   ext = SketchupExtension.new(PLUGIN_NAME, File.join('solid_procedural', 'main'))
-  ext.description = 'Non-destructive parametric solids using native SketchUp Pro boolean tools'
+  ext.description = 'Non-destructive procedural solids using native SketchUp Pro boolean tools'
   ext.version = '1.0.0'
   ext.creator = 'DRO'
   ext.copyright = '2026'

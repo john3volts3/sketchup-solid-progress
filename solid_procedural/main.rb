@@ -1,15 +1,15 @@
 require_relative 'version'
 require_relative 'circle_restore'
-require_relative 'parametric'
-require_relative 'parametric_observer'
+require_relative 'procedural'
+require_relative 'procedural_observer'
 
 module SolidProcedural
   unless @loaded
     submenu = UI.menu('Extensions').add_submenu(PLUGIN_NAME)
 
-    submenu.add_item('Create Parametric Solid') { Parametric.do_create }
-    submenu.add_item('Rebuild Parametric Solid') { Parametric.do_rebuild }
-    submenu.add_item('Finalize Parametric Solid') { Parametric.do_finalize }
+    submenu.add_item('Create Procedural Solid') { Procedural.do_create }
+    submenu.add_item('Rebuild Procedural Solid') { Procedural.do_rebuild }
+    submenu.add_item('Finalize Procedural Solid') { Procedural.do_finalize }
     submenu.add_separator
     submenu.add_item('Set Subtract Color') { self.do_set_subtract_color }
     if Sketchup.version.to_f >= 20.1
@@ -20,22 +20,22 @@ module SolidProcedural
 
     icons_dir = File.join(PLUGIN_DIR, 'solid_procedural', 'icons')
 
-    cmd_create = UI::Command.new('Create Parametric Solid') { Parametric.do_create }
-    cmd_create.tooltip = 'Create Parametric Solid — group the selected solids, result rebuilt on exit'
-    cmd_create.small_icon = File.join(icons_dir, 'create_parametric_16.png')
-    cmd_create.large_icon = File.join(icons_dir, 'create_parametric_24.png')
+    cmd_create = UI::Command.new('Create Procedural Solid') { Procedural.do_create }
+    cmd_create.tooltip = 'Create Procedural Solid — group the selected solids, result rebuilt on exit'
+    cmd_create.small_icon = File.join(icons_dir, 'create_procedural_16.png')
+    cmd_create.large_icon = File.join(icons_dir, 'create_procedural_24.png')
     toolbar.add_item(cmd_create)
 
-    cmd_rebuild = UI::Command.new('Rebuild Parametric Solid') { Parametric.do_rebuild }
-    cmd_rebuild.tooltip = 'Rebuild Parametric Solid — force the rebuild of the selected parametric solids'
-    cmd_rebuild.small_icon = File.join(icons_dir, 'rebuild_parametric_16.png')
-    cmd_rebuild.large_icon = File.join(icons_dir, 'rebuild_parametric_24.png')
+    cmd_rebuild = UI::Command.new('Rebuild Procedural Solid') { Procedural.do_rebuild }
+    cmd_rebuild.tooltip = 'Rebuild Procedural Solid — force the rebuild of the selected procedural solids'
+    cmd_rebuild.small_icon = File.join(icons_dir, 'rebuild_procedural_16.png')
+    cmd_rebuild.large_icon = File.join(icons_dir, 'rebuild_procedural_24.png')
     toolbar.add_item(cmd_rebuild)
 
-    cmd_finalize = UI::Command.new('Finalize Parametric Solid') { Parametric.do_finalize }
-    cmd_finalize.tooltip = 'Finalize Parametric Solid — replace by a plain solid, without its sources'
-    cmd_finalize.small_icon = File.join(icons_dir, 'finalize_parametric_16.png')
-    cmd_finalize.large_icon = File.join(icons_dir, 'finalize_parametric_24.png')
+    cmd_finalize = UI::Command.new('Finalize Procedural Solid') { Procedural.do_finalize }
+    cmd_finalize.tooltip = 'Finalize Procedural Solid — replace by a plain solid, without its sources'
+    cmd_finalize.small_icon = File.join(icons_dir, 'finalize_procedural_16.png')
+    cmd_finalize.large_icon = File.join(icons_dir, 'finalize_procedural_24.png')
     toolbar.add_item(cmd_finalize)
 
     toolbar.add_separator
@@ -141,7 +141,7 @@ module SolidProcedural
     unless entity
       UI.messagebox(
         "Select a group or component with a material/color applied.\n" \
-        "That color will be used to identify the volumes to subtract in parametric solids.",
+        "That color will be used to identify the volumes to subtract in procedural solids.",
         MB_OK
       )
       return
@@ -151,7 +151,7 @@ module SolidProcedural
     save_subtract_color(color)
     UI.messagebox(
       "Subtract color set to RGB(#{color.red}, #{color.green}, #{color.blue}).\n" \
-      "Volumes painted with this color will be subtracted in parametric solids.\n" \
+      "Volumes painted with this color will be subtracted in procedural solids.\n" \
       "Existing volumes keep their operation until they are repainted.",
       MB_OK
     )
@@ -191,7 +191,7 @@ module SolidProcedural
       "  Min segments for arc detection: #{arc_segments}\n\n" \
       "Lower 'Min segments for arc detection' = catches shorter arcs " \
       "but may produce false positives. Higher = safer.\n\n" \
-      "When the result of a parametric solid exceeds the large threshold and " \
+      "When the result of a procedural solid exceeds the large threshold and " \
       "auto-repair is set to No, restoration is skipped (a message is shown).",
       MB_OK
     )

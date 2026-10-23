@@ -2,9 +2,9 @@
 require 'digest/md5'
 
 module SolidProcedural
-  # Parametric — non-destructive parametric solids.
+  # Procedural — non-destructive procedural solids.
   #
-  # A parametric solid is a group (attribute role=parametric) that holds its
+  # A procedural solid is a group (attribute role=procedural) that holds its
   # source volumes (role=source) and their combination (role=result):
   #   - open for editing: sources shown, Result hidden;
   #   - closed: sources hidden, Result shown, rebuilt when the group is
@@ -28,13 +28,13 @@ module SolidProcedural
   # former Result is replaced only on success and every copy is erased on
   # failure, so a rebuild never needs abort_operation (which must not be
   # used on a transparent operation).
-  module Parametric
+  module Procedural
     DICT = 'SolidProcedural'.freeze
-    ROLE_PARAMETRIC = 'parametric'.freeze
+    ROLE_PROCEDURAL = 'procedural'.freeze
     ROLE_SOURCE = 'source'.freeze
     ROLE_RESULT = 'result'.freeze
     OP_LABELS = { 'union' => 'Union', 'outer_shell' => 'Shell', 'subtract' => 'Subtract' }.freeze
-    DEFAULT_NAME = 'Parametric Solid'.freeze
+    DEFAULT_NAME = 'Procedural Solid'.freeze
     RESULT_NAME = 'Result'.freeze
     LOG = '[Solid Procedural]'.freeze
 
@@ -47,7 +47,7 @@ module SolidProcedural
     # and kept the former Result.
     class RebuildError < StandardError; end
 
-    # Parametric groups of the active path already synchronized, per model
+    # Procedural groups of the active path already synchronized, per model
     # (kept when the file is reloaded).
     @synced_paths ||= {}
 
@@ -63,8 +63,8 @@ module SolidProcedural
       entity.is_a?(Sketchup::Group) || entity.is_a?(Sketchup::ComponentInstance)
     end
 
-    def self.parametric?(entity)
-      entity.is_a?(Sketchup::Group) && entity.valid? && role(entity) == ROLE_PARAMETRIC
+    def self.procedural?(entity)
+      entity.is_a?(Sketchup::Group) && entity.valid? && role(entity) == ROLE_PROCEDURAL
     end
 
     def self.result_of(group)
@@ -110,13 +110,13 @@ module SolidProcedural
       SolidProcedural.color_match?(material.color, SolidProcedural.subtract_color)
     end
 
-    # Parametric groups of the active path, outermost first.
+    # Procedural groups of the active path, outermost first.
     def self.open_groups(model)
-      (model.active_path || []).select { |e| parametric?(e) }
+      (model.active_path || []).select { |e| procedural?(e) }
     end
 
     def self.all_groups(model)
-      model.definitions.select(&:group?).flat_map(&:instances).select { |g| parametric?(g) }
+      model.definitions.select(&:group?).flat_map(&:instances).select { |g| procedural?(g) }
     end
 
     # -------------------------------------------------------------------
@@ -228,9 +228,9 @@ module SolidProcedural
     def self.validate(active)
       raise RebuildError, 'There is no enabled volume to combine.' if active.empty?
       active.each do |s|
-        if parametric?(s)
-          raise RebuildError, "Volume #{label(s)} is a parametric solid: " \
-                              'nested parametric solids are not supported yet.'
+        if procedural?(s)
+          raise RebuildError, "Volume #{label(s)} is a procedural solid: " \
+                              'nested procedural solids are not supported yet.'
         end
         raise RebuildError, "Volume #{label(s)} is not a solid." unless s.manifold?
       end
@@ -320,7 +320,7 @@ module SolidProcedural
 
     # Visible copy of +source+ in +entities+, with its own definition (a
     # copy shares the definition of its source, which a boolean would then
-    # modify too) and without the parametric attributes.
+    # modify too) and without the procedural attributes.
     def self.copy_of(source, entities, created)
       copy = duplicate(source, entities, created)
       copy.material = source.material
@@ -381,7 +381,7 @@ module SolidProcedural
       model = Sketchup.active_model
       volumes = model.selection.select { |e| instance?(e) }
       if volumes.empty?
-        UI.messagebox('Select the solid groups or components to combine in a parametric solid.', MB_OK)
+        UI.messagebox('Select the solid groups or components to combine in a procedural solid.', MB_OK)
         return
       end
       unless volumes.first.respond_to?(:union)
@@ -389,10 +389,10 @@ module SolidProcedural
                       "The native boolean methods are not available in your version.", MB_OK)
         return
       end
-      nested = volumes.select { |v| parametric?(v) }
+      nested = volumes.select { |v| procedural?(v) }
       unless nested.empty?
-        UI.messagebox('Nested parametric solids are not supported yet: ' \
-                      'deselect the parametric solids.', MB_OK)
+        UI.messagebox('Nested procedural solids are not supported yet: ' \
+                      'deselect the procedural solids.', MB_OK)
         return
       end
       not_solid = volumes.reject(&:manifold?)
@@ -410,10 +410,10 @@ module SolidProcedural
         return
       end
 
-      run_command(model, 'Create Parametric Solid') do
+      run_command(model, 'Create Procedural Solid') do
         group = model.active_entities.add_group(volumes)
         group.name = DEFAULT_NAME
-        group.set_attribute(DICT, 'role', ROLE_PARAMETRIC)
+        group.set_attribute(DICT, 'role', ROLE_PROCEDURAL)
         # Initial order: every added volume, then every subtracted one.
         inside = group.entities.select { |e| instance?(e) }
         inside.each { |v| v.delete_attribute(DICT) }
@@ -428,31 +428,31 @@ module SolidProcedural
 
     def self.do_rebuild
       model = Sketchup.active_model
-      groups = model.selection.select { |e| parametric?(e) }
+      groups = model.selection.select { |e| procedural?(e) }
       if groups.empty?
         message = if open_groups(model).empty?
-                    'Select one or more parametric solids to rebuild.'
+                    'Select one or more procedural solids to rebuild.'
                   else
-                    "Close the parametric solid to rebuild it: it is rebuilt automatically " \
+                    "Close the procedural solid to rebuild it: it is rebuilt automatically " \
                     "when you exit it, if its volumes changed.\n" \
                     'To force a rebuild, close it, select it and run Rebuild again.'
                   end
         UI.messagebox(message, MB_OK)
         return
       end
-      run_command(model, 'Rebuild Parametric Solid') do
+      run_command(model, 'Rebuild Procedural Solid') do
         groups.map { |g| rebuild_in_operation(model, g) }
       end
     end
 
     def self.do_finalize
       model = Sketchup.active_model
-      groups = model.selection.select { |e| parametric?(e) }
+      groups = model.selection.select { |e| procedural?(e) }
       if groups.empty?
-        UI.messagebox('Select one or more parametric solids to finalize.', MB_OK)
+        UI.messagebox('Select one or more procedural solids to finalize.', MB_OK)
         return
       end
-      run_command(model, 'Finalize Parametric Solid') do
+      run_command(model, 'Finalize Procedural Solid') do
         outcomes = []
         solids = groups.map do |g|
           outcomes << rebuild_in_operation(model, g) if stale?(g) || result_of(g).nil?
@@ -558,7 +558,7 @@ module SolidProcedural
     end
 
     # After Ctrl+Z / Ctrl+Y or when a model is opened: display of every
-    # parametric group set back from the active path. Never rebuilds (a new
+    # procedural group set back from the active path. Never rebuilds (a new
     # operation after an undo would drop the redo).
     def self.sync_all(model)
       current = open_groups(model)
@@ -572,7 +572,7 @@ module SolidProcedural
       end
       outdated = (groups - current).select { |g| stale?(g) }
       return if outdated.empty?
-      Sketchup.status_text = "Solid Procedural — #{outdated.length} parametric solid(s) out of date: " \
+      Sketchup.status_text = "Solid Procedural — #{outdated.length} procedural solid(s) out of date: " \
                              'open and close them, or use Rebuild'
     end
   end

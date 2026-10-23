@@ -6,7 +6,7 @@
 
 - **v1.0** (livrée 2026-04-03) — Première version. Union, Subtract (multi-clic), Split. Ruby pur, fonctionne sans SketchUp Pro. Performances O(n²) sur le ray casting.
 - **v2.x** (livrées 2026-04-04 → 2026-10-11) — Moteur custom abandonné au profit des booléens natifs de SketchUp Pro : Combine All (Union / Shell), Set Subtract Color, Set Repair Options, restauration des cercles et arcs en cercles natifs (v2.3.0, méthode Re-Cercle v2.0.0). *(Le plan initial « v2.0 = optimisation Ruby octree » a été livré en 2.0.0 puis remplacé le jour même par les booléens natifs.)*
-- **Solid Procedural 1.0.0** (en cours, plugin séparé, dépôt `sketchup-solid-procedural`) — **Parametric Solid** : groupes paramétriques non destructifs (sources modifiables dedans, résultat recalculé automatiquement à la sortie), table des opérations (ordre, Union / Shell / Subtract par volume, désactivation), imbrication. Installé à côté de Solid Batch v2, qui garde Combine All. Voir `SOLID_PROCEDURAL_PROJET.md` et `PRD.md`. *(L'ancien plan « Solid Batch v3.0 = backend Python trimesh/CGAL » est abandonné.)*
+- **Solid Procedural 1.0.0** (en cours, plugin séparé, dépôt `sketchup-solid-procedural`) — **Procedural Solid** : groupes procéduraux non destructifs (sources modifiables dedans, résultat recalculé automatiquement à la sortie), table des opérations (ordre, Union / Shell / Subtract par volume, désactivation), imbrication. Installé à côté de Solid Batch v2, qui garde Combine All. Voir `SOLID_PROCEDURAL_PROJET.md` et `PRD.md`. *(L'ancien plan « Solid Batch v3.0 = backend Python trimesh/CGAL » est abandonné.)*
 
 ---
 
@@ -57,10 +57,24 @@
 - **solid_procedural/icons/** — `create_parametric_16/24.png`, `rebuild_parametric_16/24.png`, `finalize_parametric_16/24.png` (générées par un script PowerShell System.Drawing, style plat des icônes existantes).
 - Vérifications : `ruby -wc` OK sur tous les fichiers ; test hors SketchUp avec API simulée OK (20 vérifications : chargement, rechargement sans doublon, réglages repris de Solid Batch, couleur → opération, affichage).
 - **Plugins SketchUp 2021** — `solid_procedural.rb` et `solid_procedural/` copiés à côté de `solid_batch` (non modifié). Redémarrage de SketchUp nécessaire.
+- Commit `49b376b` (validé par l'utilisateur).
 - **Test utilisateur dans SketchUp 2021 Pro : OK** — création, recalcul à la sortie, aucun recalcul sans modification, nouveau volume soustrait, un seul Ctrl+Z pour la modification et son résultat (option B), Ctrl+Y fonctionnel, erreur sur source non solide, copies indépendantes, cercles natifs et couleur de la base, couleur → opération (un volume repeint avec le matériau par défaut repasse en Union), Finalize, Solid Batch v2 toujours fonctionnel. `onActivePathChanged` présent dans SketchUp 2021 (Q-2 résolue). Non vérifiés : export STL d'un groupe non finalisé (Q-1), Explode d'un groupe paramétrique (Q-4).
 - **docs/FSD_FR.md, docs/FSD_EN.md** — Réécriture complète pour Solid Procedural (étape 1) : objectif, périmètre, modèle de données (attributs), EF-03/04/07–11/13/14/16–19, empreinte, booléens natifs, flux, interface, persistance (registre `SolidProcedural`, repli `SolidBatch`), limitations ; lien croisé FR ↔ EN. L'historique de Solid Batch renvoie au JOURNAL.
 - **PRD.md** — Exigences de l'étape 1 passées à « testée (étape 1) » ; EF-10 précisée (groupe fermé) ; CA-17 : « une autre couleur ou le matériau par défaut » au lieu de « gris » ; Q-2 et Q-3 résolues, Q-1 et Q-4 restent ouvertes ; `onTransactionCommit` retiré des API utilisées ; ligne d'historique de l'étape 1.
 - README et manuels utilisateur : bandeau « en cours de réécriture » conservé, réécriture à la livraison 1.0.0 (étape 4).
+
+### Étape 1b — Vocabulaire : « parametric » → « procedural »
+
+- **Demande utilisateur** : « Il faut modifier parametric en procedural ». Aucun changement de comportement.
+- **git mv** : `solid_procedural/parametric.rb` → `procedural.rb`, `parametric_observer.rb` → `procedural_observer.rb`, icônes `create_/rebuild_/finalize_parametric_16/24.png` → `*_procedural_*` (dessin inchangé).
+- **solid_procedural/procedural.rb, procedural_observer.rb** — Module `SolidProcedural::Parametric` → `SolidProcedural::Procedural` ; `ROLE_PARAMETRIC` → `ROLE_PROCEDURAL` (valeur `procedural`) ; `parametric?` → `procedural?` ; nom par défaut `Procedural Solid` ; messages et commentaires « procedural solid(s) ».
+- **solid_procedural/main.rb** — `require_relative 'procedural'` / `'procedural_observer'` ; menu, barre d'outils et infobulles : *Create / Rebuild / Finalize Procedural Solid* ; icônes renommées ; textes de Set Subtract Color et Set Repair Options.
+- **solid_procedural.rb** — Description de l'extension : « Non-destructive procedural solids… ».
+- **docs/FSD_FR.md, docs/FSD_EN.md, PRD.md** — « Parametric » → « Procedural » ; en français « groupe / solide paramétrique » → « procédural » (accords : procéduraux, procédurales) ; PRD : décision « Vocabulaire ».
+- **SOLID_PROCEDURAL_PROJET.md** — Note de vocabulaire en tête (le cadrage garde l'ancien terme).
+- Les groupes créés avec `role=parametric` pendant le test de l'étape 1 ne sont plus reconnus (pas de compatibilité, rien n'était livré).
+- Vérifications : `ruby -wc` OK ; test hors SketchUp OK (20 vérifications) ; plus aucun « parametric » dans le code et la documentation à jour.
+- **Plugins SketchUp 2021** — nouveaux fichiers copiés, anciens `parametric*.rb` et icônes `*_parametric_*` supprimés ; `solid_batch` non touché. Redémarrage de SketchUp nécessaire. **Test utilisateur OK** (menus, Create, recalcul à la sortie, Finalize).
 
 ---
 
