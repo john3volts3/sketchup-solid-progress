@@ -1,6 +1,6 @@
 # encoding: UTF-8
 # Ported from Re-Cercle v2.0.0 (re_cercle/volume.rb), unchanged except the
-# namespace: SolidBatch::CircleRestore instead of ReCercle. Solid Batch does
+# namespace: SolidProcedural::CircleRestore instead of ReCercle. Solid Procedural does
 # not depend on Re-Cercle.
 #
 # Native rebuild of straight cylinders and truncated cones (holes, pins)
@@ -27,7 +27,7 @@
 #      exist (disc over a through hole) or that fill a former hole.
 # Both end circles are then native ArcCurves.
 
-module SolidBatch
+module SolidProcedural
   module CircleRestore
     module Volume
       MIN_FACES = 3

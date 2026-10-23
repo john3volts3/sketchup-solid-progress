@@ -1,4 +1,6 @@
-# Solid Batch — SketchUp Pro Plugin
+# Solid Procedural — SketchUp Pro Plugin
+
+> **Work in progress** — Solid Procedural 1.0.0 is being developed from Solid Batch v2.3.0. The text below still describes Solid Batch v2.3.0 (Combine All) and will be rewritten for the 1.0.0 release.
 
 **Batch solid boolean operations using native SketchUp Pro tools.**
 

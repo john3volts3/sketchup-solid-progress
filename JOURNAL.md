@@ -1,10 +1,12 @@
-# Journal des modifications — Solid Batch
+# Journal des modifications — Solid Procedural
+
+> Solid Procedural est issu de **Solid Batch v2.3.0** (dépôt `sketchup-solid-batch`). Les sessions antérieures au 2026-10-23 sont l'historique de Solid Batch.
 
 ## Roadmap
 
 - **v1.0** (livrée 2026-04-03) — Première version. Union, Subtract (multi-clic), Split. Ruby pur, fonctionne sans SketchUp Pro. Performances O(n²) sur le ray casting.
 - **v2.x** (livrées 2026-04-04 → 2026-10-11) — Moteur custom abandonné au profit des booléens natifs de SketchUp Pro : Combine All (Union / Shell), Set Subtract Color, Set Repair Options, restauration des cercles et arcs en cercles natifs (v2.3.0, méthode Re-Cercle v2.0.0). *(Le plan initial « v2.0 = optimisation Ruby octree » a été livré en 2.0.0 puis remplacé le jour même par les booléens natifs.)*
-- **v3.0** (en cours, dépôt séparé `sketchup-solid-batch-v3`) — **Parametric Solid** : groupes paramétriques non destructifs (sources modifiables dedans, résultat recalculé automatiquement à la sortie), table des opérations (ordre, Union / Shell / Subtract par volume, désactivation), imbrication. Voir `SOLID_BATCH_V3_PROJET.md` et `PRD.md`. *(L'ancien plan « v3.0 = backend Python trimesh/CGAL » est abandonné.)*
+- **Solid Procedural 1.0.0** (en cours, plugin séparé, dépôt `sketchup-solid-procedural`) — **Parametric Solid** : groupes paramétriques non destructifs (sources modifiables dedans, résultat recalculé automatiquement à la sortie), table des opérations (ordre, Union / Shell / Subtract par volume, désactivation), imbrication. Installé à côté de Solid Batch v2, qui garde Combine All. Voir `SOLID_PROCEDURAL_PROJET.md` et `PRD.md`. *(L'ancien plan « Solid Batch v3.0 = backend Python trimesh/CGAL » est abandonné.)*
 
 ---
 
@@ -27,7 +29,38 @@
 - **JOURNAL.md** — Roadmap corrigée (v2.x livrées, v3.0 = Parametric Solid) ; cette section.
 - **PRD.md** — Création : contexte, utilisateurs, objectifs, périmètre, exigences v2 (livrées) et v3 (validées), contraintes, critères d'acceptation, décisions, historique.
 - **SOLID_BATCH_V3_PROJET.md** — § 3 et § 7 complétés avec les décisions de cette session.
-- Pas de commit avant validation de l'utilisateur.
+- Commit initial `62d1ce6` (validé par l'utilisateur).
+
+### Étape 0b — Nouveau plugin « Solid Procedural » (Solid Batch v2 n'est plus écrasé)
+
+- **Demande utilisateur** : créer un nouveau plugin avec sa propre entrée dans SketchUp, sans écraser Solid Batch v2, et renommer partout « solid-batch » en « solid-procedural ».
+- **Décisions** : nom affiché **Solid Procedural** (module `SolidProcedural`, loader `solid_procedural.rb`, dossier `solid_procedural/`, registre et dictionnaire d'attributs `SolidProcedural`, logs `[Solid Procedural]`) ; **Combine All retiré** (il reste dans Solid Batch v2) ; Set Subtract Color et Set Repair Options gardés ; un réglage absent de `SolidProcedural` est **lu dans `SolidBatch`** (les réglages actuels sont repris) ; version **1.0.0** ; dépôt GitHub privé **`sketchup-solid-procedural`** ; le dossier local sera renommé `sketchup-solid-procedural` à la fin de la session.
+- **git mv** : `solid_batch.rb` → `solid_procedural.rb`, `solid_batch/` → `solid_procedural/`, `SOLID_BATCH_V3_PROJET.md` → `SOLID_PROCEDURAL_PROJET.md`. **git rm** : icônes `combine_pro_union_*`, `combine_pro_shell_*`.
+- **solid_procedural.rb** — Module `SolidProcedural`, `PLUGIN_NAME = 'Solid Procedural'`, chemin `solid_procedural/main`, description, version 1.0.0.
+- **solid_procedural/version.rb** — `SolidProcedural::VERSION = '1.0.0'`.
+- **solid_procedural/circle_restore.rb, circle_restore/*.rb** — Namespace `SolidProcedural::CircleRestore`, textes « Solid Procedural ». Aucune autre différence avec Re-Cercle v2.0.0 (vérifié par `diff -w`).
+- **solid_procedural/main.rb** — Module renommé ; Combine All retiré (entrées de menu, boutons, `do_combine_all_pro`, `get_solids`) ; `REGISTRY_SECTION = 'SolidProcedural'`, `read_option` avec repli sur `'SolidBatch'` ; textes de Set Subtract Color et Set Repair Options adaptés aux groupes paramétriques.
+
+### Étape 1 — Cœur des groupes paramétriques (option B pour Ctrl+Z)
+
+- **solid_procedural/parametric.rb** — Création. Module `SolidProcedural::Parametric` :
+  - attributs : groupe `role=parametric`, `signature` ; sources `role=source`, `rank`, `op` (`union` / `outer_shell` / `subtract`), `last_add_op`, `enabled`, `seen_color` ; Result `role=result` ;
+  - **empreinte MD5** des sources (ordre, opération, matériau, transformation, sommets) au lieu d'un drapeau « modifié » : recalcul seulement si elle diffère ; annulée par Ctrl+Z avec le Result ;
+  - **couleur → opération** seulement si le matériau a changé depuis le dernier calcul (`seen_color`) : changer la couleur de soustraction n'inverse jamais les volumes existants ;
+  - **recalcul** sur des copies rendues uniques (`make_unique`), dans l'ordre `rank`, avec `union` / `outer_shell` / `outil.subtract(base)` ; copies effacées en cas d'échec (jamais d'`abort_operation` dans une opération transparente) ; matériau de la base, faces de la couleur de soustraction repeintes ; restauration des cercles **sur une copie** (échec → résultat booléen gardé) ; ancien Result remplacé seulement en cas de succès ;
+  - **affichage** : dedans, sources visibles et Result caché ; dehors, l'inverse (géométrie libre cachée aussi, signalée dans la barre d'état) ;
+  - commandes **Create**, **Rebuild** (groupes sélectionnés, groupe fermé), **Finalize** (sources effacées avant l'éclatement, Result gardé avec le nom et la balise du groupe), chacune en une seule opération annulable ;
+  - `sync_path` : à la sortie, recalcul des groupes quittés (du plus intérieur au plus extérieur) dans une opération **transparente fusionnée avec la dernière modification** (option B, constante `MERGE_REBUILD_WITH_LAST_EDIT`) ; `sync_all` : après Ctrl+Z / Ctrl+Y ou à l'ouverture, affichage resynchronisé, jamais de recalcul (signalement « out of date » dans la barre d'état) ;
+  - groupes paramétriques imbriqués refusés (étape 3).
+- **solid_procedural/parametric_observer.rb** — Création : `ModelObserver` (`onActivePathChanged`, `onTransactionUndo`, `onTransactionRedo`) et `AppObserver` (`onNewModel`, `onOpenModel`, `expectsStartupModelNotifications`) ; tout est différé par `UI.start_timer(0, false)`, arrêté dès son déclenchement (contournement du timer qui se répète pendant une boîte de dialogue) ; protections contre le double attachement et la remise à zéro au rechargement.
+- **solid_procedural/main.rb** — `require_relative` de `parametric` et `parametric_observer` ; menu et barre d'outils : Create / Rebuild / Finalize Parametric Solid, séparateur, Set Subtract Color, Set Repair Options.
+- **solid_procedural/icons/** — `create_parametric_16/24.png`, `rebuild_parametric_16/24.png`, `finalize_parametric_16/24.png` (générées par un script PowerShell System.Drawing, style plat des icônes existantes).
+- Vérifications : `ruby -wc` OK sur tous les fichiers ; test hors SketchUp avec API simulée OK (20 vérifications : chargement, rechargement sans doublon, réglages repris de Solid Batch, couleur → opération, affichage).
+- **Plugins SketchUp 2021** — `solid_procedural.rb` et `solid_procedural/` copiés à côté de `solid_batch` (non modifié). Redémarrage de SketchUp nécessaire.
+- **Test utilisateur dans SketchUp 2021 Pro : OK** — création, recalcul à la sortie, aucun recalcul sans modification, nouveau volume soustrait, un seul Ctrl+Z pour la modification et son résultat (option B), Ctrl+Y fonctionnel, erreur sur source non solide, copies indépendantes, cercles natifs et couleur de la base, couleur → opération (un volume repeint avec le matériau par défaut repasse en Union), Finalize, Solid Batch v2 toujours fonctionnel. `onActivePathChanged` présent dans SketchUp 2021 (Q-2 résolue). Non vérifiés : export STL d'un groupe non finalisé (Q-1), Explode d'un groupe paramétrique (Q-4).
+- **docs/FSD_FR.md, docs/FSD_EN.md** — Réécriture complète pour Solid Procedural (étape 1) : objectif, périmètre, modèle de données (attributs), EF-03/04/07–11/13/14/16–19, empreinte, booléens natifs, flux, interface, persistance (registre `SolidProcedural`, repli `SolidBatch`), limitations ; lien croisé FR ↔ EN. L'historique de Solid Batch renvoie au JOURNAL.
+- **PRD.md** — Exigences de l'étape 1 passées à « testée (étape 1) » ; EF-10 précisée (groupe fermé) ; CA-17 : « une autre couleur ou le matériau par défaut » au lieu de « gris » ; Q-2 et Q-3 résolues, Q-1 et Q-4 restent ouvertes ; `onTransactionCommit` retiré des API utilisées ; ligne d'historique de l'étape 1.
+- README et manuels utilisateur : bandeau « en cours de réécriture » conservé, réécriture à la livraison 1.0.0 (étape 4).
 
 ---
 

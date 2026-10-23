@@ -1,314 +1,343 @@
-# Solid Batch — Functional Specification Document
+# Solid Procedural — Functional Specification Document
 
-**Version:** 2.3.0
-**Date:** 2026-10-11
+*[Version française](FSD_FR.md)*
+
+> **Work in progress** — This document describes **step 1** of Solid Procedural 1.0.0 (core of the parametric groups, tested in SketchUp 2021 Pro on 2026-10-23). The operations table (step 2) and nesting (step 3) are planned: see `PRD.md` (French).
+
+**Version:** 1.0.0 (in development)
+**Date:** 2026-10-23
 **Author:** DRO
 
 ---
 
 ## 1. Purpose
 
-Solid Batch is a SketchUp Pro plugin that enables batch boolean operations on multiple solids in a single action. It targets users who need to combine and subtract many solid objects efficiently (e.g., architectural modeling, 3D printing preparation, mechanical assemblies).
+Solid Procedural is a SketchUp Pro plugin for **non-destructive parametric solids**. A *parametric group* holds its source volumes (to add or to subtract) and their combination, the **Result**:
+
+- **inside the group** (editing): the sources are visible and editable, the Result is hidden;
+- **outside the group**: only the Result is visible; it is rebuilt automatically on exit when the sources changed.
+
+The booleans are SketchUp Pro's (`union`, `outer_shell`, `subtract`). The Result then goes through the native circle and arc restoration. Main use: parts for 3D printing in SketchUp 2021 Pro.
+
+Solid Procedural derives from **Solid Batch v2.3.0** and installs **next to** it. Solid Batch keeps Combine All (one-click destructive combination).
 
 ## 2. Scope
 
-### In scope
-- Batch union of multiple solid objects using native SketchUp Pro API
-- Batch outer shell of multiple solid objects using native SketchUp Pro API
-- Batch subtract of color-marked solid objects from the merged result
-- Persistent color-based identification of subtract objects
-- Single undo step for the entire batch operation
-- Automatic restoration of broken circles AND arcs on the result (native boolean operations destroy `ArcCurve` associations; the plugin rebuilds them as **native circles/arcs** — `ArcCurve` with center inference — using the Re-Cercle method, and welds them into single-click selectable curves when a native rebuild is not possible)
-- Configurable threshold to skip restoration on very large objects (performance)
-- Configurable minimum segment count for arc detection (tradeoff between catching short arcs and avoiding false positives)
+### Included (step 1)
 
-### Out of scope
-- Custom boolean engine (removed in v2.0 — plugin relies entirely on native Pro methods)
-- Individual union/subtract/split operations (available natively in SketchUp Pro)
-- SketchUp Make / Free compatibility
+- Create, Rebuild and Finalize Parametric Solid
+- Automatic sources / Result display switch when entering and exiting the group
+- Automatic rebuild on exit, only when the signature of the sources changed
+- Operation order and per-volume operation (`union`, `outer_shell`, `subtract`) stored in attributes; in step 1, the operation follows the subtract color
+- Consistent Ctrl+Z / Ctrl+Y: the automatic rebuild is merged with the last edit (option B)
+- Set Subtract Color and Set Repair Options, taken over from Solid Batch; Solid Batch settings read by default
+- Native circle and arc restoration on each Result (Re-Cercle v2.0.0 method)
 
-## 3. Target Users
+### Planned
 
-- Architects and designers working with complex multi-solid models in SketchUp Pro
-- Users who frequently combine many solids into one (walls + openings, assemblies, molds)
-- Users preparing models for 3D printing or volume calculation
+- Step 2: **Parametric Table** (order, On, color, name, per-row operation, state, formula, Unions first, drag and drop, two-way selection)
+- Step 3: **nesting** (a parametric group used as a source of another)
 
-## 4. Requirements
+### Excluded
 
-### 4.1 System Requirements
+- Combine All (stays in Solid Batch v2)
+- Components as parametric containers (accepted as sources)
+- Intersect, live rebuild while editing, custom boolean engine
+- SketchUp Make and versions without native booleans
+
+## 3. System requirements
 
 | Requirement | Value |
 |-------------|-------|
-| SketchUp version | Pro 2017 or later |
-| Operating system | Windows / macOS (any OS supported by SketchUp) |
-| Ruby API methods | `Group#union`, `Group#outer_shell`, `Group#subtract`, `Group#manifold?` |
-| Circle/arc restoration | Requires SketchUp 2020.1+ (`Entities#weld`, used by the weld fallback). On older versions, Phase 3 is silently skipped and the Set Repair Options command is hidden. |
+| SketchUp version | Pro 2021 (target and tested version) |
+| OS | Windows (any OS supported by SketchUp should work, not tested) |
+| Ruby API methods | `Group#union`, `#outer_shell`, `#subtract`, `#manifold?`, `#copy`, `#make_unique`, `#explode`; `ModelObserver#onActivePathChanged`, `#onTransactionUndo`, `#onTransactionRedo`; `AppObserver#onNewModel`, `#onOpenModel` |
+| Circle/arc restoration | SketchUp 2020.1+ (`Entities#weld`, fallback welding) |
+| Ruby | `digest/md5` (standard library shipped with SketchUp) |
 
-### 4.2 Functional Requirements
+## 4. Data model
 
-#### FR-01: Combine All (Union)
+Everything is stored in the model, attribute dictionary **`SolidProcedural`**.
 
-| Field | Description |
-|-------|-------------|
-| **Input** | Selection of 2+ solid groups/components |
-| **Precondition** | At least one solid must NOT have the subtract color |
-| **Process** | 1. Separate selection into base solids and tool solids by subtract color. 2. Sequentially union all base solids using `Group#union`. 3. Sequentially subtract all tool solids using `Group#subtract`. |
-| **Output** | A single solid group/component containing the result |
-| **Undo** | Entire operation reverts with a single Ctrl+Z |
-| **Error handling** | If any step fails, abort and revert; show error message with step number |
+### 4.1 Parametric group
 
-#### FR-02: Combine All (Shell)
+| Attribute | Value |
+|-----------|-------|
+| `role` | `parametric` |
+| `signature` | MD5 signature of the sources at the last rebuild (§ 7.3) |
 
-| Field | Description |
-|-------|-------------|
-| **Input** | Selection of 2+ solid groups/components |
-| **Precondition** | At least one solid must NOT have the subtract color |
-| **Process** | Same as FR-01 but Phase 1 uses `Group#outer_shell` instead of `Group#union` |
-| **Output** | A single solid group/component (outer envelope only) |
-| **Undo** | Entire operation reverts with a single Ctrl+Z |
-| **Error handling** | Same as FR-01 |
+### 4.2 Source (group or component inside the parametric group)
 
-#### FR-03: Set Subtract Color
+| Attribute | Value |
+|-----------|-------|
+| `role` | `source` (set at the first rebuild) |
+| `rank` | Position in the operation list, 1..n (1 = Base). A source without `rank` (added in the group) goes last, in entity order |
+| `op` | `union`, `outer_shell` or `subtract` |
+| `last_add_op` | `union` or `outer_shell`: restored when a Subtract volume is repainted with another color |
+| `enabled` | `false` = ignored by the rebuild (default `true`) |
+| `seen_color` | Material key at the last rebuild (`name:r,g,b` or `none`) |
 
-| Field | Description |
-|-------|-------------|
-| **Input** | Selection containing at least one group/component with a material applied |
-| **Process** | Read the material color from the first matching entity; persist RGB values to SketchUp registry |
-| **Output** | Confirmation message showing the registered RGB color |
-| **Persistence** | Color is stored in SketchUp registry under `SolidBatch` namespace; survives application restart |
-| **Default** | Red (255, 0, 0) if no color has been set |
+### 4.3 Result
 
-#### FR-04: Set Repair Options
+| Attribute | Value |
+|-----------|-------|
+| `role` | `result`; entity name `Result` |
 
-| Field | Description |
-|-------|-------------|
-| **Input** | None (no selection required) |
-| **Process** | Open a `UI.inputbox` with three fields: `Auto-repair circles on large objects` (Yes/No), `Large object threshold (edges)` (integer), `Min segments for arc detection` (integer ≥ 3). Persist all three values to the SketchUp registry. |
-| **Output** | Confirmation messagebox listing all three saved values + brief explanation of the low/high tradeoff for min arc segments |
-| **Persistence** | Stored under `SolidBatch/auto_repair_large` (string Yes/No), `SolidBatch/large_threshold` (integer), `SolidBatch/min_arc_segments` (integer) |
-| **Defaults** | `Yes`, `10000` edges, `6` segments (a value already saved in the registry takes precedence) |
+Loose geometry (edges and faces outside the sub-groups) is **not** a volume: it is hidden outside the group and reported ("make it a group").
 
-#### FR-05: Automatic Circle AND Arc Restoration (Phase 3 of Combine All)
+## 5. Functional requirements
+
+#### EF-07: Create Parametric Solid
 
 | Field | Description |
 |-------|-------------|
-| **Input** | The solid resulting from phases 1 and 2 of Combine All |
-| **Precondition** | `result.valid?` |
-| **Process** | 1. Count edges in the result (`CircleRestore.count_edges`). 2. If `edge_count <= threshold` OR `auto_repair_large == 'Yes'` → run `CircleRestore.restore_in_solid(result, min_arc_segments: <user_setting>)` (see Algorithm). 3. Otherwise → show a modal messagebox explaining that the repair was skipped and how to enable it. |
-| **Output** | Hash `{native: N, welded: M, unwelded: K, reasons: {reason => n}}`. Circles and arcs rebuilt as native `Sketchup::ArcCurve` (center inference, radius and segments in Entity Info), or welded into a `Sketchup::Curve` (fallback), OR modal messagebox if skipped. Summary in the Ruby Console (with the weld reasons) and in the status bar. |
-| **Algorithm** | Re-Cercle v2.0.0 method, copied into the plugin (`solid_batch/circle_restore/`, no dependency on Re-Cercle). (1) **Detection** on every edge of the result (nested groups/components included): chains of equal segments whose corners lie on one circle and turn by the same angle (± 1 %), segments split by extra vertices merged; closed chain ≥ 6 segments = circle, open chain ≥ `min_arc_segments` = arc; tolerance `max(0.001", 0.5 % × r)`; intact native circles and soft/hidden rings ignored. (2) **Classification** of each chain, detected again just before its rebuild: `:native` (nothing to do), `:planar` (all faces touching it in its plane → erase + `add_arc` with the same center, radius, segment count and phase + `find_faces` + face properties restored by probe point), `:volume` (end of a straight cylinder or truncated cone: hole, pin → wall erased, circle redrawn with `add_arc`, `Face#pushpull` to the other end, cone scaled, wall/caps properties restored: both ends become native), `:weld` (anything else → `Entities#weld`, reason logged). Lines attached to a circle split it into native arcs. (3) **Check** after each native rebuild: one `ArcCurve` per piece with the expected segment count; otherwise an exception aborts Phase 3. |
-| **Constants** | `Detector::MIN_CIRCLE = 6`, `Detector::MIN_ARC = 3` (floor), `DEFAULT_MIN_ARC_SEGMENTS = 6` (configurable), `BASE_TOL = 0.001"`, `REL_TOL = 0.5 %`, `STEP_TOL = 1 %`, `MAX_STEP = 60°` |
-| **Undo** | Phase 3 chained to the single undo of phases 1/2 via transparent operation |
-| **Failure** | Exception during Phase 3 → only Phase 3 is aborted: the boolean result is kept, its circles stay as they were, a messagebox explains it |
-| **Limitations** | Recreated faces (hole wall, caps, host face) keep material, tag and orientation but lose their texture position and attributes; entity IDs change. A regular polygon of 6+ sides (hexagon…) is indistinguishable from a circle. Stay welded (not native): arcs of a rounded edge (fillet), circle on a curved surface, cylinder cut by an edge, intersecting or stacked holes, oblique cylinder, triangulated face, line attached to a cylinder circle. |
+| **Input** | Selection of one or more solid groups/components |
+| **Preconditions** | SketchUp Pro (`respond_to?(:union)`); no parametric group in the selection (nesting: step 3); all `manifold?` (otherwise a message lists the non-solid objects); at least one volume without the subtract color |
+| **Processing** | `add_group(volumes)`, name `Parametric Solid`, `role=parametric`; `SolidProcedural` attributes of the volumes deleted; `rank`: every "+" volume, then every "−" one; rebuild (EF-14) |
+| **Output** | Parametric group selected, Result visible, sources hidden |
+| **Undo** | One operation "Solid Procedural — Create Parametric Solid" |
+| **Error** | `abort_operation`, message "Nothing was changed." |
 
-#### FR-06: Solid Validation
+#### EF-08: Display switch
+
+| Context | Sources, loose geometry | Result |
+|---------|------------------------|--------|
+| Group in the active path (open) | visible | hidden |
+| Group closed | hidden | visible |
+
+Guides, texts and dimensions are left alone. A copied group shares its definition: it is made unique (`make_unique`) before its display changes, so that the original does not change.
+
+#### EF-09: Automatic rebuild on exit (`sync_path`)
 
 | Field | Description |
 |-------|-------------|
-| **Input** | Current selection |
-| **Process** | Filter entities to Groups and ComponentInstances that pass `manifold?` check |
-| **Output** | Array of valid solids, or error message if fewer than required minimum |
+| **Trigger** | `onActivePathChanged`, deferred with `UI.start_timer(0, false)` |
+| **Processing** | Difference between the previous and the current active path. Groups **left** (innermost first): rebuild when the signature changed (`stale?`), then "closed" display. Groups **entered**: "open" display |
+| **Operation** | One operation "Solid Procedural — Rebuild", **transparent**: merged with the last edit (option B, `MERGE_REBUILD_WITH_LAST_EDIT = true`). With `false`, the rebuild becomes a separate undo step (option A); display switches alone stay transparent |
+| **Error** | The operation is always committed (never `abort_operation` on a transparent operation); the former Result is kept; message "Rebuild failed — the former result is kept." naming the volume |
 
-### 4.3 Non-Functional Requirements
+#### EF-10: Rebuild Parametric Solid
+
+Forced rebuild of the **selected** (closed) parametric groups, in one non-transparent operation. If the group is open, a message asks to close it (it is rebuilt on exit). Error: `abort_operation`, nothing is changed.
+
+#### EF-11: Finalize Parametric Solid
+
+| Field | Description |
+|-------|-------------|
+| **Input** | Selected parametric groups |
+| **Processing** | Rebuild when the signature changed or there is no Result; everything but the Result erased (before exploding: loose geometry does not merge with the outside); `explode` of the group; attributes deleted, Result visible, **group name and tag** carried over |
+| **Output** | One plain solid group per parametric group, selected |
+| **Undo** | One operation |
+
+#### EF-13: Color → operation (`sync_op_with_color`)
+
+Applied at each rebuild, **only when the material changed** since the last rebuild (`seen_color`) or when `op` is not set:
+
+- subtract color material → `subtract` (the former add operation is kept in `last_add_op`);
+- other material or no material → `last_add_op`, or `union` by default.
+
+Changing the subtract color (Set Subtract Color) or opening the model on another PC therefore never flips existing volumes.
+
+#### EF-14: Ordered rebuild (`rebuild_in_operation`)
+
+1. `make_unique` of the group; sources normalized (`role`, `rank` 1..n, `enabled`, color → operation).
+2. Validation of the enabled sources: at least one; none parametric (step 3); all `manifold?`; the first one is not `subtract`.
+3. Signature computed.
+4. **Combination on copies** (§ 7.4) in `rank` order: `acc = copy(1)`, then for each next source `acc.union(copy)`, `acc.outer_shell(copy)` or `copy.subtract(acc)`. Progress in the status bar (`Solid Procedural — Subtract 2/3 (67%)`).
+5. Result material = base material; faces that inherited the subtract color reset (`nil`).
+6. Circle restoration (EF-18) on a copy of the result.
+7. Former Result erased; new Result marked (`role=result`, name `Result`); signature stored; display applied.
+
+On a failure in step 4, every copy is erased in an `ensure`, the unused component definitions created are removed, and the former Result stays in place.
+
+#### EF-16: Rebuild failure
+
+| Case | Message |
+|------|---------|
+| No enabled volume | `There is no enabled volume to combine.` |
+| Non-solid source | `Volume #2 Cylinder is not a solid.` |
+| First source is Subtract | `The first volume #1 … has the subtract color: the first volume must be added.` |
+| Native boolean failed | `Subtract of volume #3 … failed.` |
+| Nested parametric group | `… nested parametric solids are not supported yet.` |
+
+#### EF-17: Independent copies
+
+A copied parametric group shares the definition of the original: `make_unique` before any rebuild or display change. The source copies made for the rebuild are made unique too (a boolean would otherwise modify the source).
+
+#### EF-18: Circle and arc restoration
+
+Engine `solid_procedural/circle_restore/`, copy of Re-Cercle v2.0.0 (identical to Solid Batch v2.3.0, namespace `SolidProcedural::CircleRestore`):
+
+| Field | Description |
+|-------|-------------|
+| **Threshold** | If the Result has more edges than `large_threshold` and `auto_repair_large` is `No` → restoration skipped, message after the operation |
+| **Processing** | On a **duplicate** of the boolean result: `CircleRestore.restore_in_solid(min_arc_segments:)`. Success → the duplicate replaces the result. Exception → duplicate erased, boolean result kept, message |
+| **Algorithm** | (1) Detection of chains of equal segments whose corners lie on one circle and turn by the same angle (± 1 %); closed chain ≥ 6 segments = circle, open chain ≥ `min_arc_segments` = arc; tolerance `max(0.001", 0.5 % × r)`. (2) Classification of each chain, detected again just before its rebuild: `:native` (nothing), `:planar` (erase + `add_arc` with the same center, radius, segments and phase + `find_faces`), `:volume` (right cylinder or truncated cone: `add_arc` + `pushpull`), `:weld` (fallback, reason logged). (3) Check after each native rebuild |
+| **Report** | Ruby console (with the weld reasons) and status bar |
+| **Limitations** | Recreated faces keep material, tag and orientation, but lose texture positions and attributes. A regular polygon with 6 sides or more cannot be told from a circle. Still welded: fillets, circle on a curved surface, crossing or stacked holes, oblique cylinder, triangulated face |
+
+#### EF-19: Undo / Redo
+
+- **Option B**: the automatic rebuild is a transparent operation, merged with the last edit made in the group. One Ctrl+Z undoes the edit, the Result and the signature together; the Edit menu shows the name of the edit ("Undo Move").
+- After Ctrl+Z / Ctrl+Y (`onTransactionUndo` / `onTransactionRedo`): `sync_all` sets the display of every group back in line with the active path, in a transparent operation; **never a rebuild** (a new operation after an undo would drop the redo). A group whose signature no longer matches is reported in the status bar and rebuilt on the next exit or by Rebuild.
+
+#### EF-03: Set Subtract Color
+
+Color of the material of the first selected group/component that has one, stored in the `SolidProcedural` registry section. Default: red (255, 0, 0). Existing volumes keep their operation until they are repainted (EF-13).
+
+#### EF-04: Set Repair Options
+
+`UI.inputbox` with three fields: `Auto-repair circles on large objects` (Yes/No, default Yes), `Large object threshold (edges)` (default 10000), `Min segments for arc detection` (≥ 3, default 6). Hidden before SketchUp 2020.1.
+
+## 6. Non-functional requirements
 
 | ID | Requirement |
 |----|-------------|
-| NFR-01 | No custom boolean engine — rely exclusively on native SketchUp Pro methods |
-| NFR-02 | Single undo step for all batch operations |
-| NFR-03 | Subtract color persists across sessions via SketchUp registry |
-| NFR-04 | Console logging (`puts`) for each operation step for debugging |
-| NFR-05 | Graceful error handling with abort + revert on failure |
-| NFR-06 | Status bar progress display during batch operations (`Solid Batch — Subtract 7/13 (54%)`) |
-| NFR-07 | Transparent operations: each boolean step has its own start/commit (fast small deltas) chained via `transparent = true` for single undo |
-| NFR-08 | Circle and arc restoration applied only at the end (Phase 3), never on intermediate steps — for performance and reliability |
-| NFR-09 | The `large_threshold`, `auto_repair_large` and `min_arc_segments` settings persist in the SketchUp registry |
-| NFR-10 | Each chain is detected again just before its rebuild (rebuilding a cylinder also rebuilds its other end); each native rebuild is checked |
-| NFR-11 | Self-contained plugin: the circle engine is a copy of Re-Cercle v2.0.0 under `SolidBatch::CircleRestore`, no dependency on another plugin or shared library |
+| NF-01 | SketchUp Pro native booleans only |
+| NF-02 | Each command is one undoable operation; display switches are transparent |
+| NF-03 | No model change inside an observer callback: `UI.start_timer(0, false)`, timer stopped as soon as it fires (a non-repeating timer that opens a modal dialog repeats otherwise); requests coalesced per model; `@busy` guard against notifications caused by the plugin |
+| NF-04 | No rebuild without a change (signature); progress in the status bar |
+| NF-05 | Console logging `[Solid Procedural] …` |
+| NF-06 | On-screen labels in English; name "Solid Procedural" identical everywhere (extension, menu, toolbar, registry, dictionary, logs) |
+| NF-08 | Standalone plugin, no dependency on another plugin |
+| NF-09 | Coexistence with Solid Batch v2: separate modules, folders, registry and attributes |
+| NF-10 | Parametric data in the model, options in the `SolidProcedural` registry section, fallback to `SolidBatch` |
+| NF-11 | A `.skp` opened without the plugin shows the Result (sources hidden) |
+| NF-12 | A non-solid or deleted source, or an empty group, never raises an unhandled exception |
 
-## 5. Architecture
+## 7. Architecture
 
-### 5.1 File Structure
+### 7.1 File structure
 
 ```
-solid_batch.rb                # Entry point — extension registration
-solid_batch/
-  version.rb                  # VERSION constant
-  main.rb                     # Menu, toolbar, commands, business logic
-  circle_restore.rb           # CircleRestore module — restoration entry point (Phase 3)
-  circle_restore/             # Copy of the Re-Cercle v2.0.0 engine
-    detector.rb               # Chain detection and classification
-    rebuilder.rb              # Planar native rebuild, weld fallback
-    volume.rb                 # Push/Pull native rebuild of cylinders and cones
+solid_procedural.rb             # Entry point — extension registration
+solid_procedural/
+  version.rb                    # VERSION = '1.0.0'
+  main.rb                       # Menu, toolbar, options (registry), Set Subtract Color, Set Repair Options
+  parametric.rb                 # Parametric groups: data, signature, display, rebuild, commands, synchronization
+  parametric_observer.rb        # ModelObserver / AppObserver, deferred synchronization
+  circle_restore.rb             # Entry point of the circle restoration
+  circle_restore/               # Copy of the Re-Cercle v2.0.0 engine
+    detector.rb
+    rebuilder.rb
+    volume.rb
   icons/
-    combine_pro_union_16.png  # Toolbar icons (16px and 24px)
-    combine_pro_union_24.png
-    combine_pro_shell_16.png
-    combine_pro_shell_24.png
-    setcolor_16.png
-    setcolor_24.png
-    repair_circles_16.png     # New Set Repair Options icon
-    repair_circles_24.png
+    create_parametric_16/24.png
+    rebuild_parametric_16/24.png
+    finalize_parametric_16/24.png
+    setcolor_16/24.png
+    repair_circles_16/24.png
 ```
 
-### 5.2 Module Structure
+### 7.2 Module structure
 
 ```
-SolidBatch                  # Top-level namespace
-  PLUGIN_DIR                  # Plugin directory path
-  PLUGIN_NAME                 # "Solid Batch"
-  VERSION                     # "2.3.0"
+SolidProcedural
+  PLUGIN_NAME, PLUGIN_DIR, VERSION
+  REGISTRY_SECTION ('SolidProcedural'), LEGACY_REGISTRY_SECTION ('SolidBatch')
+  read_option(key, default)            # SolidProcedural, then SolidBatch, then default
+  subtract_color / save_subtract_color, auto_repair_large, large_threshold, min_arc_segments (+ save_*)
+  color_match?, is_subtract_solid?
+  do_set_subtract_color, do_set_repair_options
 
-  # Color management
-  subtract_color()            # Read persisted color
-  save_subtract_color(color)  # Write color to registry
-  color_match?(c1, c2)        # Compare two colors by RGB
-  is_subtract_solid?(entity)  # Check if entity has subtract color
+SolidProcedural::Parametric
+  DICT, ROLE_*, OP_LABELS, MERGE_REBUILD_WITH_LAST_EDIT, RebuildError
+  role, parametric?, result_of, sources_of, op_of, enabled?, label, open_groups, all_groups
+  signature, geometry_digest, stale?
+  display_entities, hidden_wanted?, display_changes, apply_display, loose_geometry?
+  normalize_sources, sync_op_with_color, validate
+  rebuild_in_operation, combine, copy_of, duplicate, restore_circles
+  do_create, do_rebuild, do_finalize, finalize, run_command
+  sync_path, sync_all
+  ModelObserver, AppObserver, attach, defer, run
 
-  # Circle and arc repair options
-  auto_repair_large()         # Read persisted Yes/No toggle
-  save_auto_repair_large(v)   # Write toggle to registry
-  large_threshold()           # Read persisted edge threshold
-  save_large_threshold(v)     # Write threshold to registry
-  min_arc_segments()          # Read persisted min arc segments
-  save_min_arc_segments(v)    # Write min arc segments to registry
-
-  # Validation
-  get_solids(min_count)        # Filter selection to valid solids
-
-  # Commands
-  do_combine_all_pro(mode)    # Batch union/shell + subtract + circle & arc restore
-  do_set_subtract_color()     # Register subtract color
-  do_set_repair_options()     # Configure auto-repair + threshold + min arc segments
-
-SolidBatch::CircleRestore   # Circle and arc restoration module
-  DEFAULT_MIN_ARC_SEGMENTS    # 6 (arcs, configurable)
-  count_edges(solid)          # Recursive edge count
-  restore_in_solid(solid, min_arc_segments:)  # Returns {native:, welded:, unwelded:, reasons:}
-  summary(result, reasons:)   # One-line report (console, status bar)
-  restore_chain(...)          # Redetect, classify, rebuild one chain (Re-Cercle restore_chain)
-  check_planar / check_volume # Post-rebuild checks (raise on failure)
-  Detector                    # Copy of Re-Cercle detector.rb (chains, analyse)
-  Rebuilder                   # Copy of Re-Cercle rebuilder.rb (planar, weld)
-  Volume                      # Copy of Re-Cercle volume.rb (detect, rebuild)
+SolidProcedural::CircleRestore         # Copy of Re-Cercle v2.0.0
+  restore_in_solid, count_edges, summary, Detector, Rebuilder, Volume
 ```
 
-### 5.3 Operation Flow
+### 7.3 Signature (`signature`)
 
-```
-User clicks "Combine All (Union)" or "(Shell)"
-  |
-  v
-get_solids(2) — validate selection
-  |
-  v
-Check native method availability (respond_to?)
-  |
-  v
-Separate solids by subtract color
-  |
-  v
-Phase 1: sequential union/outer_shell of base solids
-  |   For each step:
-  |     start_operation(transparent = !first_op)
-  |     base[0].union(base[1]) -> commit
-  |     start_operation(transparent = true)
-  |     result.union(base[2]) -> commit -> ...
-  |
-  +---> Phase 2: sequential subtract of tool solids
-  |   For each step:
-  |     start_operation(transparent = true)
-  |     tool[0].subtract(result) -> commit
-  |     tool[1].subtract(result) -> commit -> ...
-  |
-  +---> Status bar: "Solid Batch — Subtract 7/13 (54%)"
-  |
-  +---> Phase 3: circle AND arc restoration on the final result
-  |   edge_count = CircleRestore.count_edges(result)
-  |   if edge_count <= threshold OR auto_repair_large == 'Yes':
-  |     start_operation(transparent = true)
-  |     CircleRestore.restore_in_solid(result, min_arc_segments: ...)
-  |       Detector.find_chains (circles ≥ 6, arcs ≥ min_arc_segments segments)
-  |       for each chain: redetect -> analyse ->
-  |         :planar -> Rebuilder.planar (native)   -> check
-  |         :volume -> Volume.rebuild (Push/Pull)  -> check
-  |         :weld   -> Rebuilder.weld (Curve, reason logged)
-  |     -> commit   (exception -> abort Phase 3 only, boolean result kept)
-  |   else:
-  |     UI.messagebox modal "Repair skipped"
-  |
-  v
-All steps chained via transparent operations → single Ctrl+Z
-  |
-  v
-Select result
-```
+MD5 over, for each source in order: `rank`, `op`, `enabled`, material key, transformation rounded to 1e-6; then the digest of its definition's geometry (end positions of each edge, vertex count of each face, sub-groups recursively). It is computed only for a **closed** group (the coordinates of an open group are expressed in model space). Stored on the group, it is undone by Ctrl+Z together with the Result, which replaces a "modified" flag set by `onTransactionCommit`.
 
-### 5.4 Native API Usage
-
-The plugin uses the following SketchUp Pro Ruby API methods:
+### 7.4 Native booleans
 
 | Method | Receiver | Argument | Returns | Side effect |
 |--------|----------|----------|---------|-------------|
-| `union(other)` | Solid A | Solid B | Merged solid | Erases B |
-| `outer_shell(other)` | Solid A | Solid B | Shell solid | Erases B |
-| `subtract(base)` | Tool (erased) | Base (kept) | Modified base | Erases tool |
-| `manifold?` | Group/Component | — | Boolean | None |
+| `union(other)` | accumulator | copy | merged solid | operands erased or replaced (undocumented) |
+| `outer_shell(other)` | accumulator | copy | outer shell | operands erased or replaced (undocumented) |
+| `subtract(base)` | copy (tool) | accumulator (base) | modified base | the tool is erased |
+| `manifold?` | group/component | — | boolean | none |
 
-**Important:** For `subtract`, the receiver is the tool (which gets erased) and the argument is the base (which is modified and returned). This is the reverse of what the method name might suggest.
+The rebuild works on copies only; every copy and intermediate result is listed and erased at the end, whichever operand SketchUp erases.
 
-## 6. Data Persistence
+### 7.5 Flow
+
+```
+Entering the group (onActivePathChanged → timer)
+  sync_path: group entered → sources visible, Result hidden (transparent op)
+
+User edits inside the group (move, paint, add a group…)
+
+Exiting the group (onActivePathChanged → timer)
+  sync_path: group left
+    stale? (signature) ── no ──> "closed" display only
+       │ yes
+       v
+    start_operation('Solid Procedural — Rebuild', transparent = true)   # option B
+      rebuild_in_operation
+        normalize_sources → validate → signature
+        combine (copies, rank order) → base material
+        restore_circles (on a duplicate)
+        Result replaced, signature stored, "closed" display
+    commit_operation (always)   error → former Result kept + message
+
+Ctrl+Z / Ctrl+Y (onTransactionUndo/Redo → timer)
+  sync_all: display of every group according to the active path, no rebuild
+```
+
+## 8. User interface
+
+### 8.1 Menu **Extensions > Solid Procedural**
+
+1. Create Parametric Solid
+2. Rebuild Parametric Solid
+3. Finalize Parametric Solid
+4. *(separator)*
+5. Set Subtract Color
+6. Set Repair Options (SketchUp 2020.1+)
+
+### 8.2 "Solid Procedural" toolbar
+
+Create, Rebuild, Finalize, *(separator)*, Set Subtract Color, Set Repair Options (16 and 24 px icons).
+
+### 8.3 Messages
+
+`UI.messagebox` (`MB_OK`), shown after the operation is committed. Status bar: rebuild progress, circle restoration report, "out of date" groups.
+
+## 9. Persistence
 
 | Data | Storage | Key | Default |
 |------|---------|-----|---------|
-| Subtract color (R) | SketchUp registry | `SolidBatch/subtract_color_r` | 255 |
-| Subtract color (G) | SketchUp registry | `SolidBatch/subtract_color_g` | 0 |
-| Subtract color (B) | SketchUp registry | `SolidBatch/subtract_color_b` | 0 |
-| Auto-repair circles on large objects | SketchUp registry | `SolidBatch/auto_repair_large` | `Yes` |
-| "Large object" threshold in edges | SketchUp registry | `SolidBatch/large_threshold` | `10000` |
-| Min segments for arc detection | SketchUp registry | `SolidBatch/min_arc_segments` | `6` |
+| Subtract color | Registry | `SolidProcedural/subtract_color_r`, `_g`, `_b` | 255, 0, 0 |
+| Repair large objects | Registry | `SolidProcedural/auto_repair_large` | `Yes` |
+| Large object threshold | Registry | `SolidProcedural/large_threshold` | `10000` |
+| Min arc segments | Registry | `SolidProcedural/min_arc_segments` | `6` |
+| Parametric data | Model | `SolidProcedural` dictionary (§ 4) | — |
 
-## 7. User Interface
+A setting missing from `SolidProcedural` is read from `SolidBatch` (Solid Batch v2 settings carried over). Writes always go to `SolidProcedural`.
 
-### 7.1 Menu
+## 10. Known limitations (step 1)
 
-Located at **Extensions > Solid Batch**:
-1. Combine All (Union)
-2. Combine All (Shell)
-3. *(separator)*
-4. Set Subtract Color
-5. Set Repair Options
+- The order and the per-volume operation can only be changed through the color (table in step 2); a volume can become Shell only through the `op` attribute.
+- Nested parametric groups refused (step 3).
+- The rebuild runs on exiting the group, not while editing.
+- Loose geometry inside a parametric group is not used (make it a group).
+- STL export of a non-finalized group: behavior of the hidden sources still to be confirmed (PRD Q-1); Finalize before exporting is recommended.
 
-### 7.2 Toolbar
-
-Named "Solid Batch", contains 4 buttons with 16px and 24px icon variants:
-1. Combine All (Union)
-2. Combine All (Shell)
-3. Set Subtract Color
-4. Set Repair Options
-
-### 7.3 Messages
-
-All user-facing messages use `UI.messagebox` with `MB_OK`. Error messages include the step number where failure occurred.
-
-## 8. Error Handling
-
-| Scenario | Behavior |
-|----------|----------|
-| Fewer than 2 solids selected | Show count message, abort |
-| SketchUp not Pro (method missing) | Show "requires SketchUp Pro" message, abort |
-| All solids have subtract color | Show "no base objects" message, abort |
-| Boolean step fails (nil/invalid result) | Abort operation (revert all changes), show step number |
-| Circle/arc restoration fails (Phase 3) | Abort Phase 3 only (boolean result kept, circles left as they were), log backtrace, show message |
-| Unexpected exception | Abort operation, log backtrace (first 10 lines), show error message |
-
-## 9. Version History
+## 11. Version history
 
 | Version | Date | Changes |
 |---------|------|---------|
-| 1.0.0 | 2026-04-03 | Initial release — custom boolean engine (union, subtract, split) |
-| 2.0.0 | 2026-04-04 | Removed custom engine. Added Combine All (Union/Shell) using native Pro methods. Added Set Subtract Color. Removed Union, Subtract, Split individual operations. Transparent operations for fast commits + single undo. Status bar progress display. |
-| 2.1.0 | 2026-04-11 | Added Phase 3: automatic restoration of broken circles on the result (`CircleRestore` module adapted from Re-Cercle). Added `Set Repair Options` command to configure threshold and auto-repair toggle. Persistence of new options. New `repair_circles_*.png` icon. |
-| 2.2.0 | 2026-04-11 | Phase 3 extended: automatic restoration of **arcs** in addition to circles via `find_arcs_by_geometry` + `open_chain?`. New `Min segments for arc detection` parameter configurable in `Set Repair Options` (default 8). `restore_in_solid` now returns `{circles:, arcs:, total:}`. Stage 1b inserted between circles and pre-existing curve fragments. |
-| 2.2.1 | 2026-04-12 | Backward compatibility with SketchUp Pro 2017+. Replaced Ruby 2.3 safe navigation (`&.`) with classic nil checks for Ruby 2.2 compatibility. Added `respond_to?(:weld)` guard in `CircleRestore` — Phase 3 silently skipped on SketchUp < 2020.1. Set Repair Options menu/toolbar hidden on versions < 2020.1. |
-| 2.3.0 | 2026-10-11 | Phase 3 rebuilt on the Re-Cercle v2.0.0 method, copied into the plugin (`solid_batch/circle_restore/`, no dependency): broken circles and arcs become **native** `ArcCurve` (center inference) — planar rebuild, Push/Pull rebuild of cylinders and truncated cones (holes, pins) — with weld only as a fallback (reason logged). Detection by chains of equal segments (tolerance `max(0.001", 0.5 % r)`), circles ≥ 6 segments, default `min_arc_segments` 8 → 6. Post-rebuild checks; a Phase 3 failure aborts Phase 3 only (boolean result kept). `restore_in_solid` returns `{native:, welded:, unwelded:, reasons:}`; summary in console and status bar. |
+| 1.0.0 | in progress | New plugin derived from Solid Batch v2.3.0. Step 1 (2026-10-23): Create / Rebuild / Finalize Parametric Solid, automatic sources / Result switch, automatic rebuild on exit by MD5 signature, option B for Ctrl+Z, color → operation, circle restoration on each Result, settings taken over from Solid Batch. Combine All removed |
+
+Solid Batch history (v1.0.0 to v2.3.0): `JOURNAL.md` and the `sketchup-solid-batch` repository.

@@ -3,15 +3,15 @@ require_relative 'circle_restore/detector'
 require_relative 'circle_restore/rebuilder'
 require_relative 'circle_restore/volume'
 
-module SolidBatch
-  # CircleRestore — rebuilds the broken circles and arcs of a Combine All
+module SolidProcedural
+  # CircleRestore — rebuilds the broken circles and arcs of a boolean
   # result as native circles (Sketchup::ArcCurve: center inference, radius
   # and segments in Entity Info, one click selects them).
   #
   # Ported from Re-Cercle v2.0.0 (re_cercle/main.rb: restore_circles,
   # restore_chain), applied to every edge of the solid instead of the
   # selection. The engine is a copy of Re-Cercle's files under this module
-  # (Solid Batch does not depend on Re-Cercle):
+  # (Solid Procedural does not depend on Re-Cercle):
   #   circle_restore/detector.rb   chain detection and classification
   #   circle_restore/rebuilder.rb  planar native rebuild, weld fallback
   #   circle_restore/volume.rb     Push/Pull rebuild of cylinders and cones
@@ -64,7 +64,7 @@ module SolidBatch
       chains = Detector.find_chains(Detector.all_edges(entities))
       chains.reject! { |chain| short_arc?(chain, min_arc_segments) }
       chains.each_with_index do |found, i|
-        Sketchup.status_text = "Solid Batch — Restoring circles and arcs #{i + 1}/#{chains.length}"
+        Sketchup.status_text = "Solid Procedural — Restoring circles and arcs #{i + 1}/#{chains.length}"
         restore_chain(found, result, min_arc_segments)
       end
       result

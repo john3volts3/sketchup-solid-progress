@@ -1,6 +1,6 @@
 # encoding: UTF-8
 # Ported from Re-Cercle v2.0.0 (re_cercle/detector.rb), unchanged except the
-# namespace: SolidBatch::CircleRestore instead of ReCercle. Solid Batch does
+# namespace: SolidProcedural::CircleRestore instead of ReCercle. Solid Procedural does
 # not depend on Re-Cercle.
 #
 # Detection of circles and arcs from the current geometry only (not from
@@ -24,7 +24,7 @@
 # Positions are read and written in the coordinates of the entities that
 # hold the chain.
 
-module SolidBatch
+module SolidProcedural
   module CircleRestore
     module Detector
       BASE_TOL   = 0.001 # inches, SketchUp internal tolerance

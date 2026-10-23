@@ -4,6 +4,8 @@
 > À placer à la racine du nouveau projet Solid Batch v3. Il servira de base au `PRD.md`, au `FSD.md` et au `JOURNAL.md`.
 >
 > **Mis à jour le 2026-10-23** : § 3 et § 7 complétés avec les décisions de la session. Si ce document et `PRD.md` divergent, c'est `PRD.md` qui fait foi.
+>
+> **Renommé le 2026-10-23** : le projet n'est plus « Solid Batch v3 » mais un **nouveau plugin, « Solid Procedural » 1.0.0**, installé à côté de Solid Batch v2, qui garde Combine All. Ce document reste tel qu'il a été rédigé ; les noms `solid_batch/…` et « Solid Batch » qui y figurent correspondent maintenant à `solid_procedural/…` et « Solid Procedural ».
 
 ---
 

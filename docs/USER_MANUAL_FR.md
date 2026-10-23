@@ -1,4 +1,6 @@
-# Solid Batch — Manuel utilisateur
+# Solid Procedural — Manuel utilisateur
+
+> **En cours de réécriture** — Solid Procedural 1.0.0 est développé à partir de Solid Batch v2.3.0. Le texte ci-dessous décrit encore Solid Batch v2.3.0 (Combine All) et sera réécrit pour la livraison 1.0.0.
 
 ## Presentation
 

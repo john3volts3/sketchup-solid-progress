@@ -1,6 +1,6 @@
 # encoding: UTF-8
 # Ported from Re-Cercle v2.0.0 (re_cercle/rebuilder.rb), unchanged except the
-# namespace: SolidBatch::CircleRestore instead of ReCercle. Solid Batch does
+# namespace: SolidProcedural::CircleRestore instead of ReCercle. Solid Procedural does
 # not depend on Re-Cercle.
 #
 # Rebuild of planar chains as native arcs/circles, and weld fallback.
@@ -22,7 +22,7 @@
 # Weld fallback: Entities#weld (SketchUp 2020.1+) makes one plain Curve
 # (one click selects it, but no center inference).
 
-module SolidBatch
+module SolidProcedural
   module CircleRestore
     module Rebuilder
       # Rebuilds +pieces+ (arrays of Detector::Run) of +chain+. Returns the
