@@ -101,6 +101,18 @@
 - **docs/FSD_FR.md, docs/FSD_EN.md** — EF-14 (sélection mémorisée et remise, Base toujours activée), table (ligne 1 fixe, On grisée, choix « Base », Unions first), paragraphe « Base figée (EF-27) », limitation sur la Base retirée, historique.
 - **PRD.md** — EF-27 (Base figée), EF-28 (sélection gardée) testées ; EF-29 (cadre vert, option 1) validée ; CA-19, CA-20 ; décisions « Base » et « Cadre vert » ; ligne d'historique de l'étape 2b.
 
+### Étape 2c — Cadre de sélection vert pour les groupes procéduraux (option 1)
+
+- **Demande utilisateur** : une apparence spéciale pour les groupes procéduraux, par exemple un cadre vert quand ils sont sélectionnés. Pas d'API de couleur de sélection par objet dans SketchUp 2021 (les overlays n'existent qu'à partir de 2023) → option 1 retenue : couleur de sélection du style (`HighlightColor`).
+- **Vérification de la prémisse** (console, par l'utilisateur) : `HighlightColor` change bien la couleur du cadre de sélection ; aucune étape d'annulation créée ; `model.modified?` reste `false`. Couleur d'origine de l'utilisateur : `(0, 1, 255)`.
+- **solid_procedural/highlight.rb** — Création. Module `SolidProcedural::Highlight` : vert `(0, 170, 0)` tant que la sélection ne contient que des groupes procéduraux, couleur d'origine remise sinon (sélection mixte, sources dans un groupe ouvert, rien de sélectionné) ; couleur d'origine gardée en mémoire et dans le registre (`SolidProcedural/highlight_original`) ; `before_save` remet la couleur d'origine avant chaque enregistrement ; `repair` remet la couleur du registre (sinon `0, 0, 255`) si un modèle contient ce vert exact sans que le plugin le gère (plantage, enregistrement automatique) ; mise à jour différée et regroupée (`update_later`).
+- **solid_procedural/procedural_observer.rb** — `Highlight.update_later` après chaque changement de sélection, de chemin actif, annulation, rétablissement et après un enregistrement (`onPostSaveModel`) ; `onPreSaveModel` → `before_save` ; `Highlight.repair` avec `sync_all` (ouverture, annulation, rétablissement).
+- **solid_procedural/main.rb** — `require_relative 'highlight'`.
+- Vérifications : `ruby -wc` OK ; test hors SketchUp OK (58 vérifications, dont vert, sélection mixte, enregistrement, réparation).
+- **Plugins SketchUp 2021** — fichiers copiés. Redémarrage de SketchUp nécessaire. **Test utilisateur OK** (vert / bleu, sélection mixte, source dans un groupe ouvert, enregistrement puis réouverture, pas de demande d'enregistrement, Ctrl+Z / Ctrl+Y).
+- **docs/FSD_FR.md, docs/FSD_EN.md** — EF-29 (cadre vert), API, fichier `highlight.rb`, module `Highlight`, persistance `highlight_original`, limitation, historique.
+- **PRD.md** — EF-29 testée, CA-21, ligne d'historique de l'étape 2c.
+
 ---
 
 ## Session du 2026-10-11

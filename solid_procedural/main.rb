@@ -2,6 +2,7 @@ require_relative 'version'
 require_relative 'circle_restore'
 require_relative 'procedural'
 require_relative 'procedural_table'
+require_relative 'highlight'
 require_relative 'procedural_observer'
 
 module SolidProcedural

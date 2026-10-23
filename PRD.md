@@ -3,7 +3,7 @@
 > Le *quoi* et le *pourquoi*. Le *comment* (algorithme, entrées/sorties, limitations) est dans `docs/FSD_FR.md` / `docs/FSD_EN.md`.
 > Cadrage initial : `SOLID_PROCEDURAL_PROJET.md` (rédigé sous le nom « Solid Batch v3 »). Historique détaillé : `JOURNAL.md`.
 
-Dernière mise à jour : 2026-10-23 (étapes 1 et 2 testées dans SketchUp 2021 Pro).
+Dernière mise à jour : 2026-10-23 (étapes 1, 2, 2b et 2c testées dans SketchUp 2021 Pro).
 
 ---
 
@@ -93,7 +93,7 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 | EF-26 | **Explode libère les volumes** : après un Explode d'un groupe procédural (ou un copier-coller d'une source hors du groupe), les volumes libérés sont rendus visibles et redeviennent des objets ordinaires (attributs retirés). Un seul Ctrl+Z annule l'Explode et la libération | Im | testée (étape 2) |
 | EF-27 | **Base figée** : la ligne 1 est la Base, toujours en tête et toujours active (ni déplacement, ni glisser-déposer au-dessus, ni désactivation ; *Unions first* la garde en tête). Choisir « Base » sur une autre ligne en fait la nouvelle Base, l'ancienne passe en ligne 2 | I | testée (étape 2b) |
 | EF-28 | **Sélection gardée** : après un recalcul (table sur un groupe fermé, Rebuild), le groupe sélectionné reste sélectionné et la table reste dessus | I | testée (étape 2b) |
-| EF-29 | **Cadre vert** : un groupe procédural sélectionné se distingue des autres objets (couleur de sélection verte) | S | validée (option 1, prémisse à vérifier) |
+| EF-29 | **Cadre vert** : un groupe procédural sélectionné se distingue des autres objets (couleur de sélection verte) | S | testée (étape 2c) |
 
 ## 6. Exigences non fonctionnelles
 
@@ -150,6 +150,7 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 | CA-18 | Explode d'un groupe procédural → le Result et tous les volumes sont visibles, en objets ordinaires. Un seul Ctrl+Z remet le groupe procédural | EF-26 |
 | CA-19 | Ligne 1 sans poignée ni ▲▼, case On grisée ; glisser une ligne tout en haut → elle se place en ligne 2 ; *Unions first* garde la Base ; choisir « Base » sur une ligne Subtract → elle passe en ligne 1 avec son ancienne couleur, un seul Ctrl+Z annule | EF-27 |
 | CA-20 | Groupe fermé sélectionné, cocher / décocher On dans la table → le résultat suit, le groupe reste sélectionné et la table reste remplie | EF-24, EF-28 |
+| CA-21 | Groupe procédural sélectionné → cadre vert ; groupe ordinaire ou sélection mixte → cadre bleu ; enregistrer avec le cadre vert puis rouvrir → couleur d'origine ; sélectionner puis fermer sans rien modifier → pas de demande d'enregistrement | EF-29 |
 
 ## 9. Questions ouvertes et décisions
 
@@ -203,4 +204,5 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 | 2026-10-23 | Solid Procedural 1.0.0, étape 1 (commit de développement, non publié) | EF-03 à EF-11, EF-13 (couleur → opération), EF-14 à EF-19 testées dans SketchUp 2021 Pro |
 | 2026-10-23 | Solid Procedural 1.0.0, étape 2 (commit de développement, non publié) | EF-12, EF-13 (table → couleur), EF-20 à EF-24, EF-26 testées dans SketchUp 2021 Pro |
 | 2026-10-23 | Solid Procedural 1.0.0, étape 2b (commit de développement, non publié) | EF-27, EF-28 testées dans SketchUp 2021 Pro |
+| 2026-10-23 | Solid Procedural 1.0.0, étape 2c (commit de développement, non publié) | EF-29 testée dans SketchUp 2021 Pro |
 | — | **Solid Procedural 1.0.0** (prévue) | EF-03 à EF-06 (reprises), EF-07 à EF-29 |

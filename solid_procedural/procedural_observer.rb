@@ -11,6 +11,7 @@ module SolidProcedural
       def onActivePathChanged(model)
         Procedural.defer(model, :path)
         ProceduralTable.refresh_later
+        Highlight.update_later
       end
 
       def onTransactionCommit(model)
@@ -21,31 +22,50 @@ module SolidProcedural
       def onTransactionUndo(model)
         Procedural.defer(model, :all)
         ProceduralTable.refresh_later
+        Highlight.update_later
       end
 
       def onTransactionRedo(model)
         Procedural.defer(model, :all)
         ProceduralTable.refresh_later
+        Highlight.update_later
+      end
+
+      # The green selection color is never saved.
+      def onPreSaveModel(model)
+        Highlight.before_save(model)
+      end
+
+      def onPostSaveModel(_model)
+        Highlight.update_later
       end
     end
 
-    # Selection changes: highlight of the rows of the Procedural Table.
-    # onSelectionAdded / Removed are not always notified: all four are used.
+    # Selection changes: highlight of the rows of the Procedural Table and
+    # green selection color. onSelectionAdded / Removed are not always
+    # notified: all four are used.
     class SelectionObserver < Sketchup::SelectionObserver
       def onSelectionBulkChange(_selection)
-        ProceduralTable.refresh_later
+        selection_changed
       end
 
       def onSelectionCleared(_selection)
-        ProceduralTable.refresh_later
+        selection_changed
       end
 
       def onSelectionAdded(_selection, _entity)
-        ProceduralTable.refresh_later
+        selection_changed
       end
 
       def onSelectionRemoved(_selection, _entity)
+        selection_changed
+      end
+
+      private
+
+      def selection_changed
         ProceduralTable.refresh_later
+        Highlight.update_later
       end
     end
 
@@ -101,7 +121,10 @@ module SolidProcedural
       return unless model.valid?
       @busy = true
       sync_path(model) if kinds.include?(:path)
-      sync_all(model) if kinds.include?(:all)
+      if kinds.include?(:all)
+        sync_all(model)
+        Highlight.repair(model)
+      end
       release_orphans(model) if kinds.include?(:commit)
     rescue => e
       puts "[Solid Procedural] Synchronization error: #{e.message}"

@@ -31,6 +31,7 @@ Solid Procedural est issu de **Solid Batch v2.3.0** et s'installe **à côté** 
 - Ordre des opérations et opération par volume (`union`, `outer_shell`, `subtract`) stockés dans les attributs, modifiables dans la Procedural Table ou par la couleur de soustraction
 - **Procedural Table** : ordre (▲▼, glisser-déposer, Unions first), On, couleur, nom, opération par ligne, état, formule, sélection dans les deux sens
 - Explode d'un groupe procédural : les volumes libérés deviennent des objets ordinaires visibles
+- Cadre de sélection vert quand la sélection ne contient que des groupes procéduraux
 - Ctrl+Z / Ctrl+Y cohérents : le recalcul automatique est fusionné avec la dernière modification (option B)
 - Set Subtract Color et Set Repair Options, repris de Solid Batch ; réglages de Solid Batch lus par défaut
 - Restauration des cercles et arcs natifs sur chaque Result (méthode Re-Cercle v2.0.0)
@@ -52,7 +53,7 @@ Solid Procedural est issu de **Solid Batch v2.3.0** et s'installe **à côté** 
 |----------|--------|
 | Version SketchUp | Pro 2021 (version cible et testée) |
 | Système | Windows (tout OS supporté par SketchUp devrait fonctionner, non testé) |
-| Méthodes Ruby API | `Group#union`, `#outer_shell`, `#subtract`, `#manifold?`, `#copy`, `#make_unique`, `#explode` ; `ModelObserver#onActivePathChanged`, `#onTransactionCommit`, `#onTransactionUndo`, `#onTransactionRedo` ; `SelectionObserver` ; `AppObserver#onNewModel`, `#onOpenModel` ; `UI::HtmlDialog` ; `Model#active_path=` (2020.0+) |
+| Méthodes Ruby API | `Group#union`, `#outer_shell`, `#subtract`, `#manifold?`, `#copy`, `#make_unique`, `#explode` ; `ModelObserver#onActivePathChanged`, `#onTransactionCommit`, `#onTransactionUndo`, `#onTransactionRedo`, `#onPreSaveModel`, `#onPostSaveModel` ; `SelectionObserver` ; `RenderingOptions['HighlightColor']` ; `AppObserver#onNewModel`, `#onOpenModel` ; `UI::HtmlDialog` ; `Model#active_path=` (2020.0+) |
 | Restauration cercles/arcs | SketchUp 2020.1+ (`Entities#weld`, soudure de secours) |
 | Ruby | `digest/md5`, `json` (bibliothèques standard fournies avec SketchUp) |
 | Fenêtre HTML | Navigateur intégré de SketchUp 2021 (Chromium 88 en 2021.1) ; JavaScript ES2017, sans dépendance |
@@ -221,6 +222,17 @@ Fenêtre non modale (`UI::HtmlDialog`, style utilitaire, taille et position mém
 
 Après chaque opération (`onTransactionCommit`, différé), les volumes `role=source` ou `role=result` du contexte actif qui ne sont plus dans un groupe procédural (Explode, ou copier-coller hors du groupe) sont **rendus visibles et perdent leurs attributs** : ils deviennent des objets ordinaires. Opération transparente « Solid Procedural — Release », fusionnée avec l'Explode : un seul Ctrl+Z remet le groupe procédural.
 
+#### EF-29 : Cadre de sélection vert
+
+SketchUp 2021 n'a qu'une couleur de sélection, celle du style du modèle (option de rendu `HighlightColor`) ; aucune API ne la change par objet, et les overlays n'existent qu'à partir de SketchUp 2023. Module `Highlight` :
+
+- la couleur passe au **vert `(0, 170, 0)`** tant que la sélection ne contient **que** des groupes procéduraux ; la couleur d'origine revient sinon (sélection mixte, sources sélectionnées dans un groupe ouvert, rien de sélectionné) ;
+- mise à jour différée et regroupée après chaque changement de sélection ou de chemin actif, annulation, rétablissement et enregistrement ;
+- changer cette couleur ne crée aucune étape d'annulation et ne marque pas le modèle comme modifié (vérifié dans SketchUp 2021) ;
+- la couleur d'origine est gardée en mémoire et dans le registre (`SolidProcedural/highlight_original`) ;
+- **le vert n'est jamais enregistré** : `onPreSaveModel` remet la couleur d'origine (directement dans le callback, une modification différée arriverait trop tard), `onPostSaveModel` remet le vert si la sélection le demande ;
+- un modèle qui contient ce vert exact sans que le plugin le gère (plantage, enregistrement automatique) retrouve, à l'ouverture ou après une annulation, la couleur du registre, sinon `(0, 0, 255)`.
+
 #### EF-03 : Set Subtract Color
 
 Couleur du matériau du premier groupe/composant sélectionné qui en a un, enregistrée dans le registre `SolidProcedural`. Défaut : rouge (255, 0, 0). Les volumes existants gardent leur opération jusqu'à ce qu'ils soient repeints (EF-13).
@@ -257,6 +269,7 @@ solid_procedural/
   main.rb                       # Menu, barre d'outils, clic droit, options (registre), Set Subtract Color, Set Repair Options
   procedural.rb                 # Groupes procéduraux : données, empreinte, affichage, calcul, commandes, synchronisation
   procedural_table.rb           # Procedural Table : fenêtre, données des lignes, actions de la page
+  highlight.rb                  # Cadre de sélection vert (couleur de sélection du style)
   procedural_observer.rb        # ModelObserver / SelectionObserver / AppObserver, synchronisation différée
   html/
     procedural_table.html       # Page de la table (HTML, CSS, JavaScript)
@@ -300,6 +313,9 @@ SolidProcedural::Procedural
 
 SolidProcedural::ProceduralTable
   show, target_group, refresh_later, refresh, payload, color_hex, on_action, select_row, open_row
+
+SolidProcedural::Highlight
+  GREEN, wanted?, green?, update_later, update, show_green, restore, before_save, repair
 
 SolidProcedural::CircleRestore         # Copie de Re-Cercle v2.0.0
   restore_in_solid, count_edges, summary, Detector, Rebuilder, Volume
@@ -390,6 +406,7 @@ Voir EF-20 à EF-24. Titre « Solid Procedural — Procedural Table ».
 | Réparation des gros objets | Registre | `SolidProcedural/auto_repair_large` | `Yes` |
 | Seuil « gros objet » | Registre | `SolidProcedural/large_threshold` | `10000` |
 | Segments minimum d'un arc | Registre | `SolidProcedural/min_arc_segments` | `6` |
+| Couleur de sélection d'origine | Registre | `SolidProcedural/highlight_original` (`r,g,b`) | — |
 | Données procédurales | Modèle | Dictionnaire `SolidProcedural` (§ 4) | — |
 
 Un réglage absent de `SolidProcedural` est lu dans `SolidBatch` (réglages de Solid Batch v2 repris). Les écritures vont toujours dans `SolidProcedural`.
@@ -399,6 +416,7 @@ Un réglage absent de `SolidProcedural` est lu dans `SolidBatch` (réglages de S
 - Dans un groupe ouvert, l'effet d'un changement de la table ne se voit qu'à la sortie (le Result est caché pendant l'édition) ; sur un groupe fermé, il est appliqué tout de suite.
 - Une ligne ne sélectionne son volume que dans un groupe ouvert (un double-clic l'ouvre).
 - Après un Explode, la géométrie libre cachée du groupe reste cachée : seuls les volumes groupés sont libérés.
+- Le cadre vert est la couleur de sélection du style : pendant qu'il est affiché, le panneau Styles montre ce vert, et mettre à jour le style à ce moment l'y enregistrerait. Un style dont la couleur de sélection est exactement `(0, 170, 0)` est considéré comme laissé par le plugin.
 - Groupes procéduraux imbriqués refusés (étape 3).
 - Le recalcul a lieu à la sortie du groupe, pas pendant l'édition.
 - La géométrie libre dans un groupe procédural n'est pas utilisée (il faut en faire un groupe).
@@ -408,6 +426,6 @@ Un réglage absent de `SolidProcedural` est lu dans `SolidBatch` (réglages de S
 
 | Version | Date | Changements |
 |---------|------|-------------|
-| 1.0.0 | en cours | Nouveau plugin issu de Solid Batch v2.3.0. Étape 1 (2026-10-23) : Create / Rebuild / Finalize Procedural Solid, bascule automatique sources / Result, recalcul automatique à la sortie par empreinte MD5, option B pour Ctrl+Z, couleur → opération, restauration des cercles sur chaque Result, réglages repris de Solid Batch. Combine All retiré. Étape 2 (2026-10-23) : Procedural Table (ordre, On, couleur, nom, opération, état, formule, Unions first, sélection dans les deux sens ; menu, barre d'outils, clic droit), Subtract dans la table ↔ couleur, Explode libère les volumes. Étape 2b (2026-10-23) : Base figée en ligne 1 (choix « Base » sur une ligne), sélection gardée après un recalcul |
+| 1.0.0 | en cours | Nouveau plugin issu de Solid Batch v2.3.0. Étape 1 (2026-10-23) : Create / Rebuild / Finalize Procedural Solid, bascule automatique sources / Result, recalcul automatique à la sortie par empreinte MD5, option B pour Ctrl+Z, couleur → opération, restauration des cercles sur chaque Result, réglages repris de Solid Batch. Combine All retiré. Étape 2 (2026-10-23) : Procedural Table (ordre, On, couleur, nom, opération, état, formule, Unions first, sélection dans les deux sens ; menu, barre d'outils, clic droit), Subtract dans la table ↔ couleur, Explode libère les volumes. Étape 2b (2026-10-23) : Base figée en ligne 1 (choix « Base » sur une ligne), sélection gardée après un recalcul. Étape 2c (2026-10-23) : cadre de sélection vert pour les groupes procéduraux |
 
 Historique de Solid Batch (v1.0.0 à v2.3.0) : `JOURNAL.md` et dépôt `sketchup-solid-batch`.

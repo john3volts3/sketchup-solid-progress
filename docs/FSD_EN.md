@@ -31,6 +31,7 @@ Solid Procedural derives from **Solid Batch v2.3.0** and installs **next to** it
 - Operation order and per-volume operation (`union`, `outer_shell`, `subtract`) stored in attributes, editable in the Procedural Table or through the subtract color
 - **Procedural Table**: order (▲▼, drag and drop, Unions first), On, color, name, per-row operation, state, formula, two-way selection
 - Explode of a procedural group: the released volumes become visible plain objects
+- Green selection frame when the selection holds only procedural groups
 - Consistent Ctrl+Z / Ctrl+Y: the automatic rebuild is merged with the last edit (option B)
 - Set Subtract Color and Set Repair Options, taken over from Solid Batch; Solid Batch settings read by default
 - Native circle and arc restoration on each Result (Re-Cercle v2.0.0 method)
@@ -52,7 +53,7 @@ Solid Procedural derives from **Solid Batch v2.3.0** and installs **next to** it
 |-------------|-------|
 | SketchUp version | Pro 2021 (target and tested version) |
 | OS | Windows (any OS supported by SketchUp should work, not tested) |
-| Ruby API methods | `Group#union`, `#outer_shell`, `#subtract`, `#manifold?`, `#copy`, `#make_unique`, `#explode`; `ModelObserver#onActivePathChanged`, `#onTransactionCommit`, `#onTransactionUndo`, `#onTransactionRedo`; `SelectionObserver`; `AppObserver#onNewModel`, `#onOpenModel`; `UI::HtmlDialog`; `Model#active_path=` (2020.0+) |
+| Ruby API methods | `Group#union`, `#outer_shell`, `#subtract`, `#manifold?`, `#copy`, `#make_unique`, `#explode`; `ModelObserver#onActivePathChanged`, `#onTransactionCommit`, `#onTransactionUndo`, `#onTransactionRedo`, `#onPreSaveModel`, `#onPostSaveModel`; `SelectionObserver`; `RenderingOptions['HighlightColor']`; `AppObserver#onNewModel`, `#onOpenModel`; `UI::HtmlDialog`; `Model#active_path=` (2020.0+) |
 | Circle/arc restoration | SketchUp 2020.1+ (`Entities#weld`, fallback welding) |
 | Ruby | `digest/md5`, `json` (standard libraries shipped with SketchUp) |
 | HTML window | SketchUp 2021 embedded browser (Chromium 88 in 2021.1); ES2017 JavaScript, no dependency |
@@ -221,6 +222,17 @@ Modeless window (`UI::HtmlDialog`, utility style, size and position remembered),
 
 After each operation (`onTransactionCommit`, deferred), the `role=source` or `role=result` volumes of the active context that are no longer inside a procedural group (Explode, or copy-paste out of the group) are **shown and lose their attributes**: they become plain objects. Transparent operation "Solid Procedural — Release", merged with the Explode: one Ctrl+Z brings the procedural group back.
 
+#### EF-29: Green selection frame
+
+SketchUp 2021 has a single selection color, the one of the model style (rendering option `HighlightColor`); no API changes it per object, and overlays exist only from SketchUp 2023. `Highlight` module:
+
+- the color turns **green `(0, 170, 0)`** while the selection holds **only** procedural groups; the original color comes back otherwise (mixed selection, sources selected in an open group, nothing selected);
+- deferred and coalesced update after every change of the selection or the active path, undo, redo and save;
+- changing this color adds no undo step and does not mark the model as modified (checked in SketchUp 2021);
+- the original color is kept in memory and in the registry (`SolidProcedural/highlight_original`);
+- **the green is never saved**: `onPreSaveModel` restores the original color (directly in the callback, a deferred change would come too late), `onPostSaveModel` shows the green again when the selection still asks for it;
+- a model holding this exact green that the plugin does not manage (crash, autosave) gets back, when opened or after an undo, the color of the registry, else `(0, 0, 255)`.
+
 #### EF-03: Set Subtract Color
 
 Color of the material of the first selected group/component that has one, stored in the `SolidProcedural` registry section. Default: red (255, 0, 0). Existing volumes keep their operation until they are repainted (EF-13).
@@ -257,6 +269,7 @@ solid_procedural/
   main.rb                       # Menu, toolbar, context menu, options (registry), Set Subtract Color, Set Repair Options
   procedural.rb                 # Procedural groups: data, signature, display, rebuild, commands, synchronization
   procedural_table.rb           # Procedural Table: window, row data, page actions
+  highlight.rb                  # Green selection frame (selection color of the style)
   procedural_observer.rb        # ModelObserver / SelectionObserver / AppObserver, deferred synchronization
   html/
     procedural_table.html       # Table page (HTML, CSS, JavaScript)
@@ -300,6 +313,9 @@ SolidProcedural::Procedural
 
 SolidProcedural::ProceduralTable
   show, target_group, refresh_later, refresh, payload, color_hex, on_action, select_row, open_row
+
+SolidProcedural::Highlight
+  GREEN, wanted?, green?, update_later, update, show_green, restore, before_save, repair
 
 SolidProcedural::CircleRestore         # Copy of Re-Cercle v2.0.0
   restore_in_solid, count_edges, summary, Detector, Rebuilder, Volume
@@ -390,6 +406,7 @@ See EF-20 to EF-24. Title "Solid Procedural — Procedural Table".
 | Repair large objects | Registry | `SolidProcedural/auto_repair_large` | `Yes` |
 | Large object threshold | Registry | `SolidProcedural/large_threshold` | `10000` |
 | Min arc segments | Registry | `SolidProcedural/min_arc_segments` | `6` |
+| Original selection color | Registry | `SolidProcedural/highlight_original` (`r,g,b`) | — |
 | Procedural data | Model | `SolidProcedural` dictionary (§ 4) | — |
 
 A setting missing from `SolidProcedural` is read from `SolidBatch` (Solid Batch v2 settings carried over). Writes always go to `SolidProcedural`.
@@ -399,6 +416,7 @@ A setting missing from `SolidProcedural` is read from `SolidBatch` (Solid Batch 
 - In an open group, the effect of a table change shows only on exit (the Result is hidden while editing); on a closed group, it is applied at once.
 - A row selects its volume only in an open group (a double-click opens it).
 - After an Explode, the hidden loose geometry of the group stays hidden: only grouped volumes are released.
+- The green frame is the selection color of the style: while it is shown, the Styles panel shows this green, and updating the style at that time would store it there. A style whose selection color is exactly `(0, 170, 0)` is taken as left by the plugin.
 - Nested procedural groups refused (step 3).
 - The rebuild runs on exiting the group, not while editing.
 - Loose geometry inside a procedural group is not used (make it a group).
@@ -408,6 +426,6 @@ A setting missing from `SolidProcedural` is read from `SolidBatch` (Solid Batch 
 
 | Version | Date | Changes |
 |---------|------|---------|
-| 1.0.0 | in progress | New plugin derived from Solid Batch v2.3.0. Step 1 (2026-10-23): Create / Rebuild / Finalize Procedural Solid, automatic sources / Result switch, automatic rebuild on exit by MD5 signature, option B for Ctrl+Z, color → operation, circle restoration on each Result, settings taken over from Solid Batch. Combine All removed. Step 2 (2026-10-23): Procedural Table (order, On, color, name, operation, state, formula, Unions first, two-way selection; menu, toolbar, context menu), Subtract in the table ↔ color, Explode releases the volumes. Step 2b (2026-10-23): Base fixed on row 1 (Base chosen on a row), selection kept after a rebuild |
+| 1.0.0 | in progress | New plugin derived from Solid Batch v2.3.0. Step 1 (2026-10-23): Create / Rebuild / Finalize Procedural Solid, automatic sources / Result switch, automatic rebuild on exit by MD5 signature, option B for Ctrl+Z, color → operation, circle restoration on each Result, settings taken over from Solid Batch. Combine All removed. Step 2 (2026-10-23): Procedural Table (order, On, color, name, operation, state, formula, Unions first, two-way selection; menu, toolbar, context menu), Subtract in the table ↔ color, Explode releases the volumes. Step 2b (2026-10-23): Base fixed on row 1 (Base chosen on a row), selection kept after a rebuild. Step 2c (2026-10-23): green selection frame for procedural groups |
 
 Solid Batch history (v1.0.0 to v2.3.0): `JOURNAL.md` and the `sketchup-solid-batch` repository.
