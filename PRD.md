@@ -3,7 +3,7 @@
 > Le *quoi* et le *pourquoi*. Le *comment* (algorithme, entrées/sorties, limitations) est dans `docs/FSD_FR.md` / `docs/FSD_EN.md`.
 > Cadrage initial : `SOLID_PROCEDURAL_PROJET.md` (rédigé sous le nom « Solid Batch v3 »). Historique détaillé : `JOURNAL.md`.
 
-Dernière mise à jour : 2026-10-23 (étape 1 testée dans SketchUp 2021 Pro).
+Dernière mise à jour : 2026-10-23 (étapes 1 et 2 testées dans SketchUp 2021 Pro).
 
 ---
 
@@ -76,20 +76,21 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 | EF-09 | **Recalcul automatique à la sortie** d'un groupe dont les sources ont changé, détecté par une **empreinte** des sources (ordre, opération, matériau, position, sommets) enregistrée au dernier calcul. Aucun recalcul si rien n'a changé | I | testée (étape 1) |
 | EF-10 | **Rebuild Procedural Solid** : recalcul forcé des groupes sélectionnés (fermés ; un groupe ouvert est recalculé à sa sortie) | I | testée (étape 1) |
 | EF-11 | **Finalize Procedural Solid** : remplace le groupe procédural par un solide simple, sans les sources | I | testée (étape 1) |
-| EF-12 | **Modèle de données des opérations** stocké sur chaque source (dictionnaire `SolidProcedural`) : `rank` (ordre), `op` (`union`, `outer_shell` ou `subtract` ; la ligne 1 est la Base), `last_add_op`, `enabled`, `seen_color`, `prev_material` (étape 2). Une nouvelle source sans `rank` va en fin de liste | I | testée (étape 1), sauf `prev_material` (étape 2) |
-| EF-13 | **Synchronisation couleur ↔ opération, dans les deux sens** : peindre un volume de la couleur de soustraction le passe en Subtract, le repeindre autrement le repasse en Union ou Shell (`last_add_op`). La règle ne s'applique **que si le matériau a changé** : changer la couleur de soustraction, ou ouvrir le modèle sur un autre PC, n'inverse aucun volume existant. Choisir Subtract dans la table peint le volume, et le quitter restaure `prev_material` | I | couleur → opération testée (étape 1), table → couleur à l'étape 2 |
+| EF-12 | **Modèle de données des opérations** stocké sur chaque source (dictionnaire `SolidProcedural`) : `rank` (ordre), `op` (`union`, `outer_shell` ou `subtract` ; la ligne 1 est la Base), `last_add_op`, `enabled`, `seen_color`, `prev_material` (étape 2). Une nouvelle source sans `rank` va en fin de liste | I | testée (étapes 1 et 2) |
+| EF-13 | **Synchronisation couleur ↔ opération, dans les deux sens** : peindre un volume de la couleur de soustraction le passe en Subtract, le repeindre autrement le repasse en Union ou Shell (`last_add_op`). La règle ne s'applique **que si le matériau a changé** : changer la couleur de soustraction, ou ouvrir le modèle sur un autre PC, n'inverse aucun volume existant. Choisir Subtract dans la table peint le volume, et le quitter restaure `prev_material` | I | testée (couleur → opération à l'étape 1, table → couleur à l'étape 2) |
 | EF-14 | **Calcul ordonné** : le résultat se calcule ligne par ligne dans l'ordre `rank` sur des copies des sources (`résultat = op(résultat, volume)`). Les volumes désactivés sont ignorés. La première ligne active doit être un volume « + » | I | testée (étape 1) |
 | EF-15 | **Couleur du Result** : matériau de la base. Les faces qui ont hérité de la couleur de soustraction sont repeintes | Im | testée (étape 1) |
 | EF-16 | **Échec de calcul** : rien n'est modifié, l'ancien Result est conservé, et un message nomme le volume en cause (non solide, opération native en échec) | I | testée (étape 1) |
 | EF-17 | **Copies indépendantes** : un groupe procédural copié (Ctrl+C, copie par déplacement) est rendu unique avant son recalcul. Modifier la copie ne change pas l'original | I | testée (étape 1) |
 | EF-18 | **Restauration des cercles** sur chaque Result, selon les Repair Options (seuil « gros objet ») | Im | testée (étape 1) |
 | EF-19 | **Annuler / Rétablir cohérents** : le recalcul automatique est **fusionné avec la dernière modification** faite dans le groupe (option B), donc un seul Ctrl+Z annule la modification et son résultat. Après Ctrl+Z ou Ctrl+Y, l'affichage est resynchronisé sur le chemin actif, sans recalcul. Un groupe qui n'est plus à jour est signalé et recalculé à la prochaine sortie | I | testée (étape 1) |
-| EF-20 | **Procedural Table** (HtmlDialog) du groupe ouvert ou sélectionné, avec les colonnes **#**, **On**, **Color**, **Name** (modifiable, renomme le groupe source), **Operation** (Base / Union / Shell / Subtract), **State** (solide, non solide, procédural imbriqué) | I | validée (étape 2) |
-| EF-21 | **Réordonner** dans la table avec ▲▼ et par glisser-déposer. Bouton **Unions first** (toutes les unions et shells, puis les soustractions) | I | validée (étape 2) |
-| EF-22 | **Ligne de formule** : l'expression réellement calculée, par ex. `(((1 ∪ 2) shell 3) − 4) ∪ 6` | Im | validée (étape 2) |
-| EF-23 | **Sélection dans les deux sens** : un clic sur une ligne sélectionne le volume, et sélectionner un volume met sa ligne en surbrillance | Im | validée (étape 2) |
-| EF-24 | **Application des changements de la table** : immédiate quand on est hors du groupe, à la sortie quand on est dedans. Tout changement marque le groupe comme modifié | I | validée (étape 2) |
+| EF-20 | **Procedural Table** (HtmlDialog) du groupe ouvert ou sélectionné, avec les colonnes **#**, **On**, **Color**, **Name** (modifiable, renomme le groupe source), **Operation** (Base / Union / Shell / Subtract), **State** (solide, non solide, procédural imbriqué) | I | testée (étape 2) |
+| EF-21 | **Réordonner** dans la table avec ▲▼ et par glisser-déposer. Bouton **Unions first** (toutes les unions et shells, puis les soustractions) | I | testée (étape 2) |
+| EF-22 | **Ligne de formule** : l'expression réellement calculée, par ex. `(((1 ∪ 2) shell 3) − 4) ∪ 6` | Im | testée (étape 2) |
+| EF-23 | **Sélection dans les deux sens** : un clic sur une ligne sélectionne le volume, et sélectionner un volume met sa ligne en surbrillance | Im | testée (étape 2) |
+| EF-24 | **Application des changements de la table** : immédiate quand on est hors du groupe, à la sortie quand on est dedans. Tout changement marque le groupe comme modifié | I | testée (étape 2) |
 | EF-25 | **Imbrication** : un groupe procédural peut être la source d'un autre, et c'est alors son Result qui est utilisé. Le recalcul se fait de l'intérieur vers l'extérieur | Im | validée (étape 3) |
+| EF-26 | **Explode libère les volumes** : après un Explode d'un groupe procédural (ou un copier-coller d'une source hors du groupe), les volumes libérés sont rendus visibles et redeviennent des objets ordinaires (attributs retirés). Un seul Ctrl+Z annule l'Explode et la libération | Im | testée (étape 2) |
 
 ## 6. Exigences non fonctionnelles
 
@@ -112,7 +113,8 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 
 - **SketchUp 2021 Pro** (Windows) : les booléens natifs sont réservés à Pro. Ruby fourni par SketchUp 2021.
 - API utilisée :
-  - `ModelObserver#onActivePathChanged` (présent dans SketchUp 2021, vérifié), `onTransactionUndo` et `onTransactionRedo` ;
+  - `ModelObserver#onActivePathChanged` (présent dans SketchUp 2021, vérifié), `onTransactionCommit` (libération après Explode), `onTransactionUndo` et `onTransactionRedo` ;
+  - `SelectionObserver` (surbrillance des lignes de la table) et `Model#active_path=` (SketchUp 2020.0+) ;
   - `AppObserver#onNewModel`, `onOpenModel` et `expectsStartupModelNotifications` ;
   - `Group#union`, `outer_shell`, `subtract`, `copy`, `make_unique` ;
   - `UI::HtmlDialog`.
@@ -142,6 +144,7 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 | CA-15 | Result avec des trous et des tenons → cercles natifs (inférence du centre), couleur de la base, aucune face rouge | EF-15, EF-18 |
 | CA-16 | Set Subtract Color et Set Repair Options fonctionnent, avec les réglages repris de Solid Batch. Solid Batch v2 reste installé et Combine All y fonctionne toujours | EF-03, EF-04, NF-09, NF-10 |
 | CA-17 | Changer la couleur de soustraction : les volumes existants gardent leur opération. Repeindre une source en rouge la passe en Subtract, la repeindre d'une autre couleur (ou lui rendre le matériau par défaut) la remet en Union ou Shell | EF-13 |
+| CA-18 | Explode d'un groupe procédural → le Result et tous les volumes sont visibles, en objets ordinaires. Un seul Ctrl+Z remet le groupe procédural | EF-26 |
 
 ## 9. Questions ouvertes et décisions
 
@@ -152,8 +155,8 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 | Q-1 | Que fait l'export STL de SketchUp 2021 avec les entités cachées ? Si elles partent dans l'export, Finalize est obligatoire avant l'export | Non vérifié à l'étape 1 : à tester (en attendant, Finalize avant l'export) |
 | Q-2 | ~~`onActivePathChanged` existe-t-il dans SketchUp 2021 ?~~ | **Résolue** (2026-10-23) : oui, le recalcul automatique à la sortie fonctionne |
 | Q-3 | ~~Quel opérande les booléens natifs effacent-ils (`union`, `outer_shell`) ? Quels matériaux gardent les faces du résultat ?~~ | **Résolue en pratique** (2026-10-23) : le calcul efface toutes ses copies quel que soit l'opérande effacé ; Result à la couleur de la base, sans face rouge (test utilisateur) |
-| Q-4 | Que se passe-t-il quand on fait Explode sur un groupe procédural (sources et Result libérés) ? | Non testé à l'étape 1 : à voir à l'étape 2 |
-| Q-5 | Où placer l'entrée « Procedural Table » : menu, barre d'outils, menu contextuel ? | Étape 2 |
+| Q-4 | ~~Que se passe-t-il quand on fait Explode sur un groupe procédural ?~~ | **Résolue** (2026-10-23) : le Result restait visible, les sources restaient cachées avec leurs attributs → décision : Explode libère les volumes (EF-26) |
+| Q-5 | ~~Où placer l'entrée « Procedural Table » ?~~ | **Résolue** (2026-10-23) : menu, barre d'outils et clic droit |
 
 ### Décisions
 
@@ -176,6 +179,8 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 | 2026-10-23 | Intersect | Non retenu pour la 1.0.0 |
 | 2026-10-23 | Restauration des cercles | `circle_restore/` v2.3.0 (Re-Cercle v2.0.0) conservé tel quel. Rien n'est repris de Cylinder Resize, qui a la même reconstruction mais une détection limitée aux cylindres et aux cônes |
 | 2026-10-23 | Planning | Étape 1 = cœur + modèle de données complet, étape 2 = table, étape 3 = imbrication, étape 4 = livraison 1.0.0 |
+| 2026-10-23 | Entrées de la table | Menu *Extensions > Solid Procedural* (après Create), bouton de barre d'outils (après Create), clic droit sur un groupe procédural sélectionné ou ouvert |
+| 2026-10-23 | Explode | Option (a) : les volumes libérés sont rendus visibles et perdent leurs attributs (opération transparente fusionnée avec l'Explode). Options écartées : effacer les sources comme Finalize (destructif), ne rien faire |
 | 2026-10-23 | Approches écartées | Bascule manuelle Sources / Résultat (gardée en repli), recalcul en direct, opération codée dans le nom, attributs de Dynamic Components |
 
 ## 10. Historique des livraisons
@@ -189,4 +194,5 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 | 2026-04-12 | Solid Batch v2.2.1 | Compatibilité SketchUp Pro 2017+ |
 | 2026-10-11 | Solid Batch v2.3.0 (`13748c4`, dépôt `sketchup-solid-batch`) | EF-05 : cercles et arcs natifs (méthode Re-Cercle v2.0.0) |
 | 2026-10-23 | Solid Procedural 1.0.0, étape 1 (commit de développement, non publié) | EF-03 à EF-11, EF-13 (couleur → opération), EF-14 à EF-19 testées dans SketchUp 2021 Pro |
-| — | **Solid Procedural 1.0.0** (prévue) | EF-03 à EF-06 (reprises), EF-07 à EF-25 |
+| 2026-10-23 | Solid Procedural 1.0.0, étape 2 (commit de développement, non publié) | EF-12, EF-13 (table → couleur), EF-20 à EF-24, EF-26 testées dans SketchUp 2021 Pro |
+| — | **Solid Procedural 1.0.0** (prévue) | EF-03 à EF-06 (reprises), EF-07 à EF-26 |

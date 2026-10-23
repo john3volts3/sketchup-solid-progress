@@ -19,6 +19,9 @@ module SolidProcedural
   #   seen_color   material key at the last rebuild: the color sets the
   #                operation only when the material changed, so changing the
   #                subtract color never flips existing volumes
+  #   prev_material  material name ('none' = default) restored when the
+  #                volume leaves Subtract in the Procedural Table
+  #   uid          key of the volume in the Procedural Table, kept by copies
   # The group stores the signature (MD5) of its sources at the last rebuild:
   # a rebuild runs only when it differs, and Ctrl+Z restores it together
   # with the former Result.
@@ -36,6 +39,7 @@ module SolidProcedural
     OP_LABELS = { 'union' => 'Union', 'outer_shell' => 'Shell', 'subtract' => 'Subtract' }.freeze
     DEFAULT_NAME = 'Procedural Solid'.freeze
     RESULT_NAME = 'Result'.freeze
+    SUBTRACT_MATERIAL_NAME = 'Solid Procedural Subtract'.freeze
     LOG = '[Solid Procedural]'.freeze
 
     # true (option B): the automatic rebuild on exit is appended to the last
@@ -194,12 +198,21 @@ module SolidProcedural
     # Rebuild
     # -------------------------------------------------------------------
 
-    # Ranks 1..n, role, enabled by default, operation from the color when
-    # the material changed since the last rebuild. Writes only what differs.
+    # Ranks 1..n, role, uid, enabled by default, operation from the color
+    # when the material changed since the last rebuild. Writes only what
+    # differs.
     def self.normalize_sources(group)
       sources = sources_of(group)
+      used = {}
       sources.each_with_index do |s, i|
         set_attribute(s, 'role', ROLE_SOURCE) if role(s).nil?
+        uid = s.get_attribute(DICT, 'uid')
+        # A source copied inside the group has the uid of its original.
+        if uid.nil? || used[uid]
+          uid = new_uid(used)
+          s.set_attribute(DICT, 'uid', uid)
+        end
+        used[uid] = true
         set_attribute(s, 'rank', i + 1)
         set_attribute(s, 'enabled', true) if s.get_attribute(DICT, 'enabled').nil?
         sync_op_with_color(s)
@@ -211,12 +224,24 @@ module SolidProcedural
       entity.set_attribute(DICT, key, value) if entity.get_attribute(DICT, key) != value
     end
 
+    def self.new_uid(used)
+      loop do
+        uid = format('%08x', rand(0x100000000))
+        return uid unless used[uid]
+      end
+    end
+
     def self.sync_op_with_color(source)
       key = material_key(source.material)
       op = source.get_attribute(DICT, 'op')
-      return if op && source.get_attribute(DICT, 'seen_color') == key
+      seen = source.get_attribute(DICT, 'seen_color')
+      return if op && seen == key
       if subtract_material?(source.material)
-        set_attribute(source, 'last_add_op', op) if op && op != 'subtract'
+        if op && op != 'subtract'
+          set_attribute(source, 'last_add_op', op)
+          # Material before the repaint, restored if the table sets it back.
+          set_attribute(source, 'prev_material', seen.nil? || seen == 'none' ? 'none' : seen.rpartition(':').first)
+        end
         op = 'subtract'
       elsif op.nil? || op == 'subtract'
         op = source.get_attribute(DICT, 'last_add_op') || 'union'
@@ -507,6 +532,128 @@ module SolidProcedural
     end
 
     # -------------------------------------------------------------------
+    # Procedural Table: rows and changes
+    # -------------------------------------------------------------------
+
+    # Table key of each source: its uid (set at each normalization and kept
+    # by copies), or its entity ID while it has none or shares it.
+    def self.row_keys(sources)
+      used = {}
+      sources.map do |s|
+        key = s.get_attribute(DICT, 'uid')
+        key = "id:#{s.entityID}" if key.nil? || used[key]
+        used[key] = true
+        key
+      end
+    end
+
+    def self.row_lookup(group)
+      sources = sources_of(group)
+      Hash[row_keys(sources).zip(sources)]
+    end
+
+    # [text, level] of the State column; +base+ is the first enabled volume.
+    def self.state_of(source, base)
+      return ['Nested: not supported yet', 'error'] if procedural?(source)
+      return ['Not solid', 'error'] unless source.manifold?
+      return ['Disabled', 'off'] unless enabled?(source)
+      return ['Base must be added', 'error'] if base && op_of(source) == 'subtract'
+      ['Solid', 'ok']
+    end
+
+    # Applies a change of the table to +group+ in one undoable operation.
+    # The block gets the sources in rank order and the table keys resolved
+    # before the change; it returns the new order, or nil to keep it. A
+    # closed group is rebuilt in the same operation when its signature
+    # changed (an error cancels the change); an open one when it is closed.
+    def self.change_table(model, group, title)
+      run_command(model, title) do
+        open = open_groups(model).include?(group)
+        group.make_unique unless open
+        lookup = row_lookup(group)
+        sources = normalize_sources(group)
+        order = yield(sources, lookup)
+        order.each_with_index { |s, i| set_attribute(s, 'rank', i + 1) } if order
+        !open && stale?(group) ? [rebuild_in_operation(model, group)] : []
+      end
+    end
+
+    def self.table_source(lookup, key)
+      lookup[key] || raise(RebuildError, 'The table was out of date: try again.')
+    end
+
+    def self.table_toggle(model, group, key, on)
+      change_table(model, group, on ? 'Enable Volume' : 'Disable Volume') do |_sources, lookup|
+        set_attribute(table_source(lookup, key), 'enabled', on)
+        nil
+      end
+    end
+
+    def self.table_operation(model, group, key, op)
+      change_table(model, group, "Set #{OP_LABELS[op]}") do |_sources, lookup|
+        set_operation(model, table_source(lookup, key), op)
+        nil
+      end
+    end
+
+    def self.table_rename(model, group, key, name)
+      change_table(model, group, 'Rename Volume') do |_sources, lookup|
+        table_source(lookup, key).name = name
+        nil
+      end
+    end
+
+    def self.table_order(model, group, keys)
+      change_table(model, group, 'Reorder Volumes') do |sources, lookup|
+        wanted = keys.map { |k| lookup[k] }.compact.uniq
+        wanted + (sources - wanted)
+      end
+    end
+
+    # Every Union and Shell, then every Subtract, each in its current order.
+    def self.table_unions_first(model, group)
+      change_table(model, group, 'Unions First') do |sources, _lookup|
+        adds, subs = sources.partition { |s| op_of(s) != 'subtract' }
+        adds + subs
+      end
+    end
+
+    # Sets the operation of +source+ and keeps its color in line: Subtract
+    # paints it with the subtract color and keeps its former material, which
+    # comes back when it leaves Subtract.
+    def self.set_operation(model, source, op)
+      current = op_of(source)
+      return if current == op
+      if op == 'subtract'
+        set_attribute(source, 'prev_material', source.material ? source.material.name : 'none')
+        set_attribute(source, 'last_add_op', current)
+        source.material = subtract_material(model)
+      else
+        if current == 'subtract'
+          prev = source.get_attribute(DICT, 'prev_material')
+          material = prev && prev != 'none' ? model.materials[prev] : nil
+          source.material = subtract_material?(material) ? nil : material
+        end
+        set_attribute(source, 'last_add_op', op)
+      end
+      set_attribute(source, 'op', op)
+      # The color now matches the operation: no flip at the next rebuild.
+      set_attribute(source, 'seen_color', material_key(source.material))
+    end
+
+    # A material of the subtract color without texture, or a new one.
+    def self.subtract_material(model)
+      color = SolidProcedural.subtract_color
+      existing = model.materials.find do |m|
+        m.texture.nil? && SolidProcedural.color_match?(m.color, color)
+      end
+      return existing if existing
+      material = model.materials.add(SUBTRACT_MATERIAL_NAME)
+      material.color = color
+      material
+    end
+
+    # -------------------------------------------------------------------
     # Synchronization with the edit state (called by the observers,
     # deferred: never inside an observer callback)
     # -------------------------------------------------------------------
@@ -574,6 +721,26 @@ module SolidProcedural
       return if outdated.empty?
       Sketchup.status_text = "Solid Procedural — #{outdated.length} procedural solid(s) out of date: " \
                              'open and close them, or use Rebuild'
+    end
+
+    # After an operation: the volumes left by an Explode of a procedural
+    # solid (or pasted out of it) are shown and become plain objects, in a
+    # transparent operation appended to the one that released them.
+    def self.release_orphans(model)
+      path = model.active_path || []
+      return if !path.empty? && procedural?(path.last)
+      orphans = model.active_entities.select do |e|
+        instance?(e) && [ROLE_SOURCE, ROLE_RESULT].include?(role(e))
+      end
+      return if orphans.empty?
+      model.start_operation('Solid Procedural — Release', true, false, true)
+      orphans.each do |e|
+        e.delete_attribute(DICT)
+        e.hidden = false
+      end
+      model.commit_operation
+      puts "#{LOG} #{orphans.length} volume(s) released from a procedural solid"
+      Sketchup.status_text = "Solid Procedural — #{orphans.length} volume(s) released: they are plain objects now"
     end
   end
 end

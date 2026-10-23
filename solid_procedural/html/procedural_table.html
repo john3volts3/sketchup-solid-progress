@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Procedural Table</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --fg: #1f2328;
+    --muted: #6a737d;
+    --line: #d8dee4;
+    --head: #f3f5f7;
+    --selected: #dbeafe;
+    --hover: #f6f8fa;
+    --drop: #2563eb;
+    --ok: #1a7f37;
+    --error: #cf222e;
+    --open-bg: #fff4d6;
+    --open-fg: #7a5200;
+    --closed-bg: #e6f4ea;
+    --closed-fg: #1a7f37;
+  }
+  html, body {
+    height: 100%;
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font: 12px "Segoe UI", Tahoma, Arial, sans-serif;
+  }
+  body {
+    display: flex;
+    flex-direction: column;
+  }
+  header, footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7px 10px;
+    flex: none;
+  }
+  header { border-bottom: 1px solid var(--line); }
+  footer { border-top: 1px solid var(--line); }
+  #title {
+    font-weight: 600;
+    font-size: 13px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-right: 10px;
+  }
+  .mode {
+    flex: none;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+  }
+  .mode.open { background: var(--open-bg); color: var(--open-fg); }
+  .mode.closed { background: var(--closed-bg); color: var(--closed-fg); }
+  #list {
+    flex: 1;
+    overflow: auto;
+  }
+  #empty {
+    padding: 24px 12px;
+    color: var(--muted);
+    text-align: center;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  th {
+    background: var(--head);
+    text-align: left;
+    font-weight: 600;
+    padding: 4px 6px;
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+  }
+  td {
+    padding: 2px 6px;
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+  }
+  tbody tr:hover td { background: var(--hover); }
+  tbody tr.selected td { background: var(--selected); }
+  tbody tr.off td { color: var(--muted); }
+  tbody tr.drop-before td { box-shadow: inset 0 2px 0 var(--drop); }
+  tbody tr.drop-after td { box-shadow: inset 0 -2px 0 var(--drop); }
+  td.order { width: 1%; }
+  .handle {
+    cursor: grab;
+    color: var(--muted);
+    padding: 0 4px 0 0;
+    user-select: none;
+  }
+  .position {
+    display: inline-block;
+    min-width: 18px;
+    text-align: right;
+    margin-right: 4px;
+  }
+  .arrow {
+    font: inherit;
+    font-size: 9px;
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    margin: 0 1px;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    background: var(--bg);
+    color: var(--fg);
+    cursor: pointer;
+  }
+  .arrow:disabled { color: var(--line); cursor: default; }
+  .swatch {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 1px solid #8c959f;
+    border-radius: 3px;
+    vertical-align: middle;
+  }
+  .swatch.none {
+    background: repeating-linear-gradient(45deg, #ffffff 0, #ffffff 3px, #d0d7de 3px, #d0d7de 6px);
+  }
+  td.name { width: 100%; }
+  input.name {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid transparent;
+    border-radius: 3px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    padding: 2px 4px;
+  }
+  input.name:hover, input.name:focus {
+    border-color: var(--line);
+    background: var(--bg);
+    outline: none;
+  }
+  select {
+    font: inherit;
+    padding: 1px 2px;
+  }
+  .base {
+    font-weight: 600;
+    padding-left: 4px;
+  }
+  .state.ok { color: var(--ok); }
+  .state.error { color: var(--error); font-weight: 600; }
+  .state.off { color: var(--muted); }
+  #formula {
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-right: 10px;
+  }
+  #unions-first {
+    flex: none;
+    font: inherit;
+    padding: 3px 10px;
+    cursor: pointer;
+  }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+  <header>
+    <span id="title">Procedural Table</span>
+    <span id="mode" class="mode hidden"></span>
+  </header>
+  <div id="list">
+    <div id="empty">Select or open a procedural solid.</div>
+    <table id="table" class="hidden">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th title="Disabled volumes are ignored by the rebuild">On</th>
+          <th>Color</th>
+          <th>Name</th>
+          <th>Operation</th>
+          <th>State</th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+  <footer id="footer" class="hidden">
+    <span id="formula" title="Operations computed, in order"></span>
+    <button id="unions-first" type="button" title="Every Union and Shell, then every Subtract, each in its current order">Unions first</button>
+  </footer>
+
+<script>
+(function () {
+  'use strict';
+
+  // Written for the browser of SketchUp 2021 (no optional chaining, no
+  // flex gap).
+  var SYMBOLS = { union: '∪', outer_shell: 'shell', subtract: '−' };
+  var OPERATIONS = [['union', 'Union'], ['outer_shell', 'Shell'], ['subtract', 'Subtract']];
+  var data = null;
+  var dragKey = null;
+  // True while the rows are replaced: the blur of a removed input is not
+  // a rename.
+  var rendering = false;
+
+  function send(message) {
+    if (window.sketchup && window.sketchup.action) {
+      window.sketchup.action(JSON.stringify(message));
+    }
+  }
+
+  function element(tag, className, text) {
+    var e = document.createElement(tag);
+    if (className) e.className = className;
+    if (text !== undefined) e.textContent = text;
+    return e;
+  }
+
+  function rowKeys() {
+    return data.rows.map(function (r) { return r.key; });
+  }
+
+  function sendOrder(keys) {
+    send({ type: 'order', group: data.group, keys: keys });
+  }
+
+  function move(key, delta) {
+    var keys = rowKeys();
+    var i = keys.indexOf(key);
+    var j = i + delta;
+    if (i < 0 || j < 0 || j >= keys.length) return;
+    keys.splice(i, 1);
+    keys.splice(j, 0, key);
+    sendOrder(keys);
+  }
+
+  // (((1 ∪ 2) shell 3) − 4) ∪ 6 : enabled rows, in order.
+  function formula(rows) {
+    var active = rows.filter(function (r) { return r.enabled; });
+    if (!active.length) return 'No enabled volume';
+    var expr = String(active[0].position);
+    for (var i = 1; i < active.length; i++) {
+      if (i > 1) expr = '(' + expr + ')';
+      expr += ' ' + SYMBOLS[active[i].op] + ' ' + active[i].position;
+    }
+    return expr;
+  }
+
+  function clearDrop() {
+    var marked = document.querySelectorAll('.drop-before, .drop-after');
+    for (var i = 0; i < marked.length; i++) {
+      marked[i].classList.remove('drop-before', 'drop-after');
+    }
+  }
+
+  function dropAfter(tr, event) {
+    var box = tr.getBoundingClientRect();
+    return event.clientY > box.top + box.height / 2;
+  }
+
+  function buildRow(row, index, count, inputs) {
+    var tr = element('tr');
+    if (row.selected) tr.classList.add('selected');
+    if (!row.enabled) tr.classList.add('off');
+
+    // # : drag handle, position, up / down.
+    var order = element('td', 'order');
+    var handle = element('span', 'handle', '⋮⋮');
+    handle.title = 'Drag to reorder';
+    handle.addEventListener('mousedown', function () { tr.draggable = true; });
+    order.appendChild(handle);
+    order.appendChild(element('span', 'position', String(row.position)));
+    var up = element('button', 'arrow', '▲');
+    up.type = 'button';
+    up.title = 'Move up';
+    up.disabled = index === 0;
+    up.addEventListener('click', function () { move(row.key, -1); });
+    var down = element('button', 'arrow', '▼');
+    down.type = 'button';
+    down.title = 'Move down';
+    down.disabled = index === count - 1;
+    down.addEventListener('click', function () { move(row.key, 1); });
+    order.appendChild(up);
+    order.appendChild(down);
+    tr.appendChild(order);
+
+    // On
+    var on = element('td');
+    var box = element('input');
+    box.type = 'checkbox';
+    box.checked = row.enabled;
+    box.addEventListener('change', function () {
+      send({ type: 'toggle', group: data.group, key: row.key, on: box.checked });
+    });
+    on.appendChild(box);
+    tr.appendChild(on);
+
+    // Color
+    var color = element('td');
+    var swatch = element('span', row.color ? 'swatch' : 'swatch none');
+    if (row.color) swatch.style.background = row.color;
+    swatch.title = row.color ? row.color : 'Default material';
+    color.appendChild(swatch);
+    tr.appendChild(color);
+
+    // Name
+    var name = element('td', 'name');
+    var input = element('input', 'name');
+    input.type = 'text';
+    input.value = row.name;
+    input.placeholder = row.placeholder;
+    input.spellcheck = false;
+    input.addEventListener('keydown', function (event) {
+      if (event.key === 'Enter') {
+        input.blur();
+      } else if (event.key === 'Escape') {
+        input.value = row.name;
+        input.blur();
+      }
+    });
+    // Enter, Tab or a click elsewhere renames the volume.
+    input.addEventListener('blur', function () {
+      if (!rendering && input.value.trim() !== row.name) {
+        send({ type: 'rename', group: data.group, key: row.key, name: input.value });
+      }
+    });
+    inputs[row.key] = input;
+    name.appendChild(input);
+    tr.appendChild(name);
+
+    // Operation: the first enabled row is the base.
+    var operation = element('td');
+    if (row.base && row.op !== 'subtract') {
+      operation.appendChild(element('span', 'base', 'Base'));
+    } else {
+      var select = element('select');
+      OPERATIONS.forEach(function (o) {
+        var option = element('option', null, o[1]);
+        option.value = o[0];
+        select.appendChild(option);
+      });
+      select.value = row.op;
+      select.addEventListener('change', function () {
+        send({ type: 'op', group: data.group, key: row.key, op: select.value });
+      });
+      operation.appendChild(select);
+    }
+    tr.appendChild(operation);
+
+    // State
+    tr.appendChild(element('td', 'state ' + row.level, row.state));
+
+    // Selection in the model.
+    tr.addEventListener('click', function (event) {
+      if (event.target.closest('input, select, button')) return;
+      send({ type: 'select', group: data.group, key: row.key });
+    });
+    tr.addEventListener('dblclick', function (event) {
+      if (event.target.closest('input, select, button')) return;
+      send({ type: 'open', group: data.group, key: row.key });
+    });
+
+    // Drag and drop, started from the handle only.
+    tr.addEventListener('dragstart', function (event) {
+      dragKey = row.key;
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', row.key);
+    });
+    tr.addEventListener('dragend', function () {
+      tr.draggable = false;
+      dragKey = null;
+      clearDrop();
+    });
+    tr.addEventListener('dragover', function (event) {
+      if (!dragKey || dragKey === row.key) return;
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'move';
+      var after = dropAfter(tr, event);
+      tr.classList.toggle('drop-after', after);
+      tr.classList.toggle('drop-before', !after);
+    });
+    tr.addEventListener('dragleave', function () {
+      tr.classList.remove('drop-before', 'drop-after');
+    });
+    tr.addEventListener('drop', function (event) {
+      event.preventDefault();
+      if (!dragKey || dragKey === row.key) return;
+      var keys = rowKeys().filter(function (k) { return k !== dragKey; });
+      var target = keys.indexOf(row.key) + (dropAfter(tr, event) ? 1 : 0);
+      keys.splice(target, 0, dragKey);
+      dragKey = null;
+      clearDrop();
+      sendOrder(keys);
+    });
+    return tr;
+  }
+
+  function render() {
+    var title = document.getElementById('title');
+    var mode = document.getElementById('mode');
+    var empty = document.getElementById('empty');
+    var table = document.getElementById('table');
+    var footer = document.getElementById('footer');
+
+    if (!data || !data.group) {
+      title.textContent = 'Procedural Table';
+      mode.classList.add('hidden');
+      table.classList.add('hidden');
+      footer.classList.add('hidden');
+      empty.textContent = data ? data.message : 'Select or open a procedural solid.';
+      empty.classList.remove('hidden');
+      return;
+    }
+
+    // A name being typed survives the refresh.
+    var focused = document.activeElement;
+    var keep = null;
+    if (focused && focused.classList.contains('name') && focused.dataset.key) {
+      keep = { key: focused.dataset.key, value: focused.value,
+               start: focused.selectionStart, end: focused.selectionEnd };
+    }
+
+    title.textContent = data.name;
+    mode.textContent = data.open ? 'Open — applied on exit' : 'Closed — applied now';
+    mode.className = 'mode ' + (data.open ? 'open' : 'closed');
+    empty.classList.add('hidden');
+    table.classList.remove('hidden');
+    footer.classList.remove('hidden');
+
+    var tbody = document.getElementById('rows');
+    var inputs = {};
+    var fragment = document.createDocumentFragment();
+    data.rows.forEach(function (row, i) {
+      fragment.appendChild(buildRow(row, i, data.rows.length, inputs));
+    });
+    Object.keys(inputs).forEach(function (key) { inputs[key].dataset.key = key; });
+    rendering = true;
+    tbody.innerHTML = '';
+    tbody.appendChild(fragment);
+    if (!data.rows.length) {
+      empty.textContent = 'This procedural solid has no volume.';
+      empty.classList.remove('hidden');
+    }
+    document.getElementById('formula').textContent = formula(data.rows);
+
+    if (keep && inputs[keep.key]) {
+      var input = inputs[keep.key];
+      input.value = keep.value;
+      input.focus();
+      input.setSelectionRange(keep.start, keep.end);
+    }
+    rendering = false;
+  }
+
+  window.SolidProcedural = {
+    update: function (payload) {
+      data = payload;
+      render();
+    }
+  };
+
+  document.getElementById('unions-first').addEventListener('click', function () {
+    if (data && data.group) send({ type: 'unions_first', group: data.group });
+  });
+
+  document.addEventListener('DOMContentLoaded', function () {
+    send({ type: 'ready' });
+  });
+}());
+</script>
+</body>
+</html>

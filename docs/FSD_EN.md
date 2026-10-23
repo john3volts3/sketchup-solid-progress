@@ -2,7 +2,7 @@
 
 *[Version française](FSD_FR.md)*
 
-> **Work in progress** — This document describes **step 1** of Solid Procedural 1.0.0 (core of the procedural groups, tested in SketchUp 2021 Pro on 2026-10-23). The operations table (step 2) and nesting (step 3) are planned: see `PRD.md` (French).
+> **Work in progress** — This document describes **steps 1 and 2** of Solid Procedural 1.0.0 (core of the procedural groups and Procedural Table, tested in SketchUp 2021 Pro on 2026-10-23). Nesting (step 3) is planned: see `PRD.md` (French).
 
 **Version:** 1.0.0 (in development)
 **Date:** 2026-10-23
@@ -23,19 +23,20 @@ Solid Procedural derives from **Solid Batch v2.3.0** and installs **next to** it
 
 ## 2. Scope
 
-### Included (step 1)
+### Included (steps 1 and 2)
 
 - Create, Rebuild and Finalize Procedural Solid
 - Automatic sources / Result display switch when entering and exiting the group
 - Automatic rebuild on exit, only when the signature of the sources changed
-- Operation order and per-volume operation (`union`, `outer_shell`, `subtract`) stored in attributes; in step 1, the operation follows the subtract color
+- Operation order and per-volume operation (`union`, `outer_shell`, `subtract`) stored in attributes, editable in the Procedural Table or through the subtract color
+- **Procedural Table**: order (▲▼, drag and drop, Unions first), On, color, name, per-row operation, state, formula, two-way selection
+- Explode of a procedural group: the released volumes become visible plain objects
 - Consistent Ctrl+Z / Ctrl+Y: the automatic rebuild is merged with the last edit (option B)
 - Set Subtract Color and Set Repair Options, taken over from Solid Batch; Solid Batch settings read by default
 - Native circle and arc restoration on each Result (Re-Cercle v2.0.0 method)
 
 ### Planned
 
-- Step 2: **Procedural Table** (order, On, color, name, per-row operation, state, formula, Unions first, drag and drop, two-way selection)
 - Step 3: **nesting** (a procedural group used as a source of another)
 
 ### Excluded
@@ -51,9 +52,10 @@ Solid Procedural derives from **Solid Batch v2.3.0** and installs **next to** it
 |-------------|-------|
 | SketchUp version | Pro 2021 (target and tested version) |
 | OS | Windows (any OS supported by SketchUp should work, not tested) |
-| Ruby API methods | `Group#union`, `#outer_shell`, `#subtract`, `#manifold?`, `#copy`, `#make_unique`, `#explode`; `ModelObserver#onActivePathChanged`, `#onTransactionUndo`, `#onTransactionRedo`; `AppObserver#onNewModel`, `#onOpenModel` |
+| Ruby API methods | `Group#union`, `#outer_shell`, `#subtract`, `#manifold?`, `#copy`, `#make_unique`, `#explode`; `ModelObserver#onActivePathChanged`, `#onTransactionCommit`, `#onTransactionUndo`, `#onTransactionRedo`; `SelectionObserver`; `AppObserver#onNewModel`, `#onOpenModel`; `UI::HtmlDialog`; `Model#active_path=` (2020.0+) |
 | Circle/arc restoration | SketchUp 2020.1+ (`Entities#weld`, fallback welding) |
-| Ruby | `digest/md5` (standard library shipped with SketchUp) |
+| Ruby | `digest/md5`, `json` (standard libraries shipped with SketchUp) |
+| HTML window | SketchUp 2021 embedded browser (Chromium 88 in 2021.1); ES2017 JavaScript, no dependency |
 
 ## 4. Data model
 
@@ -76,6 +78,8 @@ Everything is stored in the model, attribute dictionary **`SolidProcedural`**.
 | `last_add_op` | `union` or `outer_shell`: restored when a Subtract volume is repainted with another color |
 | `enabled` | `false` = ignored by the rebuild (default `true`) |
 | `seen_color` | Material key at the last rebuild (`name:r,g,b` or `none`) |
+| `prev_material` | Material name (`none` = default) restored when the volume leaves Subtract in the table |
+| `uid` | Key of the row in the Procedural Table (8 hexadecimal digits), kept by copies |
 
 ### 4.3 Result
 
@@ -181,6 +185,39 @@ Engine `solid_procedural/circle_restore/`, copy of Re-Cercle v2.0.0 (identical t
 - **Option B**: the automatic rebuild is a transparent operation, merged with the last edit made in the group. One Ctrl+Z undoes the edit, the Result and the signature together; the Edit menu shows the name of the edit ("Undo Move").
 - After Ctrl+Z / Ctrl+Y (`onTransactionUndo` / `onTransactionRedo`): `sync_all` sets the display of every group back in line with the active path, in a transparent operation; **never a rebuild** (a new operation after an undo would drop the redo). A group whose signature no longer matches is reported in the status bar and rebuilt on the next exit or by Rebuild.
 
+#### EF-20 to EF-24: Procedural Table
+
+Modeless window (`UI::HtmlDialog`, utility style, size and position remembered), opened from the menu, the toolbar or the context menu (§ 8). It shows the innermost **open** procedural group, else the **only** selected procedural group, else a message ("Select or open a procedural solid.").
+
+| Element | Description |
+|---------|-------------|
+| **Header** | Group name; badge "Open — applied on exit" (open group) or "Closed — applied now" (closed group) |
+| **#** | Handle ⋮⋮ (drag and drop), position, ▲▼ |
+| **On** | Checkbox: `enabled` |
+| **Color** | Swatch of the volume material (hatched = default material) |
+| **Name** | Instance name, editable (Enter, Tab or a click elsewhere = rename, Escape = cancel); the definition name is the placeholder |
+| **Operation** | "Base" on the first enabled row; otherwise Union / Shell / Subtract |
+| **State** | `Solid`, `Not solid`, `Disabled`, `Base must be added`, `Nested: not supported yet` |
+| **Formula** | Operations actually computed, enabled rows in order: `(((1 ∪ 2) shell 3) − 4) ∪ 6` |
+| **Unions first** | Every Union and Shell, then every Subtract, each in its current order |
+
+**Applying the changes (EF-24)**: each action is **one undoable operation** (`change_table`).
+
+- **Closed** group: the Result is rebuilt at once, in the same operation, when the signature changed. An error (non-solid volume, no enabled volume left…) cancels the whole change with a message.
+- **Open** group: only the attributes change; the signature (which holds the order, the operation and On) triggers the rebuild on exit.
+
+**Table → color (EF-13, reverse direction)**: choosing Subtract paints the volume with the subtract color (an existing material of that color without texture, else a new `Solid Procedural Subtract` material) and keeps the former material in `prev_material`; leaving Subtract restores it (or the default material). `seen_color` is updated so that the color → operation rule does not flip it back. When a volume is repainted with the subtract color in the model, its former material is kept in `prev_material` too.
+
+**Two-way selection (EF-23)**: open group → a click on a row selects the volume (a source being edited is closed first), and the selected or edited volumes have their row highlighted. Closed group → a double-click opens the group (`Model#active_path=`) and selects the volume.
+
+**Row keys**: `uid` attribute of each source (kept by copies and `make_unique`, made unique again at normalization), else `id:<entityID>`. An action for another group than the one shown, or for a key not found, changes nothing and refreshes the table.
+
+**Refresh**: deferred and coalesced (`UI.start_timer`), only while the window is open, after every change of the active path, operation, undo, redo or selection change (`SelectionObserver`: all four events, `onSelectionAdded` is not always notified). A name being typed is kept.
+
+#### EF-26: Explode of a procedural group
+
+After each operation (`onTransactionCommit`, deferred), the `role=source` or `role=result` volumes of the active context that are no longer inside a procedural group (Explode, or copy-paste out of the group) are **shown and lose their attributes**: they become plain objects. Transparent operation "Solid Procedural — Release", merged with the Explode: one Ctrl+Z brings the procedural group back.
+
 #### EF-03: Set Subtract Color
 
 Color of the material of the first selected group/component that has one, stored in the `SolidProcedural` registry section. Default: red (255, 0, 0). Existing volumes keep their operation until they are repainted (EF-13).
@@ -199,6 +236,7 @@ Color of the material of the first selected group/component that has one, stored
 | NF-04 | No rebuild without a change (signature); progress in the status bar |
 | NF-05 | Console logging `[Solid Procedural] …` |
 | NF-06 | On-screen labels in English; name "Solid Procedural" identical everywhere (extension, menu, toolbar, registry, dictionary, logs) |
+| NF-07 | Procedural Table in HTML/CSS/JS in a single file, no external dependency; JavaScript compatible with the SketchUp 2021 browser |
 | NF-08 | Standalone plugin, no dependency on another plugin |
 | NF-09 | Coexistence with Solid Batch v2: separate modules, folders, registry and attributes |
 | NF-10 | Procedural data in the model, options in the `SolidProcedural` registry section, fallback to `SolidBatch` |
@@ -213,9 +251,12 @@ Color of the material of the first selected group/component that has one, stored
 solid_procedural.rb             # Entry point — extension registration
 solid_procedural/
   version.rb                    # VERSION = '1.0.0'
-  main.rb                       # Menu, toolbar, options (registry), Set Subtract Color, Set Repair Options
+  main.rb                       # Menu, toolbar, context menu, options (registry), Set Subtract Color, Set Repair Options
   procedural.rb                 # Procedural groups: data, signature, display, rebuild, commands, synchronization
-  procedural_observer.rb        # ModelObserver / AppObserver, deferred synchronization
+  procedural_table.rb           # Procedural Table: window, row data, page actions
+  procedural_observer.rb        # ModelObserver / SelectionObserver / AppObserver, deferred synchronization
+  html/
+    procedural_table.html       # Table page (HTML, CSS, JavaScript)
   circle_restore.rb             # Entry point of the circle restoration
   circle_restore/               # Copy of the Re-Cercle v2.0.0 engine
     detector.rb
@@ -223,6 +264,7 @@ solid_procedural/
     volume.rb
   icons/
     create_procedural_16/24.png
+    table_procedural_16/24.png
     rebuild_procedural_16/24.png
     finalize_procedural_16/24.png
     setcolor_16/24.png
@@ -248,8 +290,13 @@ SolidProcedural::Procedural
   normalize_sources, sync_op_with_color, validate
   rebuild_in_operation, combine, copy_of, duplicate, restore_circles
   do_create, do_rebuild, do_finalize, finalize, run_command
-  sync_path, sync_all
-  ModelObserver, AppObserver, attach, defer, run
+  row_keys, row_lookup, state_of, change_table, table_toggle, table_operation, table_rename,
+  table_order, table_unions_first, set_operation, subtract_material
+  sync_path, sync_all, release_orphans
+  ModelObserver, SelectionObserver, AppObserver, attach, defer, run
+
+SolidProcedural::ProceduralTable
+  show, target_group, refresh_later, refresh, payload, color_hex, on_action, select_row, open_row
 
 SolidProcedural::CircleRestore         # Copy of Re-Cercle v2.0.0
   restore_in_solid, count_edges, summary, Detector, Rebuilder, Volume
@@ -293,6 +340,15 @@ Exiting the group (onActivePathChanged → timer)
 
 Ctrl+Z / Ctrl+Y (onTransactionUndo/Redo → timer)
   sync_all: display of every group according to the active path, no rebuild
+
+After each operation (onTransactionCommit → timer)
+  release_orphans: volumes released by an Explode → visible, no attributes (transparent op)
+
+Procedural Table action (page callback, not an observer)
+  change_table: one operation "Solid Procedural — <action>"
+    closed group → make_unique, attributes, rebuild when the signature changed (error → abort)
+    open group → attributes only, rebuild on exit
+  refresh_later → payload (JSON) → SolidProcedural.update() in the page
 ```
 
 ## 8. User interface
@@ -300,17 +356,26 @@ Ctrl+Z / Ctrl+Y (onTransactionUndo/Redo → timer)
 ### 8.1 Menu **Extensions > Solid Procedural**
 
 1. Create Procedural Solid
-2. Rebuild Procedural Solid
-3. Finalize Procedural Solid
-4. *(separator)*
-5. Set Subtract Color
-6. Set Repair Options (SketchUp 2020.1+)
+2. Procedural Table
+3. Rebuild Procedural Solid
+4. Finalize Procedural Solid
+5. *(separator)*
+6. Set Subtract Color
+7. Set Repair Options (SketchUp 2020.1+)
 
 ### 8.2 "Solid Procedural" toolbar
 
-Create, Rebuild, Finalize, *(separator)*, Set Subtract Color, Set Repair Options (16 and 24 px icons).
+Create, Procedural Table, Rebuild, Finalize, *(separator)*, Set Subtract Color, Set Repair Options (16 and 24 px icons).
 
-### 8.3 Messages
+### 8.3 Context menu
+
+**Procedural Table**, when a procedural group is selected or open.
+
+### 8.4 Procedural Table window
+
+See EF-20 to EF-24. Title "Solid Procedural — Procedural Table".
+
+### 8.5 Messages
 
 `UI.messagebox` (`MB_OK`), shown after the operation is committed. Status bar: rebuild progress, circle restoration report, "out of date" groups.
 
@@ -326,9 +391,12 @@ Create, Rebuild, Finalize, *(separator)*, Set Subtract Color, Set Repair Options
 
 A setting missing from `SolidProcedural` is read from `SolidBatch` (Solid Batch v2 settings carried over). Writes always go to `SolidProcedural`.
 
-## 10. Known limitations (step 1)
+## 10. Known limitations (steps 1 and 2)
 
-- The order and the per-volume operation can only be changed through the color (table in step 2); a volume can become Shell only through the `op` attribute.
+- The Base is the first enabled row: it can be moved or disabled like the other rows, which changes the Base.
+- In an open group, the effect of a table change shows only on exit (the Result is hidden while editing); on a closed group, it is applied at once.
+- A row selects its volume only in an open group (a double-click opens it).
+- After an Explode, the hidden loose geometry of the group stays hidden: only grouped volumes are released.
 - Nested procedural groups refused (step 3).
 - The rebuild runs on exiting the group, not while editing.
 - Loose geometry inside a procedural group is not used (make it a group).
@@ -338,6 +406,6 @@ A setting missing from `SolidProcedural` is read from `SolidBatch` (Solid Batch 
 
 | Version | Date | Changes |
 |---------|------|---------|
-| 1.0.0 | in progress | New plugin derived from Solid Batch v2.3.0. Step 1 (2026-10-23): Create / Rebuild / Finalize Procedural Solid, automatic sources / Result switch, automatic rebuild on exit by MD5 signature, option B for Ctrl+Z, color → operation, circle restoration on each Result, settings taken over from Solid Batch. Combine All removed |
+| 1.0.0 | in progress | New plugin derived from Solid Batch v2.3.0. Step 1 (2026-10-23): Create / Rebuild / Finalize Procedural Solid, automatic sources / Result switch, automatic rebuild on exit by MD5 signature, option B for Ctrl+Z, color → operation, circle restoration on each Result, settings taken over from Solid Batch. Combine All removed. Step 2 (2026-10-23): Procedural Table (order, On, color, name, operation, state, formula, Unions first, two-way selection; menu, toolbar, context menu), Subtract in the table ↔ color, Explode releases the volumes |
 
 Solid Batch history (v1.0.0 to v2.3.0): `JOURNAL.md` and the `sketchup-solid-batch` repository.

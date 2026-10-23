@@ -1,6 +1,7 @@
 require_relative 'version'
 require_relative 'circle_restore'
 require_relative 'procedural'
+require_relative 'procedural_table'
 require_relative 'procedural_observer'
 
 module SolidProcedural
@@ -8,6 +9,7 @@ module SolidProcedural
     submenu = UI.menu('Extensions').add_submenu(PLUGIN_NAME)
 
     submenu.add_item('Create Procedural Solid') { Procedural.do_create }
+    submenu.add_item('Procedural Table') { ProceduralTable.show }
     submenu.add_item('Rebuild Procedural Solid') { Procedural.do_rebuild }
     submenu.add_item('Finalize Procedural Solid') { Procedural.do_finalize }
     submenu.add_separator
@@ -25,6 +27,12 @@ module SolidProcedural
     cmd_create.small_icon = File.join(icons_dir, 'create_procedural_16.png')
     cmd_create.large_icon = File.join(icons_dir, 'create_procedural_24.png')
     toolbar.add_item(cmd_create)
+
+    cmd_table = UI::Command.new('Procedural Table') { ProceduralTable.show }
+    cmd_table.tooltip = 'Procedural Table — order and operation of the volumes of a procedural solid'
+    cmd_table.small_icon = File.join(icons_dir, 'table_procedural_16.png')
+    cmd_table.large_icon = File.join(icons_dir, 'table_procedural_24.png')
+    toolbar.add_item(cmd_table)
 
     cmd_rebuild = UI::Command.new('Rebuild Procedural Solid') { Procedural.do_rebuild }
     cmd_rebuild.tooltip = 'Rebuild Procedural Solid — force the rebuild of the selected procedural solids'
@@ -52,6 +60,14 @@ module SolidProcedural
       cmd_repairopts.small_icon = File.join(icons_dir, 'repair_circles_16.png')
       cmd_repairopts.large_icon = File.join(icons_dir, 'repair_circles_24.png')
       toolbar.add_item(cmd_repairopts)
+    end
+
+    # Right-click on a selected procedural solid, or inside an open one.
+    UI.add_context_menu_handler do |menu|
+      if ProceduralTable.target_group(Sketchup.active_model)
+        menu.add_separator
+        menu.add_item('Procedural Table') { ProceduralTable.show }
+      end
     end
 
     if toolbar.get_last_state == TB_VISIBLE

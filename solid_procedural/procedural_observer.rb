@@ -4,19 +4,48 @@ module SolidProcedural
   module Procedural
     # Observers of the edit state. The API forbids changing the model inside
     # an observer callback: every change is deferred with UI.start_timer and
-    # runs once SketchUp is idle (Procedural.sync_path / sync_all).
+    # runs once SketchUp is idle (Procedural.sync_path / sync_all /
+    # release_orphans). The Procedural Table is refreshed the same way.
     class ModelObserver < Sketchup::ModelObserver
       # The user opened or closed a group or component for editing.
       def onActivePathChanged(model)
         Procedural.defer(model, :path)
+        ProceduralTable.refresh_later
+      end
+
+      def onTransactionCommit(model)
+        Procedural.defer(model, :commit)
+        ProceduralTable.refresh_later
       end
 
       def onTransactionUndo(model)
         Procedural.defer(model, :all)
+        ProceduralTable.refresh_later
       end
 
       def onTransactionRedo(model)
         Procedural.defer(model, :all)
+        ProceduralTable.refresh_later
+      end
+    end
+
+    # Selection changes: highlight of the rows of the Procedural Table.
+    # onSelectionAdded / Removed are not always notified: all four are used.
+    class SelectionObserver < Sketchup::SelectionObserver
+      def onSelectionBulkChange(_selection)
+        ProceduralTable.refresh_later
+      end
+
+      def onSelectionCleared(_selection)
+        ProceduralTable.refresh_later
+      end
+
+      def onSelectionAdded(_selection, _entity)
+        ProceduralTable.refresh_later
+      end
+
+      def onSelectionRemoved(_selection, _entity)
+        ProceduralTable.refresh_later
       end
     end
 
@@ -43,12 +72,15 @@ module SolidProcedural
     def self.attach(model)
       return unless model
       @model_observer ||= ModelObserver.new
+      @selection_observer ||= SelectionObserver.new
       return if @attached[model]
       model.add_observer(@model_observer)
+      model.selection.add_observer(@selection_observer)
       @attached[model] = true
       @synced_paths[model] = open_groups(model)
       # A model saved while a procedural solid was open shows its sources.
       defer(model, :all)
+      ProceduralTable.refresh_later
     end
 
     # Runs the requested synchronizations once, after the callback.
@@ -70,6 +102,7 @@ module SolidProcedural
       @busy = true
       sync_path(model) if kinds.include?(:path)
       sync_all(model) if kinds.include?(:all)
+      release_orphans(model) if kinds.include?(:commit)
     rescue => e
       puts "[Solid Procedural] Synchronization error: #{e.message}"
       e.backtrace.first(10).each { |line| puts "  #{line}" }

@@ -2,7 +2,7 @@
 
 *[English version](FSD_EN.md)*
 
-> **Version en cours** — Ce document décrit l'**étape 1** de Solid Procedural 1.0.0 (cœur des groupes procéduraux, testé dans SketchUp 2021 Pro le 2026-10-23). La table des opérations (étape 2) et l'imbrication (étape 3) sont prévues : voir `PRD.md`.
+> **Version en cours** — Ce document décrit les **étapes 1 et 2** de Solid Procedural 1.0.0 (cœur des groupes procéduraux et Procedural Table, testés dans SketchUp 2021 Pro le 2026-10-23). L'imbrication (étape 3) est prévue : voir `PRD.md`.
 
 **Version :** 1.0.0 (en développement)
 **Date :** 2026-10-23
@@ -23,19 +23,20 @@ Solid Procedural est issu de **Solid Batch v2.3.0** et s'installe **à côté** 
 
 ## 2. Périmètre
 
-### Inclus (étape 1)
+### Inclus (étapes 1 et 2)
 
 - Create, Rebuild et Finalize Procedural Solid
 - Bascule automatique de l'affichage sources / Result à l'entrée et à la sortie du groupe
 - Recalcul automatique à la sortie, seulement si l'empreinte des sources a changé
-- Ordre des opérations et opération par volume (`union`, `outer_shell`, `subtract`) stockés dans les attributs ; à l'étape 1, l'opération suit la couleur de soustraction
+- Ordre des opérations et opération par volume (`union`, `outer_shell`, `subtract`) stockés dans les attributs, modifiables dans la Procedural Table ou par la couleur de soustraction
+- **Procedural Table** : ordre (▲▼, glisser-déposer, Unions first), On, couleur, nom, opération par ligne, état, formule, sélection dans les deux sens
+- Explode d'un groupe procédural : les volumes libérés deviennent des objets ordinaires visibles
 - Ctrl+Z / Ctrl+Y cohérents : le recalcul automatique est fusionné avec la dernière modification (option B)
 - Set Subtract Color et Set Repair Options, repris de Solid Batch ; réglages de Solid Batch lus par défaut
 - Restauration des cercles et arcs natifs sur chaque Result (méthode Re-Cercle v2.0.0)
 
 ### Prévu
 
-- Étape 2 : **Procedural Table** (ordre, On, couleur, nom, opération par ligne, état, formule, Unions first, glisser-déposer, sélection dans les deux sens)
 - Étape 3 : **imbrication** (un groupe procédural source d'un autre)
 
 ### Exclu
@@ -51,9 +52,10 @@ Solid Procedural est issu de **Solid Batch v2.3.0** et s'installe **à côté** 
 |----------|--------|
 | Version SketchUp | Pro 2021 (version cible et testée) |
 | Système | Windows (tout OS supporté par SketchUp devrait fonctionner, non testé) |
-| Méthodes Ruby API | `Group#union`, `#outer_shell`, `#subtract`, `#manifold?`, `#copy`, `#make_unique`, `#explode` ; `ModelObserver#onActivePathChanged`, `#onTransactionUndo`, `#onTransactionRedo` ; `AppObserver#onNewModel`, `#onOpenModel` |
+| Méthodes Ruby API | `Group#union`, `#outer_shell`, `#subtract`, `#manifold?`, `#copy`, `#make_unique`, `#explode` ; `ModelObserver#onActivePathChanged`, `#onTransactionCommit`, `#onTransactionUndo`, `#onTransactionRedo` ; `SelectionObserver` ; `AppObserver#onNewModel`, `#onOpenModel` ; `UI::HtmlDialog` ; `Model#active_path=` (2020.0+) |
 | Restauration cercles/arcs | SketchUp 2020.1+ (`Entities#weld`, soudure de secours) |
-| Ruby | `digest/md5` (bibliothèque standard fournie avec SketchUp) |
+| Ruby | `digest/md5`, `json` (bibliothèques standard fournies avec SketchUp) |
+| Fenêtre HTML | Navigateur intégré de SketchUp 2021 (Chromium 88 en 2021.1) ; JavaScript ES2017, sans dépendance |
 
 ## 4. Modèle de données
 
@@ -76,6 +78,8 @@ Tout est stocké dans le modèle, dictionnaire d'attributs **`SolidProcedural`**
 | `last_add_op` | `union` ou `outer_shell` : rétabli quand un volume Subtract est repeint d'une autre couleur |
 | `enabled` | `false` = ignoré par le calcul (défaut `true`) |
 | `seen_color` | Clé du matériau au dernier calcul (`nom:r,g,b` ou `none`) |
+| `prev_material` | Nom du matériau (`none` = défaut) remis quand le volume quitte Subtract dans la table |
+| `uid` | Clé de la ligne dans la Procedural Table (8 chiffres hexadécimaux), gardée par les copies |
 
 ### 4.3 Result
 
@@ -181,6 +185,39 @@ Moteur `solid_procedural/circle_restore/`, copie de Re-Cercle v2.0.0 (identique 
 - **Option B** : le recalcul automatique est une opération transparente, fusionnée avec la dernière modification faite dans le groupe. Un seul Ctrl+Z annule la modification, le Result et l'empreinte ensemble ; le menu Édition affiche le nom de la modification (« Annuler Déplacer »).
 - Après Ctrl+Z / Ctrl+Y (`onTransactionUndo` / `onTransactionRedo`) : `sync_all` remet l'affichage de chaque groupe en accord avec le chemin actif, dans une opération transparente ; **jamais de recalcul** (une nouvelle opération après une annulation supprimerait le Rétablir). Un groupe dont l'empreinte ne correspond plus est signalé dans la barre d'état et recalculé à la prochaine sortie ou par Rebuild.
 
+#### EF-20 à EF-24 : Procedural Table
+
+Fenêtre non modale (`UI::HtmlDialog`, style utilitaire, taille et position mémorisées), ouverte par le menu, la barre d'outils ou le clic droit (§ 8). Elle affiche le groupe procédural **ouvert** le plus intérieur, sinon le **seul** groupe procédural sélectionné, sinon un message (« Select or open a procedural solid. »).
+
+| Élément | Description |
+|---------|-------------|
+| **En-tête** | Nom du groupe ; badge « Open — applied on exit » (groupe ouvert) ou « Closed — applied now » (groupe fermé) |
+| **#** | Poignée ⋮⋮ (glisser-déposer), position, ▲▼ |
+| **On** | Case à cocher : `enabled` |
+| **Color** | Pastille du matériau du volume (hachures = matériau par défaut) |
+| **Name** | Nom de l'instance, modifiable (Entrée, Tab ou clic ailleurs = renommer, Échap = annuler) ; le nom de la définition sert d'indication |
+| **Operation** | « Base » sur la première ligne active ; sinon Union / Shell / Subtract |
+| **State** | `Solid`, `Not solid`, `Disabled`, `Base must be added`, `Nested: not supported yet` |
+| **Formule** | Opérations réellement calculées, lignes actives dans l'ordre : `(((1 ∪ 2) shell 3) − 4) ∪ 6` |
+| **Unions first** | Toutes les Union et Shell, puis toutes les Subtract, chacune dans son ordre actuel |
+
+**Application des changements (EF-24)** : chaque action est **une seule opération annulable** (`change_table`).
+
+- Groupe **fermé** : le Result est recalculé tout de suite, dans la même opération, si l'empreinte a changé. Une erreur (volume non solide, plus aucun volume actif…) annule tout le changement avec un message.
+- Groupe **ouvert** : seuls les attributs changent ; l'empreinte (qui contient l'ordre, l'opération et On) déclenche le recalcul à la sortie.
+
+**Table → couleur (EF-13, sens inverse)** : choisir Subtract peint le volume de la couleur de soustraction (matériau existant de cette couleur sans texture, sinon nouveau matériau `Solid Procedural Subtract`) et garde l'ancien matériau dans `prev_material` ; quitter Subtract remet ce matériau (ou le matériau par défaut). `seen_color` est mis à jour pour que la règle couleur → opération ne revienne pas en arrière. Quand un volume est repeint de la couleur de soustraction dans le modèle, son ancien matériau est aussi gardé dans `prev_material`.
+
+**Sélection dans les deux sens (EF-23)** : groupe ouvert → un clic sur une ligne sélectionne le volume (si une source est en cours d'édition, son contexte est d'abord fermé), et les volumes sélectionnés ou en cours d'édition ont leur ligne en surbrillance. Groupe fermé → un double-clic ouvre le groupe (`Model#active_path=`) et sélectionne le volume.
+
+**Clé des lignes** : attribut `uid` de chaque source (gardé par les copies et par `make_unique`, unicité rétablie à la normalisation), sinon `id:<entityID>`. Une action reçue pour un autre groupe que celui affiché, ou pour une clé introuvable, ne modifie rien et rafraîchit la table.
+
+**Rafraîchissement** : différé et regroupé (`UI.start_timer`), seulement si la fenêtre est ouverte, après chaque changement du chemin actif, opération, annulation, rétablissement ou changement de sélection (`SelectionObserver` : les quatre événements, `onSelectionAdded` n'étant pas toujours notifié). Un nom en cours de saisie est conservé.
+
+#### EF-26 : Explode d'un groupe procédural
+
+Après chaque opération (`onTransactionCommit`, différé), les volumes `role=source` ou `role=result` du contexte actif qui ne sont plus dans un groupe procédural (Explode, ou copier-coller hors du groupe) sont **rendus visibles et perdent leurs attributs** : ils deviennent des objets ordinaires. Opération transparente « Solid Procedural — Release », fusionnée avec l'Explode : un seul Ctrl+Z remet le groupe procédural.
+
 #### EF-03 : Set Subtract Color
 
 Couleur du matériau du premier groupe/composant sélectionné qui en a un, enregistrée dans le registre `SolidProcedural`. Défaut : rouge (255, 0, 0). Les volumes existants gardent leur opération jusqu'à ce qu'ils soient repeints (EF-13).
@@ -199,6 +236,7 @@ Couleur du matériau du premier groupe/composant sélectionné qui en a un, enre
 | NF-04 | Pas de recalcul sans modification (empreinte) ; progression dans la barre d'état |
 | NF-05 | Journalisation console `[Solid Procedural] …` |
 | NF-06 | Libellés à l'écran en anglais ; nom « Solid Procedural » identique partout (extension, menu, barre d'outils, registre, dictionnaire, logs) |
+| NF-07 | Procedural Table en HTML/CSS/JS dans un seul fichier, sans dépendance externe ; JavaScript compatible avec le navigateur de SketchUp 2021 |
 | NF-08 | Plugin autonome, aucune dépendance à un autre plugin |
 | NF-09 | Coexistence avec Solid Batch v2 : modules, dossiers, registre et attributs distincts |
 | NF-10 | Données procédurales dans le modèle, options dans le registre `SolidProcedural`, repli sur `SolidBatch` |
@@ -213,9 +251,12 @@ Couleur du matériau du premier groupe/composant sélectionné qui en a un, enre
 solid_procedural.rb             # Point d'entrée — enregistrement de l'extension
 solid_procedural/
   version.rb                    # VERSION = '1.0.0'
-  main.rb                       # Menu, barre d'outils, options (registre), Set Subtract Color, Set Repair Options
+  main.rb                       # Menu, barre d'outils, clic droit, options (registre), Set Subtract Color, Set Repair Options
   procedural.rb                 # Groupes procéduraux : données, empreinte, affichage, calcul, commandes, synchronisation
-  procedural_observer.rb        # ModelObserver / AppObserver, synchronisation différée
+  procedural_table.rb           # Procedural Table : fenêtre, données des lignes, actions de la page
+  procedural_observer.rb        # ModelObserver / SelectionObserver / AppObserver, synchronisation différée
+  html/
+    procedural_table.html       # Page de la table (HTML, CSS, JavaScript)
   circle_restore.rb             # Point d'entrée de la restauration des cercles
   circle_restore/               # Copie du moteur de Re-Cercle v2.0.0
     detector.rb
@@ -223,6 +264,7 @@ solid_procedural/
     volume.rb
   icons/
     create_procedural_16/24.png
+    table_procedural_16/24.png
     rebuild_procedural_16/24.png
     finalize_procedural_16/24.png
     setcolor_16/24.png
@@ -248,8 +290,13 @@ SolidProcedural::Procedural
   normalize_sources, sync_op_with_color, validate
   rebuild_in_operation, combine, copy_of, duplicate, restore_circles
   do_create, do_rebuild, do_finalize, finalize, run_command
-  sync_path, sync_all
-  ModelObserver, AppObserver, attach, defer, run
+  row_keys, row_lookup, state_of, change_table, table_toggle, table_operation, table_rename,
+  table_order, table_unions_first, set_operation, subtract_material
+  sync_path, sync_all, release_orphans
+  ModelObserver, SelectionObserver, AppObserver, attach, defer, run
+
+SolidProcedural::ProceduralTable
+  show, target_group, refresh_later, refresh, payload, color_hex, on_action, select_row, open_row
 
 SolidProcedural::CircleRestore         # Copie de Re-Cercle v2.0.0
   restore_in_solid, count_edges, summary, Detector, Rebuilder, Volume
@@ -293,6 +340,15 @@ Sortie du groupe (onActivePathChanged → timer)
 
 Ctrl+Z / Ctrl+Y (onTransactionUndo/Redo → timer)
   sync_all : affichage de tous les groupes selon le chemin actif, sans recalcul
+
+Après chaque opération (onTransactionCommit → timer)
+  release_orphans : volumes libérés par un Explode → visibles, sans attributs (op. transparente)
+
+Action de la Procedural Table (callback de la page, hors observateur)
+  change_table : une opération « Solid Procedural — <action> »
+    groupe fermé → make_unique, attributs, recalcul si l'empreinte a changé (erreur → abort)
+    groupe ouvert → attributs seulement, recalcul à la sortie
+  refresh_later → payload (JSON) → SolidProcedural.update() dans la page
 ```
 
 ## 8. Interface utilisateur
@@ -300,17 +356,26 @@ Ctrl+Z / Ctrl+Y (onTransactionUndo/Redo → timer)
 ### 8.1 Menu **Extensions > Solid Procedural**
 
 1. Create Procedural Solid
-2. Rebuild Procedural Solid
-3. Finalize Procedural Solid
-4. *(séparateur)*
-5. Set Subtract Color
-6. Set Repair Options (SketchUp 2020.1+)
+2. Procedural Table
+3. Rebuild Procedural Solid
+4. Finalize Procedural Solid
+5. *(séparateur)*
+6. Set Subtract Color
+7. Set Repair Options (SketchUp 2020.1+)
 
 ### 8.2 Barre d'outils « Solid Procedural »
 
-Create, Rebuild, Finalize, *(séparateur)*, Set Subtract Color, Set Repair Options (icônes 16 et 24 px).
+Create, Procedural Table, Rebuild, Finalize, *(séparateur)*, Set Subtract Color, Set Repair Options (icônes 16 et 24 px).
 
-### 8.3 Messages
+### 8.3 Clic droit
+
+**Procedural Table**, quand un groupe procédural est sélectionné ou ouvert.
+
+### 8.4 Fenêtre Procedural Table
+
+Voir EF-20 à EF-24. Titre « Solid Procedural — Procedural Table ».
+
+### 8.5 Messages
 
 `UI.messagebox` (`MB_OK`), affichés après la validation de l'opération. Barre d'état : progression du calcul, bilan de la restauration des cercles, groupes « out of date ».
 
@@ -326,9 +391,12 @@ Create, Rebuild, Finalize, *(séparateur)*, Set Subtract Color, Set Repair Optio
 
 Un réglage absent de `SolidProcedural` est lu dans `SolidBatch` (réglages de Solid Batch v2 repris). Les écritures vont toujours dans `SolidProcedural`.
 
-## 10. Limitations connues (étape 1)
+## 10. Limitations connues (étapes 1 et 2)
 
-- L'ordre et l'opération par volume ne sont modifiables que par la couleur (table à l'étape 2) ; un volume ne peut passer en Shell que par l'attribut `op`.
+- La Base est la première ligne active : elle peut être déplacée ou désactivée comme les autres lignes, ce qui change de Base.
+- Dans un groupe ouvert, l'effet d'un changement de la table ne se voit qu'à la sortie (le Result est caché pendant l'édition) ; sur un groupe fermé, il est appliqué tout de suite.
+- Une ligne ne sélectionne son volume que dans un groupe ouvert (un double-clic l'ouvre).
+- Après un Explode, la géométrie libre cachée du groupe reste cachée : seuls les volumes groupés sont libérés.
 - Groupes procéduraux imbriqués refusés (étape 3).
 - Le recalcul a lieu à la sortie du groupe, pas pendant l'édition.
 - La géométrie libre dans un groupe procédural n'est pas utilisée (il faut en faire un groupe).
@@ -338,6 +406,6 @@ Un réglage absent de `SolidProcedural` est lu dans `SolidBatch` (réglages de S
 
 | Version | Date | Changements |
 |---------|------|-------------|
-| 1.0.0 | en cours | Nouveau plugin issu de Solid Batch v2.3.0. Étape 1 (2026-10-23) : Create / Rebuild / Finalize Procedural Solid, bascule automatique sources / Result, recalcul automatique à la sortie par empreinte MD5, option B pour Ctrl+Z, couleur → opération, restauration des cercles sur chaque Result, réglages repris de Solid Batch. Combine All retiré |
+| 1.0.0 | en cours | Nouveau plugin issu de Solid Batch v2.3.0. Étape 1 (2026-10-23) : Create / Rebuild / Finalize Procedural Solid, bascule automatique sources / Result, recalcul automatique à la sortie par empreinte MD5, option B pour Ctrl+Z, couleur → opération, restauration des cercles sur chaque Result, réglages repris de Solid Batch. Combine All retiré. Étape 2 (2026-10-23) : Procedural Table (ordre, On, couleur, nom, opération, état, formule, Unions first, sélection dans les deux sens ; menu, barre d'outils, clic droit), Subtract dans la table ↔ couleur, Explode libère les volumes |
 
 Historique de Solid Batch (v1.0.0 à v2.3.0) : `JOURNAL.md` et dépôt `sketchup-solid-batch`.
