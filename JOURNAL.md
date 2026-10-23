@@ -143,6 +143,8 @@
 - **.gitignore** — `build/` exclu (le `.rbz` est un produit de construction).
 - **build/solid_procedural.rbz** — Construit (`solid_procedural.rb` + `solid_procedural/`).
 - **Plugins SketchUp 2021** — Fichiers recopiés et vérifiés identiques.
+- **GitHub** — Dépôt privé `john3volts3/sketchup-solid-procedural` créé, `master` et le tag `v1.0.0` poussés ; release **v1.0.0** publiée avec `solid_procedural.rbz` (43 632 octets), à la demande de l'utilisateur.
+- Sauvegarde de l'environnement Claude : 6 fichiers copiés, envoyés sur GitHub.
 
 ---
 
