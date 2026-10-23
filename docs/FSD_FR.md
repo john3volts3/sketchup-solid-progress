@@ -2,9 +2,9 @@
 
 *[English version](FSD_EN.md)*
 
-> **Version en cours** — Ce document décrit les **étapes 1 et 2** de Solid Procedural 1.0.0 (cœur des groupes procéduraux et Procedural Table, testés dans SketchUp 2021 Pro le 2026-10-23). L'imbrication est reportée : voir `PRD.md` (EF-25).
+> Ce document décrit **Solid Procedural 1.0.0**, livré le 2026-10-23 pour SketchUp Pro 2021. L'imbrication est reportée (EF-25 du `PRD.md`) ; la compatibilité SketchUp 2017 est prévue (EF-31).
 
-**Version :** 1.0.0 (en développement)
+**Version :** 1.0.0
 **Date :** 2026-10-23
 **Auteur :** DRO
 
@@ -23,7 +23,7 @@ Solid Procedural est issu de **Solid Batch v2.3.0** et s'installe **à côté** 
 
 ## 2. Périmètre
 
-### Inclus (étapes 1 et 2)
+### Inclus (1.0.0)
 
 - Create, Rebuild et Finalize Procedural Solid
 - Bascule automatique de l'affichage sources / Result à l'entrée et à la sortie du groupe
@@ -39,6 +39,7 @@ Solid Procedural est issu de **Solid Batch v2.3.0** et s'installe **à côté** 
 ### Prévu
 
 - **Imbrication** (un groupe procédural source d'un autre) : reportée (EF-25 du PRD)
+- **Compatibilité SketchUp 2017 Pro** (EF-31 du PRD)
 
 ### Exclu
 
@@ -414,7 +415,7 @@ Voir EF-20 à EF-24. Titre « Solid Procedural — Procedural Table ».
 
 Un réglage absent de `SolidProcedural` est lu dans `SolidBatch` (réglages de Solid Batch v2 repris). Les écritures vont toujours dans `SolidProcedural`.
 
-## 10. Limitations connues (étapes 1 et 2)
+## 10. Limitations connues (1.0.0)
 
 - Dans un groupe ouvert, l'effet d'un changement de la table ne se voit qu'à la sortie (le Result est caché pendant l'édition) ; sur un groupe fermé, il est appliqué tout de suite.
 - Une ligne ne sélectionne son volume que dans un groupe ouvert (un double-clic l'ouvre).
@@ -430,6 +431,6 @@ Un réglage absent de `SolidProcedural` est lu dans `SolidBatch` (réglages de S
 
 | Version | Date | Changements |
 |---------|------|-------------|
-| 1.0.0 | en cours | Nouveau plugin issu de Solid Batch v2.3.0. Étape 1 (2026-10-23) : Create / Rebuild / Finalize Procedural Solid, bascule automatique sources / Result, recalcul automatique à la sortie par empreinte MD5, option B pour Ctrl+Z, couleur → opération, restauration des cercles sur chaque Result, réglages repris de Solid Batch. Combine All retiré. Étape 2 (2026-10-23) : Procedural Table (ordre, On, couleur, nom, opération, état, formule, Unions first, sélection dans les deux sens ; menu, barre d'outils, clic droit), Subtract dans la table ↔ couleur, Explode libère les volumes. Étape 2b (2026-10-23) : Base figée en ligne 1 (choix « Base » sur une ligne), sélection gardée après un recalcul. Étape 2c (2026-10-23) : cadre de sélection vert pour les groupes procéduraux. Étape 2d (2026-10-23) : raccourcis de SketchUp utilisables quand la table est ouverte (clavier rendu à SketchUp) |
+| 1.0.0 | 2026-10-23 | Nouveau plugin issu de Solid Batch v2.3.0. Étape 1 (2026-10-23) : Create / Rebuild / Finalize Procedural Solid, bascule automatique sources / Result, recalcul automatique à la sortie par empreinte MD5, option B pour Ctrl+Z, couleur → opération, restauration des cercles sur chaque Result, réglages repris de Solid Batch. Combine All retiré. Étape 2 (2026-10-23) : Procedural Table (ordre, On, couleur, nom, opération, état, formule, Unions first, sélection dans les deux sens ; menu, barre d'outils, clic droit), Subtract dans la table ↔ couleur, Explode libère les volumes. Étape 2b (2026-10-23) : Base figée en ligne 1 (choix « Base » sur une ligne), sélection gardée après un recalcul. Étape 2c (2026-10-23) : cadre de sélection vert pour les groupes procéduraux. Étape 2d (2026-10-23) : raccourcis de SketchUp utilisables quand la table est ouverte (clavier rendu à SketchUp) |
 
 Historique de Solid Batch (v1.0.0 à v2.3.0) : `JOURNAL.md` et dépôt `sketchup-solid-batch`.

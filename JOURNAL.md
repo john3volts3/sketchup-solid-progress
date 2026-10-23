@@ -6,7 +6,7 @@
 
 - **v1.0** (livrée 2026-04-03) — Première version. Union, Subtract (multi-clic), Split. Ruby pur, fonctionne sans SketchUp Pro. Performances O(n²) sur le ray casting.
 - **v2.x** (livrées 2026-04-04 → 2026-10-11) — Moteur custom abandonné au profit des booléens natifs de SketchUp Pro : Combine All (Union / Shell), Set Subtract Color, Set Repair Options, restauration des cercles et arcs en cercles natifs (v2.3.0, méthode Re-Cercle v2.0.0). *(Le plan initial « v2.0 = optimisation Ruby octree » a été livré en 2.0.0 puis remplacé le jour même par les booléens natifs.)*
-- **Solid Procedural 1.0.0** (en cours, plugin séparé, dépôt `sketchup-solid-procedural`) — **Procedural Solid** : groupes procéduraux non destructifs (sources modifiables dedans, résultat recalculé automatiquement à la sortie), table des opérations (ordre, Union / Shell / Subtract par volume, désactivation), imbrication. Installé à côté de Solid Batch v2, qui garde Combine All. Voir `SOLID_PROCEDURAL_PROJET.md` et `PRD.md`. *(L'ancien plan « Solid Batch v3.0 = backend Python trimesh/CGAL » est abandonné.)*
+- **Solid Procedural 1.0.0** (livrée le 2026-10-23 pour SketchUp 2021 Pro, plugin séparé, dépôt privé `sketchup-solid-procedural`) — **Procedural Solid** : groupes procéduraux non destructifs (sources modifiables dedans, résultat recalculé automatiquement à la sortie), table des opérations (ordre, Union / Shell / Subtract par volume, désactivation), imbrication. Installé à côté de Solid Batch v2, qui garde Combine All. Voir `SOLID_PROCEDURAL_PROJET.md` et `PRD.md`. *(L'ancien plan « Solid Batch v3.0 = backend Python trimesh/CGAL » est abandonné.)*
 
 ---
 
@@ -132,6 +132,17 @@
 - **Décision** : reportée — l'utilisateur pense pouvoir s'en passer ; travail et risque de régression sur des fonctions testées jugés trop importants. Condition : aucun effet de bord sans imbrication — vérifié dans le code (seuls `do_create`, `validate` et `state_of` traitent un volume procédural, pour le refuser).
 - **PRD.md** — EF-25 « reportée » avec la raison, CA-10 reporté, périmètre, décision « Imbrication (étape 3) » avec le plan conservé.
 - **docs/FSD_FR.md, docs/FSD_EN.md** — Imbrication reportée ; limitation détaillée (refus propre, finaliser une sous-pièce pour la réutiliser, Explode d'un groupe collé dans un groupe ouvert).
+
+### Livraison 1.0.0 (SketchUp 2021 Pro)
+
+- Test de l'ensemble confirmé par l'utilisateur ; création du dépôt GitHub privé acceptée.
+- **README.md** — Réécrit pour Solid Procedural 1.0.0 (anglais puis français) : principe, fonctionnalités, Finalize obligatoire avant l'export STL, prérequis SketchUp Pro 2021, installation, démarrage rapide, documentation. Bandeau « en cours de réécriture » et démo de Solid Batch retirés.
+- **docs/USER_MANUAL_EN.md, docs/USER_MANUAL_FR.md** — Réécrits (lien croisé FR ↔ EN) : notions, flux de travail et exemple, commandes (Create, Procedural Table, Rebuild, Finalize, Set Subtract Color, Set Repair Options), cercles et arcs, annulation, Explode, cadre vert, dépannage (messages), limitations.
+- **docs/FSD_FR.md, docs/FSD_EN.md** — Version 1.0.0 livrée (bandeau, version, périmètre, limitations, historique).
+- **PRD.md** — Exigences EF-03 à EF-24 et EF-26 à EF-30 « livrée en 1.0.0 » ; ligne d'historique de la livraison.
+- **.gitignore** — `build/` exclu (le `.rbz` est un produit de construction).
+- **build/solid_procedural.rbz** — Construit (`solid_procedural.rb` + `solid_procedural/`).
+- **Plugins SketchUp 2021** — Fichiers recopiés et vérifiés identiques.
 
 ---
 

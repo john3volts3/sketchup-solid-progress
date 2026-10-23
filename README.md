@@ -1,61 +1,64 @@
 # Solid Procedural — SketchUp Pro Plugin
 
-> **Work in progress** — Solid Procedural 1.0.0 is being developed from Solid Batch v2.3.0. The text below still describes Solid Batch v2.3.0 (Combine All) and will be rewritten for the 1.0.0 release.
+**Non-destructive procedural solids for SketchUp Pro: your boolean sources stay editable.**
 
-**Batch solid boolean operations using native SketchUp Pro tools.**
-
-*[Version francaise ci-dessous](#solid-batch--plugin-sketchup-pro)*
+*[Version française ci-dessous](#solid-procedural--plugin-sketchup-pro)*
 
 ---
 
-## Demo
+## Why Solid Procedural?
 
-[![Solid Batch Demo](https://img.youtube.com/vi/Zmjdbe_O_Cc/0.jpg)](https://youtu.be/y5_-0-7OkBw)
+When designing technical parts for 3D printing in SketchUp, a part is often built from simple volumes — a base, added blocks, holes, pins — combined with boolean operations. Native booleans are destructive: once the hole is cut, moving it means undoing or remodelling.
 
-## Why Solid Batch?
+Solid Procedural keeps the sources. A **procedural solid** is a group that holds its source volumes and their combination, the **Result**:
 
-When designing technical parts for 3D printing in SketchUp, a common workflow is to build up complex shapes from simple volumes — boxes, cylinders, extrusions — then combine them using boolean operations at the end of each design stage or at the very end. Manually running union and subtract on dozens of objects one by one is tedious and time-consuming. Solid Batch automates this: select all your solids, click once, and the plugin unions the bases and subtracts the tools in a single batch operation.
+- **inside the group**, you see and edit the sources (move a hole, resize a pin, add a volume);
+- **outside the group**, you see the Result, rebuilt automatically when you close the group.
+
+It derives from [Solid Batch](https://github.com/john3volts3/sketchup-solid-batch) v2.3.0 and installs **next to it**: Solid Batch keeps its one-click, destructive Combine All.
 
 ## Features
 
-- **Combine All (Union)** — Select multiple solids, automatically union all base solids then subtract color-marked objects. Single undo step.
-- **Combine All (Shell)** — Same workflow using Outer Shell instead of Union (merges overlapping volumes into one shell).
-- **Automatic circle and arc restoration** — Native boolean operations break circles and arcs into individual segments. At the end of every Combine All, Solid Batch rebuilds them as **native SketchUp circles and arcs** (center inference, radius and segments in Entity Info): holes, pins, cylinders and truncated cones get native end circles. When a native rebuild is not possible (e.g. arcs of a rounded edge), the segments are welded into a single-click selectable curve.
-- **Set Subtract Color** — Pick a color from a selected object to mark which solids should be subtracted during Combine All operations.
-- **Set Repair Options** — Configure the circle/arc restoration behavior: auto-repair toggle, "large object" edge threshold (above which restoration can be skipped for performance), and minimum segments for arc detection (tradeoff between catching short arcs and avoiding false positives).
+- **Create Procedural Solid** — groups the selected solids into a procedural solid and computes its Result. Volumes painted with the *subtract color* are subtracted, the others added.
+- **Automatic rebuild** — when you close a procedural solid whose sources changed (signature of the sources), its Result is rebuilt. Nothing is recomputed when nothing changed.
+- **Procedural Table** — the operation list of a procedural solid: order (▲▼, drag and drop, *Unions first*), **On** to disable a volume, color, editable name, operation per row (**Base / Union / Shell / Subtract**), state, and the formula actually computed, e.g. `(((1 ∪ 2) shell 3) − 4) ∪ 6`. Row 1 is the **Base**, always first. Selection works both ways between the rows and the volumes. On a closed solid, every change is applied at once.
+- **Rebuild / Finalize** — force a rebuild, or replace a procedural solid by a plain solid (sources removed) before exporting.
+- **Consistent undo** — the automatic rebuild is merged with your last edit: one Ctrl+Z undoes the edit and its Result.
+- **Green selection frame** — a selected procedural solid shows a green frame, so you know it is still procedural.
+- **Native circles** — circles and arcs broken by the booleans are rebuilt as native SketchUp circles and arcs on every Result (center inference), as in Solid Batch.
+- **Explode releases the volumes** — exploding a procedural solid gives back the Result and all the source volumes as plain, visible objects.
+- **Set Subtract Color / Set Repair Options** — as in Solid Batch; the settings of Solid Batch are taken over until you change them.
 
-All operations use SketchUp Pro's native boolean engine for maximum reliability.
+All operations use SketchUp Pro's native boolean engine.
+
+> **Always run Finalize before an STL export**: the hidden sources of a procedural solid would be exported too.
 
 ## Requirements
 
-- **SketchUp Pro** (2017 or later) — the native boolean methods (`union`, `outer_shell`, `subtract`) are Pro-only features.
-- Circle and arc restoration requires **SketchUp 2020.1+** (`Entities#weld`). On older versions, batch operations work normally but restoration is silently skipped.
+- **SketchUp Pro 2021** (tested with 21.0) on Windows — the native booleans (`union`, `outer_shell`, `subtract`) are Pro-only.
+- SketchUp 2017 support is planned for a later version.
 
 ## Installation
 
-1. Download `solid_batch.rbz` from the [Releases](../../releases) page
+1. Get `solid_procedural.rbz` (attached to the GitHub release, or built in `build/`)
 2. In SketchUp: **Window > Extension Manager > Install Extension**
 3. Select the `.rbz` file
-4. The toolbar and menu appear under **Extensions > Solid Batch**
+4. The menu and the toolbar appear under **Extensions > Solid Procedural**
 
 ## Quick Start
 
-1. Paint the objects you want to subtract with a specific color (e.g. red)
-2. Use **Set Subtract Color** to register that color
-3. Select all your solids (bases + tools)
-4. Click **Combine All (Union)** or **Combine All (Shell)**
-5. Done — one solid, one undo step
+1. Model a base and the volumes to add or remove, each as a **solid group**; paint the volumes to remove in red (the default subtract color)
+2. Select them all and click **Create Procedural Solid**
+3. Double-click the procedural solid to edit its sources; close it (click outside or Escape): the Result is rebuilt
+4. Open the **Procedural Table** to change the order or the operation of each volume
+5. Before exporting to STL: **Finalize Procedural Solid**
 
 ## Documentation
 
 - [User Manual (English)](docs/USER_MANUAL_EN.md)
-- [Manuel utilisateur (Francais)](docs/USER_MANUAL_FR.md)
+- [Manuel utilisateur (Français)](docs/USER_MANUAL_FR.md)
 - [Functional Specification (English)](docs/FSD_EN.md)
-- [Specification fonctionnelle (Francais)](docs/FSD_FR.md)
-
-## Credits
-
-Uses the native boolean operations built into SketchUp Pro.
+- [Spécification fonctionnelle (Français)](docs/FSD_FR.md)
 
 ## License
 
@@ -63,58 +66,63 @@ MIT License — see [LICENSE.md](LICENSE.md)
 
 ---
 
-# Solid Batch — Plugin SketchUp Pro
+# Solid Procedural — Plugin SketchUp Pro
 
-**Operations booleennes par lot sur les solides, utilisant les outils natifs de SketchUp Pro.**
+**Solides procéduraux non destructifs pour SketchUp Pro : les volumes sources de vos opérations booléennes restent modifiables.**
 
-## Demo
+## Pourquoi Solid Procedural ?
 
-[![Solid Batch Demo](https://img.youtube.com/vi/Zmjdbe_O_Cc/0.jpg)](https://youtu.be/y5_-0-7OkBw)
+Pour concevoir des pièces techniques à imprimer en 3D dans SketchUp, on part souvent de volumes simples — une base, des blocs ajoutés, des trous, des tenons — combinés par des opérations booléennes. Les booléens natifs sont destructifs : une fois le trou percé, le déplacer oblige à annuler ou à remodéliser.
 
-## Pourquoi Solid Batch ?
+Solid Procedural garde les sources. Un **solide procédural** est un groupe qui contient ses volumes sources et leur combinaison, le **Result** :
 
-Lors de la conception de pieces techniques pour l'impression 3D dans SketchUp, une methode courante consiste a construire des formes complexes a partir de volumes simples — boites, cylindres, extrusions — puis a les combiner par operations booleennes a la fin de chaque etape ou tout a la fin du design. Executer manuellement les unions et soustractions sur des dizaines d'objets un par un est fastidieux et chronophage. Solid Batch automatise tout cela : selectionnez tous vos solides, un seul clic, et le plugin fusionne les bases et soustrait les outils en une seule operation.
+- **dans le groupe**, vous voyez et modifiez les sources (déplacer un trou, agrandir un tenon, ajouter un volume) ;
+- **hors du groupe**, vous voyez le Result, recalculé automatiquement quand vous fermez le groupe.
 
-## Fonctionnalites
+Il est issu de [Solid Batch](https://github.com/john3volts3/sketchup-solid-batch) v2.3.0 et s'installe **à côté** de lui : Solid Batch garde son Combine All en un clic, destructif.
 
-- **Combine All (Union)** — Selectionnez plusieurs solides, fusionne automatiquement les solides de base puis soustrait les objets marques par couleur. Une seule etape d'annulation.
-- **Combine All (Shell)** — Meme principe avec Outer Shell au lieu de Union (fusionne les volumes en une seule coque).
-- **Restauration automatique des cercles et des arcs** — Les opérations booléennes natives cassent les cercles et les arcs en segments individuels. À la fin de chaque Combine All, Solid Batch les reconstruit en **vrais cercles et arcs natifs** de SketchUp (inférence du centre, rayon et segments dans *Infos sur l'entité*) : trous, tenons, cylindres et troncs de cône retrouvent des cercles natifs à leurs extrémités. Quand la reconstruction native est impossible (ex. arcs d'une arête arrondie), les segments sont soudés en une courbe sélectionnable en un clic.
-- **Set Subtract Color** — Choisissez une couleur depuis un objet selectionne pour marquer les solides a soustraire.
-- **Set Repair Options** — Configurer la restauration des cercles et arcs : toggle auto-repair, seuil "gros objet" en edges (au-dessus duquel la restauration peut être ignorée pour la performance), et nombre minimum de segments pour la détection des arcs (compromis entre détection des arcs courts et évitement des faux positifs).
+## Fonctionnalités
 
-Toutes les operations utilisent le moteur booleen natif de SketchUp Pro pour une fiabilite maximale.
+- **Create Procedural Solid** — regroupe les solides sélectionnés dans un solide procédural et calcule son Result. Les volumes peints de la *couleur de soustraction* sont soustraits, les autres ajoutés.
+- **Recalcul automatique** — quand vous fermez un solide procédural dont les sources ont changé (empreinte des sources), son Result est recalculé. Rien n'est recalculé si rien n'a changé.
+- **Procedural Table** — la liste des opérations d'un solide procédural : ordre (▲▼, glisser-déposer, *Unions first*), **On** pour désactiver un volume, couleur, nom modifiable, opération par ligne (**Base / Union / Shell / Subtract**), état, et la formule réellement calculée, par ex. `(((1 ∪ 2) shell 3) − 4) ∪ 6`. La ligne 1 est la **Base**, toujours en tête. La sélection marche dans les deux sens entre les lignes et les volumes. Sur un solide fermé, chaque changement est appliqué tout de suite.
+- **Rebuild / Finalize** — forcer un recalcul, ou remplacer un solide procédural par un solide simple (sources supprimées) avant l'export.
+- **Annulation cohérente** — le recalcul automatique est fusionné avec votre dernière modification : un seul Ctrl+Z annule la modification et son Result.
+- **Cadre de sélection vert** — un solide procédural sélectionné a un cadre vert : vous savez qu'il est encore procédural.
+- **Cercles natifs** — les cercles et arcs cassés par les booléens sont reconstruits en vrais cercles et arcs SketchUp sur chaque Result (inférence du centre), comme dans Solid Batch.
+- **Explode libère les volumes** — éclater un solide procédural rend le Result et tous les volumes sources en objets ordinaires visibles.
+- **Set Subtract Color / Set Repair Options** — comme dans Solid Batch ; les réglages de Solid Batch sont repris tant que vous ne les changez pas.
 
-## Prerequis
+Toutes les opérations utilisent le moteur booléen natif de SketchUp Pro.
 
-- **SketchUp Pro** (2017 ou plus recent) — les methodes booleennes natives (`union`, `outer_shell`, `subtract`) sont exclusives a la version Pro.
-- La restauration des cercles et arcs nécessite **SketchUp 2020.1+** (`Entities#weld`). Sur les versions antérieures, les opérations batch fonctionnent normalement mais la restauration est silencieusement ignorée.
+> **Lancez toujours Finalize avant un export STL** : les sources cachées d'un solide procédural seraient exportées aussi.
+
+## Prérequis
+
+- **SketchUp Pro 2021** (testé avec la 21.0) sous Windows — les booléens natifs (`union`, `outer_shell`, `subtract`) sont réservés à la version Pro.
+- La prise en charge de SketchUp 2017 est prévue dans une version ultérieure.
 
 ## Installation
 
-1. Telecharger `solid_batch.rbz` depuis la page [Releases](../../releases)
-2. Dans SketchUp : **Window > Extension Manager > Install Extension**
-3. Selectionner le fichier `.rbz`
-4. La barre d'outils et le menu apparaissent sous **Extensions > Solid Batch**
+1. Récupérer `solid_procedural.rbz` (joint à la release GitHub, ou construit dans `build/`)
+2. Dans SketchUp : **Fenêtre > Gestionnaire d'extensions > Installer l'extension**
+3. Sélectionner le fichier `.rbz`
+4. Le menu et la barre d'outils apparaissent sous **Extensions > Solid Procedural**
 
-## Demarrage rapide
+## Démarrage rapide
 
-1. Peindre les objets a soustraire avec une couleur specifique (ex. rouge)
-2. Utiliser **Set Subtract Color** pour enregistrer cette couleur
-3. Selectionner tous vos solides (bases + outils)
-4. Cliquer sur **Combine All (Union)** ou **Combine All (Shell)**
-5. Termine — un seul solide, un seul Ctrl+Z
+1. Modélisez une base et les volumes à ajouter ou à retirer, chacun en **groupe solide** ; peignez en rouge (couleur de soustraction par défaut) les volumes à retirer
+2. Sélectionnez-les tous et cliquez sur **Create Procedural Solid**
+3. Double-cliquez sur le solide procédural pour modifier ses sources ; fermez-le (clic à l'extérieur ou Échap) : le Result est recalculé
+4. Ouvrez la **Procedural Table** pour changer l'ordre ou l'opération de chaque volume
+5. Avant un export STL : **Finalize Procedural Solid**
 
 ## Documentation
 
 - [User Manual (English)](docs/USER_MANUAL_EN.md)
-- [Manuel utilisateur (Francais)](docs/USER_MANUAL_FR.md)
+- [Manuel utilisateur (Français)](docs/USER_MANUAL_FR.md)
 - [Functional Specification (English)](docs/FSD_EN.md)
-- [Specification fonctionnelle (Francais)](docs/FSD_FR.md)
-
-## Credits
-
-Utilise les operations booleennes natives de SketchUp Pro.
+- [Spécification fonctionnelle (Français)](docs/FSD_FR.md)
 
 ## Licence
 

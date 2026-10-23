@@ -1,82 +1,121 @@
 # Solid Procedural — Manuel utilisateur
 
-> **En cours de réécriture** — Solid Procedural 1.0.0 est développé à partir de Solid Batch v2.3.0. Le texte ci-dessous décrit encore Solid Batch v2.3.0 (Combine All) et sera réécrit pour la livraison 1.0.0.
+*[English version](USER_MANUAL_EN.md)*
 
-## Presentation
+Version 1.0.0 — SketchUp Pro 2021
 
-Solid Batch est un plugin SketchUp Pro qui effectue des operations booleennes par lot sur plusieurs solides en un seul clic. Il utilise le moteur booleen natif de SketchUp Pro pour des resultats fiables.
+## Présentation
 
-Le plugin fournit quatre commandes accessibles via le menu **Extensions > Solid Batch** et la barre d'outils **Solid Batch**.
+Solid Procedural est un plugin SketchUp Pro de **modélisation booléenne non destructive**. Un **solide procédural** est un groupe qui contient :
 
-## Prerequis
+- ses **volumes sources** — des groupes ou composants solides, ajoutés ou soustraits ;
+- son **Result** — la combinaison des sources, calculée avec les booléens natifs de SketchUp Pro.
 
-- **SketchUp Pro** 2017 ou plus recent
-- Tous les objets doivent etre des groupes ou composants **solides** (geometrie manifold — chaque arete borde exactement 2 faces)
+Dans le groupe, vous modifiez les sources ; hors du groupe, vous voyez le Result, recalculé automatiquement quand vous fermez le groupe. Quand la pièce est terminée, **Finalize** la transforme en solide simple, prêt pour l'export STL.
 
-### Compatibilité par version
+Les commandes sont dans le menu **Extensions > Solid Procedural**, la barre d'outils **Solid Procedural** et le menu contextuel (clic droit).
 
-| Version SketchUp | Fonctionnalités disponibles |
-|---|---|
-| Pro 2017 – 2019 | Combine All (Union), Combine All (Shell), Set Subtract Color |
-| Pro 2020.1+ | Tout ci-dessus + restauration automatique cercles/arcs + Set Repair Options |
+Solid Procedural s'installe à côté de **Solid Batch**, qui garde son Combine All en un clic, destructif.
+
+## Prérequis
+
+- **SketchUp Pro 2021** sous Windows (testé avec la 21.0). Les booléens natifs sont réservés à la version Pro.
+- Chaque source doit être un groupe ou composant **solide** (*Infos sur l'entité* affiche « Groupe solide » ou « Composant solide »).
+
+## Notions
+
+| Terme | Sens |
+|-------|------|
+| **Solide procédural** | Groupe créé par *Create Procedural Solid*. Sélectionné, il a un cadre **vert** |
+| **Source** (volume) | Groupe ou composant solide placé dans le solide procédural |
+| **Result** | Combinaison des sources actives, dans l'ordre. Visible quand le solide procédural est fermé, caché pendant que vous le modifiez |
+| **Base** | Ligne 1 de la liste : le volume auquel les autres sont ajoutés ou soustraits. Toujours en tête et toujours active |
+| **Opération** | Pour chaque autre ligne : **Union** (ajouter), **Shell** (ajouter avec *Outer Shell* : faces intérieures supprimées), **Subtract** (retirer) |
+| **Couleur de soustraction** | Peindre un volume de cette couleur (rouge par défaut) en fait un volume Subtract ; le repeindre d'une autre couleur en refait un volume ajouté |
+
+Le Result prend le matériau de la Base ; les faces taillées par un volume soustrait ne gardent pas la couleur de soustraction.
+
+## Flux de travail
+
+1. **Modélisez les volumes** — une base, les volumes à ajouter, les volumes à retirer (trous, rainures), chacun en groupe solide.
+2. **Peignez les volumes à retirer** de la couleur de soustraction (rouge par défaut).
+3. **Sélectionnez-les tous** et cliquez sur **Create Procedural Solid**. L'ordre est : tous les volumes ajoutés, puis tous les volumes soustraits. Le Result apparaît, les sources sont cachées. Vérifiez dans la Procedural Table quel volume est la Base (son matériau est celui du Result) ; choisissez *Base* sur une autre ligne pour en changer.
+4. **Modifiez** — double-cliquez sur le solide procédural : les sources apparaissent, le Result est caché. Déplacez un trou, agrandissez un tenon, peignez un volume, ajoutez un nouveau groupe solide (il va en fin de liste).
+5. **Fermez** le solide procédural (clic à l'extérieur ou Échap) : si les sources ont changé, le Result est recalculé. La console Ruby affiche `[Solid Procedural] Rebuild '…'` ; rien n'est recalculé si rien n'a changé.
+6. **Ajustez** l'ordre et les opérations dans la **Procedural Table**.
+7. **Finalisez** avant l'export STL.
+
+### Exemple : plaque avec un trou et un tenon
+
+1. Une boîte (base), un cylindre rouge qui la traverse (trou), un petit cylindre dans le trou (tenon).
+2. *Create Procedural Solid* : la Base (la boîte — vérifiez-le dans la table), puis le tenon (ajouté), puis le trou (soustrait) → le trou perce aussi le tenon.
+3. Dans la Procedural Table, placez le tenon après le trou → le tenon remplit maintenant une partie du trou.
 
 ## Commandes
 
-### Combine All (Union)
+### Create Procedural Solid
 
-Fusionne tous les solides selectionnes en un seul, en utilisant `union` natif pour les solides de base et `subtract` natif pour les solides-outils marques par couleur.
+Sélectionnez un ou plusieurs groupes ou composants solides, puis cliquez sur **Create Procedural Solid**.
 
-**Comportement :**
-1. Separe la selection en deux ensembles selon la couleur de soustraction :
-   - **Solides de base** — tous les solides qui N'ONT PAS la couleur de soustraction
-   - **Solides-outils** — tous les solides qui ONT la couleur de soustraction
-2. **Phase 1 (Union) :** Fusionne tous les solides de base en un seul par appels sequentiels a `union`. S'il n'y a qu'un seul solide de base, cette phase est ignoree.
-3. **Phase 2 (Subtract) :** Soustrait chaque solide-outil du solide fusionne, un par un.
-4. **Phase 3 (Restauration des cercles ET arcs) :** Détecte les cercles ET les arcs cassés par les opérations booléennes natives et les reconstruit en **vrais cercles et arcs natifs** de SketchUp (inférence du centre, rayon et segments dans *Infos sur l'entité*). Quand la reconstruction native est impossible, ils sont soudés en une `Curve` sélectionnable en un clic (voir [Ce que produit la Phase 3](#ce-que-produit-la-phase-3)). Cette phase peut être désactivée pour les très gros objets via **Set Repair Options**.
-5. L'operation entiere est encapsulee dans une seule etape d'annulation.
+- La sélection est regroupée dans un nouveau solide procédural nommé `Procedural Solid`, et son Result est calculé.
+- Chaque objet doit être un solide ; sinon un message liste les objets à réparer ou à désélectionner.
+- Au moins un objet ne doit **pas** avoir la couleur de soustraction.
+- Un solide procédural ne peut pas servir de volume à un autre (pas d'imbrication) : pour réutiliser une sous-pièce, finalisez-la d'abord.
+- Un seul Ctrl+Z annule toute la création.
 
-**Quand l'utiliser :** Quand vous voulez fusionner des solides en preservant les vides internes (ex. fusion de murs avec des ouvertures de fenetres).
+### Procedural Table
 
-### Combine All (Shell)
+Ouverte par le menu, le bouton de la barre d'outils (après *Create*) ou un clic droit sur un solide procédural (sélectionné ou ouvert). La fenêtre reste ouverte pendant que vous travaillez.
 
-Meme principe que Combine All (Union), mais utilise `outer_shell` au lieu de `union` en Phase 1.
+La table montre le solide procédural **ouvert**, sinon le solide procédural **sélectionné**. Son en-tête affiche le nom et le mode :
 
-**Difference avec Union :**
-- **Union** preserve la geometrie interne (vides, faces internes)
-- **Outer Shell** supprime toute geometrie interne et ne garde que la surface exterieure
+- **Closed — applied now** (vert) : le solide procédural est fermé ; chaque changement recalcule le Result tout de suite et le garde sélectionné.
+- **Open — applied on exit** (jaune) : vous modifiez le solide procédural ; les changements sont appliqués quand vous le fermez.
 
-**Quand l'utiliser :** Quand vous voulez une enveloppe exterieure propre sans faces internes (ex. creation d'un solide simplifie pour le calcul de volume ou l'impression 3D).
+| Colonne | Usage |
+|---------|-------|
+| **#** | Position. Glissez une ligne par sa poignée ⋮⋮ ou utilisez ▲▼ pour la déplacer. La ligne 1 (Base) ne bouge pas et rien ne passe au-dessus d'elle |
+| **On** | Décochez pour ignorer un volume (il reste dans le groupe). La Base est toujours active |
+| **Color** | Matériau du volume (hachures = matériau par défaut) |
+| **Name** | Cliquez pour renommer ; Entrée valide, Échap annule |
+| **Operation** | *Base* sur la ligne 1 ; Union / Shell / Subtract sur les autres lignes. **Subtract** peint le volume de la couleur de soustraction (son ancien matériau revient quand il quitte Subtract). Choisir **Base** sur une autre ligne en fait la nouvelle Base (l'ancienne passe en ligne 2) |
+| **State** | `Solid`, `Not solid`, `Disabled`, `Base must be added` (la ligne 1 a la couleur de soustraction), `Nested: not supported yet` |
+
+Sous la table :
+
+- la **formule** des opérations réellement calculées, lignes actives dans l'ordre, par exemple `(((1 ∪ 2) shell 3) − 4) ∪ 6` ;
+- **Unions first** : la Base, puis toutes les Union et Shell, puis toutes les Subtract, chacune dans son ordre actuel.
+
+**Sélection :**
+
+- dans un solide procédural ouvert, un clic sur une ligne sélectionne son volume, et sélectionner un volume met sa ligne en surbrillance ;
+- sur un solide procédural fermé, un double-clic sur une ligne l'ouvre et sélectionne le volume.
+
+**Clavier :** après une action dans la table (et quand la souris en sort), le clavier revient à SketchUp : ses raccourcis (W, etc.) marchent sans cliquer dans le modèle. Pendant la saisie d'un nom, le champ garde le clavier jusqu'à Entrée ou Échap.
+
+Chaque changement de la table s'annule en **un seul Ctrl+Z**, recalcul compris.
+
+### Rebuild Procedural Solid
+
+Recalcule les solides procéduraux **sélectionnés**, même si rien n'a changé (par exemple après avoir changé les options de réparation). Un solide procédural en cours de modification est recalculé quand vous le fermez.
+
+### Finalize Procedural Solid
+
+Remplace chaque solide procédural sélectionné par son Result : un groupe solide simple qui garde le nom et la balise du solide procédural ; les sources sont supprimées. Le Result est d'abord recalculé si besoin. Un Ctrl+Z remet le solide procédural.
+
+**Finalisez toujours avant un export STL** : l'export contiendrait aussi les sources cachées d'un solide procédural. Le cadre de sélection vert vous rappelle quels objets sont encore procéduraux.
 
 ### Set Subtract Color
 
-Enregistre une couleur pour identifier les solides a soustraire lors des operations Combine All.
-
-**Comment l'utiliser :**
-1. Selectionnez un groupe ou composant auquel un materiau/couleur est applique
-2. Cliquez sur **Set Subtract Color**
-3. La couleur est sauvegardee et persiste entre les sessions SketchUp
-
-**Couleur par defaut :** Rouge (RGB 255, 0, 0)
+Sélectionnez un groupe ou composant qui a un matériau et cliquez sur **Set Subtract Color** : cette couleur marque désormais les volumes à soustraire. Défaut : rouge (255, 0, 0). Les volumes existants gardent leur opération jusqu'à ce qu'ils soient repeints.
 
 ### Set Repair Options
 
-Configure le comportement de la **Phase 3** (restauration automatique des cercles ET arcs) à la fin des opérations Combine All.
+Réglages de la restauration des cercles et des arcs faite sur chaque Result :
 
-**Pourquoi c'est utile :** Les opérations booléennes natives de SketchUp Pro cassent les associations `ArcCurve` des cercles et des arcs : un cercle ou un arc d'origine devient une suite de petits segments individuels (ou une courbe simple sans inférence du centre). La Phase 3 les détecte et les reconstruit en cercles et arcs natifs. Sur les très gros objets (plusieurs dizaines de milliers d'edges), cela peut prendre plusieurs secondes ; l'option permet de la désactiver dans ce cas.
-
-**Comment l'utiliser :**
-1. Cliquez sur **Set Repair Options** (aucune sélection requise)
-2. Une fenêtre s'ouvre avec trois champs :
-   - **Auto-repair circles on large objects** (Yes/No) : si `Yes`, la restauration s'exécute toujours, même sur les gros objets ; si `No`, elle est ignorée au-dessus du seuil et un message vous prévient
-   - **Large object threshold (edges)** : nombre d'edges à partir duquel un objet est considéré comme « gros »
-   - **Min segments for arc detection** : nombre minimum de segments pour qu'une chaîne d'edges soit considérée comme un arc. Plus bas = détecte les arcs plus courts mais risque de faux positifs. Plus haut = plus sûr mais peut manquer les arcs courts.
-3. Cliquez **OK** — les valeurs sont mémorisées pour les futures sessions
-
-**Valeurs par défaut :** Auto-repair = `Yes`, Threshold = `10000` edges, Min arc segments = `6` (si vous aviez enregistré ces options avec une version précédente, votre valeur est conservée : vérifiez-la dans la fenêtre)
-
-**Choisir le `Min segments for arc detection` :**
-
-Un arc n'est reconnu que si ses segments ont la même longueur et tournent du même angle (60° au plus chacun). Un cercle demande toujours 6 segments ou plus. Le défaut de `6` est aligné sur les cercles ; quelques repères :
+- **Auto-repair circles on large objects** (Yes/No) : avec `No`, la restauration est ignorée au-dessus du seuil et un message vous prévient ;
+- **Large object threshold (edges)** : défaut `10000` ;
+- **Min segments for arc detection** : défaut `6`, minimum `3`. Plus bas = détecte les arcs plus courts mais risque de faux positifs.
 
 | Type d'arc | Segments | Détecté avec seuil = 6 ? |
 |------------|----------|--------------------------|
@@ -86,106 +125,53 @@ Un arc n'est reconnu que si ses segments ont la même longueur et tournent du m�
 | 90° avec 24 segments | 6 | ✓ |
 | 90° avec 12 segments | 3 | ✗ — baisser le seuil à 3 |
 
-Si vous travaillez avec beaucoup d'arcs courts, baissez le seuil (minimum `3`). Si des morceaux de polygones à côtés égaux sont transformés en arcs, remontez-le.
+Les réglages de Solid Batch sont utilisés tant que vous ne les changez pas ici.
 
-**Décision Phase 3 (résumé) :**
+## Cercles et arcs du Result
 
-| Cas | Action |
-|-----|--------|
-| Résultat ≤ seuil | Restauration toujours exécutée |
-| Résultat > seuil ET auto-repair = Yes | Restauration exécutée |
-| Résultat > seuil ET auto-repair = No | Restauration ignorée + message modal |
+Les booléens natifs cassent les cercles et les arcs en segments. Chaque Result passe par la restauration de Solid Batch (méthode de Re-Cercle) :
 
-### Ce que produit la Phase 3
-
-| Cas dans le résultat | Résultat |
-|----------------------|----------|
-| Trou traversant, trou borgne, tenon (boîte ± cylindre), tronc de cône | Les deux cercles d'extrémité deviennent **natifs** (reconstruits par Pousser/Tirer) |
+| Cas dans le Result | Résultat |
+|--------------------|----------|
+| Trou traversant, trou borgne, tenon, tronc de cône | Les deux cercles d'extrémité deviennent **natifs** |
 | Cercle ou arc posé sur une face plane | Cercle ou arc **natif** |
 | Cercle traversé par une ligne | Arcs **natifs** entre les croisements |
-| Arcs d'une arête arrondie (congé), cylindre coupé par une arête, trous qui se croisent ou empilés, cercle sur une surface courbe, cylindre oblique | **Soudés** en une courbe (sélection en un clic, sans inférence du centre) |
-| Cercles déjà natifs | Inchangés |
+| Arcs d'une arête arrondie, trous qui se croisent ou empilés, cercle sur une surface courbe, cylindre oblique | **Soudés** en une courbe (sélection en un clic, sans inférence du centre) |
 
-Un bilan s'affiche dans la barre de statut et, avec la raison de chaque soudure, dans la console Ruby (**Fenêtre > Console Ruby**).
+Un bilan s'affiche dans la barre d'état et, avec la raison de chaque soudure, dans la console Ruby. Si la restauration échoue, le Result booléen est gardé tel quel et un message vous prévient.
 
-**Limitations :** les faces reconstruites autour d'un cercle réparé (paroi du trou, extrémités, face hôte) gardent leur matériau, leur balise et leur orientation, mais perdent la position de leur texture et leurs attributs. Un polygone régulier de 6 côtés ou plus (hexagone…) ne peut pas être distingué d'un cercle et en devient un.
+## Annuler et rétablir
 
-## Flux de travail
+- Le recalcul automatique à la sortie est fusionné avec votre dernière modification : **un seul Ctrl+Z** annule la modification et son Result ensemble ; Ctrl+Y rétablit les deux.
+- Chaque commande et chaque changement de la table est une seule étape d'annulation.
 
-### Flux de base
+## Explode
 
-1. **Modelez vos solides** — Creez tous les groupes/composants que vous voulez combiner. Assurez-vous qu'ils sont tous des solides valides (les Infos sur l'entite doivent afficher "Groupe solide" ou "Composant solide").
+Éclater un solide procédural rend le Result **et** tous les volumes sources en groupes ordinaires visibles. Un Ctrl+Z remet le solide procédural. Pour ne garder que le Result, utilisez plutôt **Finalize**.
 
-2. **Peignez les outils** — Appliquez une couleur specifique (ex. rouge) a tous les objets qui doivent etre soustraits du resultat final.
+## Cadre de sélection vert
 
-3. **Enregistrez la couleur de soustraction** — Selectionnez un des objets-outils peints et cliquez sur **Set Subtract Color**. Vous n'avez besoin de le faire qu'une seule fois (la couleur est memorisee).
+Tant que la sélection ne contient que des solides procéduraux, le cadre de sélection de SketchUp est vert ; sinon il garde sa couleur habituelle. Le vert n'est jamais enregistré dans le fichier, et sélectionner un solide procédural ne marque pas le modèle comme modifié.
 
-4. **Selectionnez tout** — Selectionnez tous les solides a traiter (bases et outils).
+## Dépannage
 
-5. **Lancez l'operation** — Cliquez sur **Combine All (Union)** ou **Combine All (Shell)**.
+| Message | Sens |
+|---------|------|
+| *These objects are not solids: …* | Réparez les objets listés (trous, arêtes en trop) ou désélectionnez-les |
+| *No base volume found: all the selected objects have the subtract color* | Repeignez au moins un objet d'une autre couleur |
+| *Volume #2 … is not a solid.* | Une source a été abîmée pendant la modification : réparez-la ; l'ancien Result est gardé |
+| *Subtract of volume #3 … failed.* | Le booléen natif a échoué (volumes qui ne se touchent pas, faces coplanaires…) : déplacez ou simplifiez le volume |
+| *The first volume … has the subtract color* | La Base est peinte de la couleur de soustraction : repeignez-la, ou choisissez *Base* sur une autre ligne |
+| *The base volume is always enabled* | Choisissez *Base* sur une autre ligne avant de désactiver ce volume |
+| *Close the procedural solid to rebuild it* | *Rebuild* agit sur des solides procéduraux fermés ; un solide ouvert est recalculé quand vous le fermez |
+| *Nested procedural solids are not supported yet* | Un solide procédural ne peut pas être le volume d'un autre : finalisez-le d'abord |
+| *… procedural solid(s) out of date* (barre d'état) | Après une annulation, un Result ne correspond plus à ses sources : ouvrez-le et fermez-le, ou utilisez *Rebuild* |
 
-6. **Resultat** — Un seul solide reste. En cas de probleme, appuyez sur **Ctrl+Z** pour annuler l'operation entiere.
+Les arêtes et faces libres dans un solide procédural ne sont pas des volumes : faites-en un groupe pour les utiliser.
 
-### Exemple : Mur avec fenetres
+## Limitations
 
-1. Creez un mur comme groupe solide
-2. Creez les formes d'ouverture de fenetres comme groupes solides
-3. Peignez les formes de fenetres en rouge
-4. Definissez la couleur de soustraction sur rouge (si ce n'est pas deja fait)
-5. Selectionnez le mur + toutes les formes de fenetres
-6. Cliquez sur **Combine All (Union)**
-7. Resultat : mur avec les ouvertures de fenetres decoupees
-
-### Exemple : Fusion de plusieurs pieces
-
-1. Creez chaque piece comme un groupe solide (murs, sol, plafond)
-2. Aucun objet n'a besoin de la couleur de soustraction
-3. Selectionnez tous les groupes de pieces
-4. Cliquez sur **Combine All (Shell)** pour une enveloppe exterieure propre
-5. Resultat : un seul solide representant l'enveloppe du batiment
-
-## Icones de la barre d'outils
-
-| Icone | Commande | Description |
-|-------|----------|-------------|
-| Combine Union | Combine All (Union) | Union native + soustraction + restauration cercles & arcs |
-| Combine Shell | Combine All (Shell) | Outer shell native + soustraction + restauration cercles & arcs |
-| Set Color | Set Subtract Color | Choix couleur depuis la selection |
-| Cercle ✓ | Set Repair Options | Configurer auto-repair, seuil edges et min segments arc |
-
-## Resolution de problemes
-
-### "This function requires SketchUp Pro"
-Vous utilisez SketchUp Make ou SketchUp Free. Les methodes booleennes natives ne sont disponibles que dans SketchUp Pro.
-
-### "Select at least 2 solid group(s) or component(s)"
-Votre selection contient moins de 2 solides valides. Verifiez que :
-- Vous avez selectionne au moins 2 objets
-- Chaque objet est un Groupe ou un ComposantInstance
-- Chaque objet est un solide valide (verifiez dans Infos sur l'entite — il doit afficher "Solide")
-
-### "No base objects found"
-Tous les objets selectionnes ont la couleur de soustraction. Au moins un objet doit avoir une couleur differente pour servir de base.
-
-### L'operation echoue a une etape specifique
-Une des operations booleennes a echoue. Causes habituelles :
-- Deux solides ne s'intersectent pas (rien a fusionner/soustraire)
-- La geometrie est trop complexe ou a des faces coplanaires
-- Essayez de reordonner ou simplifier les solides problematiques
-
-### "Circle and arc restoration failed"
-Un cercle n'a pas pu être reconstruit. Seule la restauration est annulée : le résultat du Combine All est conservé et ses cercles restent dans leur état. La console Ruby donne le détail.
-
-### Progression
-Pendant les operations par lot, la barre de statut en bas de la fenetre SketchUp affiche la progression en temps reel : `Solid Batch — Subtract 7/13 (54%)`. Un message final confirme la fin, avec le bilan de la restauration des cercles : `Solid Batch — Done (13 operations) — 4 circle(s)/arc(s) rebuilt as native circles`.
-
-### Annulation
-Toutes les operations Combine All sont encapsulees dans une seule etape d'annulation. Appuyez sur **Ctrl+Z** (Cmd+Z sur Mac) pour annuler l'operation entiere.
-
-## Astuces
-
-- **Verifiez les solides d'abord :** Utilisez le panneau Infos sur l'entite de SketchUp pour verifier que chaque objet est un solide valide avant de lancer les operations.
-- **La couleur de soustraction est globale :** La couleur s'applique a tous les modeles. Definissez-la une fois, elle persiste.
-- **Union vs Shell :** Si vous n'etes pas sur, commencez par Union. Ca preserve plus de geometrie, vous pourrez toujours simplifier ensuite.
-- **L'ordre compte pour la soustraction :** Les solides-outils sont soustraits dans l'ordre de selection. Si les resultats sont inattendus, essayez de changer l'ordre de selection.
-- **Sauvegardez votre modele :** Bien que Ctrl+Z fonctionne, sauvegardez avant les grosses operations par lot.
+- L'imbrication de solides procéduraux n'est pas prise en charge (finalisez une sous-pièce pour la réutiliser).
+- Le Result est recalculé quand vous fermez le solide procédural, pas pendant la modification ; sur un solide procédural fermé, la Procedural Table applique ses changements tout de suite.
+- Les faces reconstruites autour d'un cercle réparé gardent leur matériau, leur balise et leur orientation, mais perdent la position de leur texture et leurs attributs. Un polygone régulier de 6 côtés ou plus ne peut pas être distingué d'un cercle.
+- Testé seulement sous SketchUp Pro 2021 (Windows).

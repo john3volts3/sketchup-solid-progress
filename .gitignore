@@ -3,3 +3,6 @@ Thumbs.db
 
 # SketchUp auto-backups
 *.skb
+
+# Build output (.rbz)
+build/
