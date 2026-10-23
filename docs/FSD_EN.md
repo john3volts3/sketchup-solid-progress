@@ -2,7 +2,7 @@
 
 *[Version française](FSD_FR.md)*
 
-> **Work in progress** — This document describes **steps 1 and 2** of Solid Procedural 1.0.0 (core of the procedural groups and Procedural Table, tested in SketchUp 2021 Pro on 2026-10-23). Nesting (step 3) is planned: see `PRD.md` (French).
+> **Work in progress** — This document describes **steps 1 and 2** of Solid Procedural 1.0.0 (core of the procedural groups and Procedural Table, tested in SketchUp 2021 Pro on 2026-10-23). Nesting is postponed: see `PRD.md` (French, EF-25).
 
 **Version:** 1.0.0 (in development)
 **Date:** 2026-10-23
@@ -38,7 +38,7 @@ Solid Procedural derives from **Solid Batch v2.3.0** and installs **next to** it
 
 ### Planned
 
-- Step 3: **nesting** (a procedural group used as a source of another)
+- **Nesting** (a procedural group used as a source of another): postponed (PRD EF-25)
 
 ### Excluded
 
@@ -97,7 +97,7 @@ Loose geometry (edges and faces outside the sub-groups) is **not** a volume: it 
 | Field | Description |
 |-------|-------------|
 | **Input** | Selection of one or more solid groups/components |
-| **Preconditions** | SketchUp Pro (`respond_to?(:union)`); no procedural group in the selection (nesting: step 3); all `manifold?` (otherwise a message lists the non-solid objects); at least one volume without the subtract color |
+| **Preconditions** | SketchUp Pro (`respond_to?(:union)`); no procedural group in the selection (nesting postponed); all `manifold?` (otherwise a message lists the non-solid objects); at least one volume without the subtract color |
 | **Processing** | `add_group(volumes)`, name `Procedural Solid`, `role=procedural`; `SolidProcedural` attributes of the volumes deleted; `rank`: every "+" volume, then every "−" one; rebuild (EF-14) |
 | **Output** | Procedural group selected, Result visible, sources hidden |
 | **Undo** | One operation "Solid Procedural — Create Procedural Solid" |
@@ -146,7 +146,7 @@ Changing the subtract color (Set Subtract Color) or opening the model on another
 #### EF-14: Ordered rebuild (`rebuild_in_operation`)
 
 1. Selection remembered; `make_unique` of the group; sources normalized (`role`, `rank` 1..n, `uid`, `enabled` — the Base is always enabled —, color → operation).
-2. Validation of the enabled sources: at least one; none procedural (step 3); all `manifold?`; the first one is not `subtract`.
+2. Validation of the enabled sources: at least one; none procedural (nesting postponed); all `manifold?`; the first one is not `subtract`.
 3. Signature computed.
 4. **Combination on copies** (§ 7.4) in `rank` order: `acc = copy(1)`, then for each next source `acc.union(copy)`, `acc.outer_shell(copy)` or `copy.subtract(acc)`. Progress in the status bar (`Solid Procedural — Subtract 2/3 (67%)`).
 5. Result material = base material; faces that inherited the subtract color reset (`nil`).
@@ -420,7 +420,7 @@ A setting missing from `SolidProcedural` is read from `SolidBatch` (Solid Batch 
 - A row selects its volume only in an open group (a double-click opens it).
 - After an Explode, the hidden loose geometry of the group stays hidden: only grouped volumes are released.
 - The green frame is the selection color of the style: while it is shown, the Styles panel shows this green, and updating the style at that time would store it there. A style whose selection color is exactly `(0, 170, 0)` is taken as left by the plugin.
-- Nested procedural groups refused (step 3).
+- Nested procedural groups refused (nesting postponed): Create refuses a selection holding one, the rebuild stops with a message (former result kept) and the table shows the row as an error. To reuse a sub-part, finalize it, then use it as a volume. An Explode of a procedural group pasted inside an open procedural group would mix its volumes with the ones of that group.
 - The rebuild runs on exiting the group, not while editing.
 - Loose geometry inside a procedural group is not used (make it a group).
 - **STL export: always run Finalize first** (the hidden sources of a non-finalized group go into the export, PRD Q-1). The green frame is a reminder that a group is still procedural.

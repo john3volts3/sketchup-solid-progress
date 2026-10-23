@@ -126,6 +126,13 @@
 - **docs/FSD_FR.md, docs/FSD_EN.md** — Paragraphe « Clavier rendu à SketchUp (EF-30) », API, module `Win32`, limitations (Finalize obligatoire avant l'export STL, saisie d'un nom), historique.
 - **PRD.md** — EF-30 testée, EF-31 (compatibilité SketchUp 2017) validée, CA-22 ; Q-1 résolue (Finalize avant l'export STL) ; décisions « Export STL », « Clavier », « SketchUp 2017 » ; périmètre corrigé ; ligne d'historique de l'étape 2d.
 
+### Étape 3 — Imbrication reportée
+
+- **Analyse** (plan présenté à l'utilisateur) : copie du Result intérieur (copie + Explode d'une enveloppe), recalcul de l'intérieur vers l'extérieur avant l'empreinte, rang gardé par Finalize, identifiants `group_id` / `owner` pour la libération après Explode dans un groupe ouvert.
+- **Décision** : reportée — l'utilisateur pense pouvoir s'en passer ; travail et risque de régression sur des fonctions testées jugés trop importants. Condition : aucun effet de bord sans imbrication — vérifié dans le code (seuls `do_create`, `validate` et `state_of` traitent un volume procédural, pour le refuser).
+- **PRD.md** — EF-25 « reportée » avec la raison, CA-10 reporté, périmètre, décision « Imbrication (étape 3) » avec le plan conservé.
+- **docs/FSD_FR.md, docs/FSD_EN.md** — Imbrication reportée ; limitation détaillée (refus propre, finaliser une sous-pièce pour la réutiliser, Explode d'un groupe collé dans un groupe ouvert).
+
 ---
 
 ## Session du 2026-10-11

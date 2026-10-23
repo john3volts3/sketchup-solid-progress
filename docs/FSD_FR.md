@@ -2,7 +2,7 @@
 
 *[English version](FSD_EN.md)*
 
-> **Version en cours** — Ce document décrit les **étapes 1 et 2** de Solid Procedural 1.0.0 (cœur des groupes procéduraux et Procedural Table, testés dans SketchUp 2021 Pro le 2026-10-23). L'imbrication (étape 3) est prévue : voir `PRD.md`.
+> **Version en cours** — Ce document décrit les **étapes 1 et 2** de Solid Procedural 1.0.0 (cœur des groupes procéduraux et Procedural Table, testés dans SketchUp 2021 Pro le 2026-10-23). L'imbrication est reportée : voir `PRD.md` (EF-25).
 
 **Version :** 1.0.0 (en développement)
 **Date :** 2026-10-23
@@ -38,7 +38,7 @@ Solid Procedural est issu de **Solid Batch v2.3.0** et s'installe **à côté** 
 
 ### Prévu
 
-- Étape 3 : **imbrication** (un groupe procédural source d'un autre)
+- **Imbrication** (un groupe procédural source d'un autre) : reportée (EF-25 du PRD)
 
 ### Exclu
 
@@ -97,7 +97,7 @@ La géométrie libre (arêtes et faces hors des sous-groupes) n'est **pas** un v
 | Champ | Description |
 |-------|-------------|
 | **Entrée** | Sélection d'un ou plusieurs groupes/composants solides |
-| **Préconditions** | SketchUp Pro (`respond_to?(:union)`) ; aucun groupe procédural dans la sélection (imbrication : étape 3) ; tous `manifold?` (sinon message listant les objets non solides) ; au moins un volume sans la couleur de soustraction |
+| **Préconditions** | SketchUp Pro (`respond_to?(:union)`) ; aucun groupe procédural dans la sélection (imbrication reportée) ; tous `manifold?` (sinon message listant les objets non solides) ; au moins un volume sans la couleur de soustraction |
 | **Traitement** | `add_group(volumes)`, nom `Procedural Solid`, `role=procedural` ; attributs `SolidProcedural` des volumes effacés ; `rank` : tous les volumes « + » puis tous les « − » ; calcul (EF-14) |
 | **Sortie** | Groupe procédural sélectionné, Result visible, sources cachées |
 | **Annulation** | Une seule opération « Solid Procedural — Create Procedural Solid » |
@@ -146,7 +146,7 @@ Changer la couleur de soustraction (Set Subtract Color) ou ouvrir le modèle sur
 #### EF-14 : Calcul ordonné (`rebuild_in_operation`)
 
 1. Sélection mémorisée ; `make_unique` du groupe ; normalisation des sources (`role`, `rank` 1..n, `uid`, `enabled` — la Base est toujours activée —, couleur → opération).
-2. Validation des sources actives : au moins une ; aucune procédurale (étape 3) ; toutes `manifold?` ; la première n'est pas `subtract`.
+2. Validation des sources actives : au moins une ; aucune procédurale (imbrication reportée) ; toutes `manifold?` ; la première n'est pas `subtract`.
 3. Calcul de l'empreinte.
 4. **Combinaison sur des copies** (§ 7.4) dans l'ordre `rank` : `acc = copie(1)`, puis pour chaque source suivante `acc.union(copie)`, `acc.outer_shell(copie)` ou `copie.subtract(acc)`. Progression dans la barre d'état (`Solid Procedural — Subtract 2/3 (67%)`).
 5. Matériau du résultat = matériau de la base ; faces ayant hérité de la couleur de soustraction repeintes (`nil`).
@@ -420,7 +420,7 @@ Un réglage absent de `SolidProcedural` est lu dans `SolidBatch` (réglages de S
 - Une ligne ne sélectionne son volume que dans un groupe ouvert (un double-clic l'ouvre).
 - Après un Explode, la géométrie libre cachée du groupe reste cachée : seuls les volumes groupés sont libérés.
 - Le cadre vert est la couleur de sélection du style : pendant qu'il est affiché, le panneau Styles montre ce vert, et mettre à jour le style à ce moment l'y enregistrerait. Un style dont la couleur de sélection est exactement `(0, 170, 0)` est considéré comme laissé par le plugin.
-- Groupes procéduraux imbriqués refusés (étape 3).
+- Groupes procéduraux imbriqués refusés (imbrication reportée) : Create refuse une sélection qui en contient, le recalcul s'arrête avec un message (ancien résultat gardé) et la table affiche la ligne en erreur. Pour réutiliser une sous-pièce, la finaliser puis l'utiliser comme volume. Un Explode d'un groupe procédural collé à l'intérieur d'un groupe procédural ouvert mélangerait ses volumes avec ceux de ce groupe.
 - Le recalcul a lieu à la sortie du groupe, pas pendant l'édition.
 - La géométrie libre dans un groupe procédural n'est pas utilisée (il faut en faire un groupe).
 - **Export STL : toujours lancer Finalize avant** (les sources cachées d'un groupe non finalisé partent dans l'export, Q-1 du PRD). Le cadre vert rappelle qu'un groupe est encore procédural.

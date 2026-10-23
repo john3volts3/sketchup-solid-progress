@@ -46,7 +46,7 @@ Besoin : modéliser de façon **non destructive et interactive**. On modifie les
 - Set Subtract Color et Set Repair Options, repris de Solid Batch v2.3.0. Les réglages non définis sont lus dans ceux de Solid Batch.
 - Groupes procéduraux : création, bascule automatique sources / résultat, recalcul automatique et manuel, Finalize.
 - Table des opérations par groupe procédural.
-- Imbrication de groupes procéduraux (arbre d'opérations).
+- ~~Imbrication de groupes procéduraux (arbre d'opérations).~~ Reportée (EF-25) : pour réutiliser une sous-pièce, la finaliser puis l'utiliser comme volume.
 - Restauration des cercles et arcs natifs sur chaque résultat (moteur `circle_restore` v2.3.0).
 
 ### Exclu
@@ -89,7 +89,7 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 | EF-22 | **Ligne de formule** : l'expression réellement calculée, par ex. `(((1 ∪ 2) shell 3) − 4) ∪ 6` | Im | testée (étape 2) |
 | EF-23 | **Sélection dans les deux sens** : un clic sur une ligne sélectionne le volume, et sélectionner un volume met sa ligne en surbrillance | Im | testée (étape 2) |
 | EF-24 | **Application des changements de la table** : immédiate quand on est hors du groupe, à la sortie quand on est dedans. Tout changement marque le groupe comme modifié | I | testée (étape 2) |
-| EF-25 | **Imbrication** : un groupe procédural peut être la source d'un autre, et c'est alors son Result qui est utilisé. Le recalcul se fait de l'intérieur vers l'extérieur | Im | validée (étape 3) |
+| EF-25 | **Imbrication** : un groupe procédural peut être la source d'un autre, et c'est alors son Result qui est utilisé. Le recalcul se fait de l'intérieur vers l'extérieur | Im | **reportée** (2026-10-23) : non indispensable, risque de régression sur des fonctions testées ; aucun effet de bord sans imbrication (refus propre) |
 | EF-26 | **Explode libère les volumes** : après un Explode d'un groupe procédural (ou un copier-coller d'une source hors du groupe), les volumes libérés sont rendus visibles et redeviennent des objets ordinaires (attributs retirés). Un seul Ctrl+Z annule l'Explode et la libération | Im | testée (étape 2) |
 | EF-27 | **Base figée** : la ligne 1 est la Base, toujours en tête et toujours active (ni déplacement, ni glisser-déposer au-dessus, ni désactivation ; *Unions first* la garde en tête). Choisir « Base » sur une autre ligne en fait la nouvelle Base, l'ancienne passe en ligne 2 | I | testée (étape 2b) |
 | EF-28 | **Sélection gardée** : après un recalcul (table sur un groupe fermé, Rebuild), le groupe sélectionné reste sélectionné et la table reste dessus | I | testée (étape 2b) |
@@ -141,7 +141,7 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 | CA-07 | Choisir Subtract dans la table → le volume devient rouge. Repasser en Union → l'ancienne couleur revient | EF-13 |
 | CA-08 | Décocher On → le volume n'est plus pris en compte. Recocher → il revient | EF-12, EF-20 |
 | CA-09 | « Unions first » → les unions et shells passent avant les soustractions, et la formule suit | EF-21, EF-22 |
-| CA-10 | Groupe procédural imbriqué → modifier l'intérieur → le résultat extérieur suit | EF-25 |
+| CA-10 | *(reporté avec EF-25)* Groupe procédural imbriqué → modifier l'intérieur → le résultat extérieur suit | EF-25 |
 | CA-11 | Source non étanche → message qui nomme le volume, ancien résultat conservé | EF-16 |
 | CA-12 | Ctrl+Z juste après une sortie → l'affichage reste cohérent, et la sortie suivante recalcule | EF-19 |
 | CA-13 | Copier un groupe procédural et modifier la copie → l'original ne change pas | EF-17 |
@@ -195,6 +195,7 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 | 2026-10-23 | Export STL | Toujours lancer Finalize avant l'export STL (Q-1) |
 | 2026-10-23 | Clavier | `Sketchup.focus` absent de SketchUp 21.0.391 → API Windows par Fiddle (bibliothèque standard de Ruby, aucun paquet externe), `Sketchup.focus` utilisé quand il existe |
 | 2026-10-23 | SketchUp 2017 | Compatibilité demandée (remplace « SketchUp 2021 Pro seulement »). Cercles natifs sous 2017 : à essayer (choix laissé à Claude). Licence Pro de SketchUp 2017 absente sur le PC (`liclog.txt`) : test plus tard |
+| 2026-10-23 | Imbrication (étape 3) | **Reportée** : l'utilisateur pense pouvoir s'en passer ; travail et risque de régression jugés trop importants pour le besoin. Condition posée : aucun effet de bord sans groupes imbriqués (vérifié : seuls Create, la validation du recalcul et l'état de la table traitent un volume procédural, et seulement pour le refuser). Plan conservé pour plus tard : copie du Result intérieur par copie + Explode d'une enveloppe, recalcul de l'intérieur vers l'extérieur avant l'empreinte, rang gardé par Finalize, identifiants `group_id` / `owner` pour la libération après Explode dans un groupe ouvert |
 | 2026-10-23 | Approches écartées | Bascule manuelle Sources / Résultat (gardée en repli), recalcul en direct, opération codée dans le nom, attributs de Dynamic Components |
 
 ## 10. Historique des livraisons
@@ -212,4 +213,4 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 | 2026-10-23 | Solid Procedural 1.0.0, étape 2b (commit de développement, non publié) | EF-27, EF-28 testées dans SketchUp 2021 Pro |
 | 2026-10-23 | Solid Procedural 1.0.0, étape 2c (commit de développement, non publié) | EF-29 testée dans SketchUp 2021 Pro |
 | 2026-10-23 | Solid Procedural 1.0.0, étape 2d (commit de développement, non publié) | EF-30 testée dans SketchUp 2021 Pro |
-| — | **Solid Procedural 1.0.0** (prévue) | EF-03 à EF-06 (reprises), EF-07 à EF-31 |
+| — | **Solid Procedural 1.0.0** (prévue) | EF-03 à EF-06 (reprises), EF-07 à EF-31 (sauf EF-25, reportée) |
