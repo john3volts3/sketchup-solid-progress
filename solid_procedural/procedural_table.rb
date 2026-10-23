@@ -88,7 +88,8 @@ module SolidProcedural
       sources = Procedural.sources_of(group)
       keys = Procedural.row_keys(sources)
       path = model.active_path || []
-      base = sources.find { |s| Procedural.enabled?(s) }
+      # The first row is the base, always enabled (Procedural.normalize_sources).
+      base = sources.first
       rows = sources.each_with_index.map do |s, i|
         state, level = Procedural.state_of(s, s == base)
         {
@@ -141,6 +142,8 @@ module SolidProcedural
         Procedural.table_toggle(model, group, data['key'], data['on'] == true)
       when 'op'
         Procedural.table_operation(model, group, data['key'], data['op']) if OPERATIONS.include?(data['op'])
+      when 'base'
+        Procedural.table_set_base(model, group, data['key'])
       when 'rename'
         Procedural.table_rename(model, group, data['key'], data['name'].to_s.strip)
       when 'order'

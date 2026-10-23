@@ -214,7 +214,8 @@ module SolidProcedural
         end
         used[uid] = true
         set_attribute(s, 'rank', i + 1)
-        set_attribute(s, 'enabled', true) if s.get_attribute(DICT, 'enabled').nil?
+        # The base (first row) is always enabled.
+        set_attribute(s, 'enabled', true) if i.zero? || s.get_attribute(DICT, 'enabled').nil?
         sync_op_with_color(s)
       end
       sources
@@ -269,6 +270,7 @@ module SolidProcedural
     # for the user (circle restoration skipped or failed) or nil.
     # Raises RebuildError.
     def self.rebuild_in_operation(model, group)
+      selected = model.selection.to_a
       group.make_unique
       sources = normalize_sources(group)
       active = sources.select { |s| enabled?(s) }
@@ -310,6 +312,10 @@ module SolidProcedural
       apply_display(group, open_groups(model).include?(group))
       puts "#{LOG} Rebuild '#{group_label(group)}' done: #{note}"
       [note, warning]
+    ensure
+      # combine clears the selection: select again what still exists.
+      kept = (selected || []).select(&:valid?)
+      model.selection.add(kept) unless kept.empty?
     end
 
     # Combines copies of +active+ in order. Every copy and intermediate
@@ -552,7 +558,7 @@ module SolidProcedural
       Hash[row_keys(sources).zip(sources)]
     end
 
-    # [text, level] of the State column; +base+ is the first enabled volume.
+    # [text, level] of the State column; +base+ is the first row.
     def self.state_of(source, base)
       return ['Nested: not supported yet', 'error'] if procedural?(source)
       return ['Not solid', 'error'] unless source.manifold?
@@ -583,9 +589,26 @@ module SolidProcedural
     end
 
     def self.table_toggle(model, group, key, on)
-      change_table(model, group, on ? 'Enable Volume' : 'Disable Volume') do |_sources, lookup|
-        set_attribute(table_source(lookup, key), 'enabled', on)
+      change_table(model, group, on ? 'Enable Volume' : 'Disable Volume') do |sources, lookup|
+        source = table_source(lookup, key)
+        if source == sources.first && !on
+          raise RebuildError, 'The base volume is always enabled: make another volume the base first.'
+        end
+        set_attribute(source, 'enabled', on)
         nil
+      end
+    end
+
+    # The volume of the row becomes the base (first row, enabled, added);
+    # the former base comes second with its own operation.
+    def self.table_set_base(model, group, key)
+      change_table(model, group, 'Set Base') do |sources, lookup|
+        source = table_source(lookup, key)
+        if op_of(source) == 'subtract'
+          set_operation(model, source, source.get_attribute(DICT, 'last_add_op') || 'union')
+        end
+        set_attribute(source, 'enabled', true)
+        [source] + (sources - [source])
       end
     end
 
@@ -603,18 +626,23 @@ module SolidProcedural
       end
     end
 
+    # The base stays first whatever the order received.
     def self.table_order(model, group, keys)
       change_table(model, group, 'Reorder Volumes') do |sources, lookup|
-        wanted = keys.map { |k| lookup[k] }.compact.uniq
-        wanted + (sources - wanted)
+        next nil if sources.empty?
+        base = sources.first
+        wanted = keys.map { |k| lookup[k] }.compact.uniq - [base]
+        [base] + wanted + (sources - wanted - [base])
       end
     end
 
-    # Every Union and Shell, then every Subtract, each in its current order.
+    # The base, then every Union and Shell, then every Subtract, each in its
+    # current order.
     def self.table_unions_first(model, group)
       change_table(model, group, 'Unions First') do |sources, _lookup|
-        adds, subs = sources.partition { |s| op_of(s) != 'subtract' }
-        adds + subs
+        base, *others = sources
+        adds, subs = others.partition { |s| op_of(s) != 'subtract' }
+        base ? [base] + adds + subs : nil
       end
     end
 

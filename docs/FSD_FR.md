@@ -144,13 +144,14 @@ Changer la couleur de soustraction (Set Subtract Color) ou ouvrir le modèle sur
 
 #### EF-14 : Calcul ordonné (`rebuild_in_operation`)
 
-1. `make_unique` du groupe ; normalisation des sources (`role`, `rank` 1..n, `enabled`, couleur → opération).
+1. Sélection mémorisée ; `make_unique` du groupe ; normalisation des sources (`role`, `rank` 1..n, `uid`, `enabled` — la Base est toujours activée —, couleur → opération).
 2. Validation des sources actives : au moins une ; aucune procédurale (étape 3) ; toutes `manifold?` ; la première n'est pas `subtract`.
 3. Calcul de l'empreinte.
 4. **Combinaison sur des copies** (§ 7.4) dans l'ordre `rank` : `acc = copie(1)`, puis pour chaque source suivante `acc.union(copie)`, `acc.outer_shell(copie)` ou `copie.subtract(acc)`. Progression dans la barre d'état (`Solid Procedural — Subtract 2/3 (67%)`).
 5. Matériau du résultat = matériau de la base ; faces ayant hérité de la couleur de soustraction repeintes (`nil`).
 6. Restauration des cercles (EF-18) sur une copie du résultat.
 7. Ancien Result effacé ; nouveau Result marqué (`role=result`, nom `Result`) ; empreinte enregistrée ; affichage appliqué.
+8. Sélection remise (les entités encore valides), même en cas d'erreur : les booléens vident la sélection, et un groupe sélectionné doit le rester (table, Rebuild).
 
 En cas d'échec à l'étape 4, toutes les copies sont effacées dans un `ensure`, les définitions de composants créées et inutilisées sont supprimées, et l'ancien Result reste en place.
 
@@ -192,19 +193,21 @@ Fenêtre non modale (`UI::HtmlDialog`, style utilitaire, taille et position mém
 | Élément | Description |
 |---------|-------------|
 | **En-tête** | Nom du groupe ; badge « Open — applied on exit » (groupe ouvert) ou « Closed — applied now » (groupe fermé) |
-| **#** | Poignée ⋮⋮ (glisser-déposer), position, ▲▼ |
-| **On** | Case à cocher : `enabled` |
+| **#** | Poignée ⋮⋮ (glisser-déposer), position, ▲▼ ; la ligne 1 (Base) n'a ni poignée ni ▲▼ |
+| **On** | Case à cocher : `enabled` ; grisée sur la Base, toujours active |
 | **Color** | Pastille du matériau du volume (hachures = matériau par défaut) |
 | **Name** | Nom de l'instance, modifiable (Entrée, Tab ou clic ailleurs = renommer, Échap = annuler) ; le nom de la définition sert d'indication |
-| **Operation** | « Base » sur la première ligne active ; sinon Union / Shell / Subtract |
+| **Operation** | « Base » sur la ligne 1 ; sur les autres lignes, Base / Union / Shell / Subtract (choisir Base fait de la ligne la nouvelle Base) |
 | **State** | `Solid`, `Not solid`, `Disabled`, `Base must be added`, `Nested: not supported yet` |
 | **Formule** | Opérations réellement calculées, lignes actives dans l'ordre : `(((1 ∪ 2) shell 3) − 4) ∪ 6` |
-| **Unions first** | Toutes les Union et Shell, puis toutes les Subtract, chacune dans son ordre actuel |
+| **Unions first** | La Base, puis toutes les Union et Shell, puis toutes les Subtract, chacune dans son ordre actuel |
 
 **Application des changements (EF-24)** : chaque action est **une seule opération annulable** (`change_table`).
 
 - Groupe **fermé** : le Result est recalculé tout de suite, dans la même opération, si l'empreinte a changé. Une erreur (volume non solide, plus aucun volume actif…) annule tout le changement avec un message.
 - Groupe **ouvert** : seuls les attributs changent ; l'empreinte (qui contient l'ordre, l'opération et On) déclenche le recalcul à la sortie.
+
+**Base figée (EF-27)** : la ligne 1 est la Base, toujours en tête et toujours active. Un déplacement ou un glisser-déposer ne passe jamais au-dessus d'elle (un dépôt sur la Base place la ligne juste après), *Unions first* la garde en tête, et la désactiver est refusé (« The base volume is always enabled… »). Choisir **Base** sur une autre ligne (`table_set_base`) la fait passer en ligne 1, activée et ajoutée (si elle était en Subtract, elle reprend son ancien matériau) ; l'ancienne Base passe en ligne 2 avec sa propre opération. Le code Ruby applique les mêmes règles que la page. Une Base repeinte de la couleur de soustraction reste une erreur (`Base must be added`).
 
 **Table → couleur (EF-13, sens inverse)** : choisir Subtract peint le volume de la couleur de soustraction (matériau existant de cette couleur sans texture, sinon nouveau matériau `Solid Procedural Subtract`) et garde l'ancien matériau dans `prev_material` ; quitter Subtract remet ce matériau (ou le matériau par défaut). `seen_color` est mis à jour pour que la règle couleur → opération ne revienne pas en arrière. Quand un volume est repeint de la couleur de soustraction dans le modèle, son ancien matériau est aussi gardé dans `prev_material`.
 
@@ -393,7 +396,6 @@ Un réglage absent de `SolidProcedural` est lu dans `SolidBatch` (réglages de S
 
 ## 10. Limitations connues (étapes 1 et 2)
 
-- La Base est la première ligne active : elle peut être déplacée ou désactivée comme les autres lignes, ce qui change de Base.
 - Dans un groupe ouvert, l'effet d'un changement de la table ne se voit qu'à la sortie (le Result est caché pendant l'édition) ; sur un groupe fermé, il est appliqué tout de suite.
 - Une ligne ne sélectionne son volume que dans un groupe ouvert (un double-clic l'ouvre).
 - Après un Explode, la géométrie libre cachée du groupe reste cachée : seuls les volumes groupés sont libérés.
@@ -406,6 +408,6 @@ Un réglage absent de `SolidProcedural` est lu dans `SolidBatch` (réglages de S
 
 | Version | Date | Changements |
 |---------|------|-------------|
-| 1.0.0 | en cours | Nouveau plugin issu de Solid Batch v2.3.0. Étape 1 (2026-10-23) : Create / Rebuild / Finalize Procedural Solid, bascule automatique sources / Result, recalcul automatique à la sortie par empreinte MD5, option B pour Ctrl+Z, couleur → opération, restauration des cercles sur chaque Result, réglages repris de Solid Batch. Combine All retiré. Étape 2 (2026-10-23) : Procedural Table (ordre, On, couleur, nom, opération, état, formule, Unions first, sélection dans les deux sens ; menu, barre d'outils, clic droit), Subtract dans la table ↔ couleur, Explode libère les volumes |
+| 1.0.0 | en cours | Nouveau plugin issu de Solid Batch v2.3.0. Étape 1 (2026-10-23) : Create / Rebuild / Finalize Procedural Solid, bascule automatique sources / Result, recalcul automatique à la sortie par empreinte MD5, option B pour Ctrl+Z, couleur → opération, restauration des cercles sur chaque Result, réglages repris de Solid Batch. Combine All retiré. Étape 2 (2026-10-23) : Procedural Table (ordre, On, couleur, nom, opération, état, formule, Unions first, sélection dans les deux sens ; menu, barre d'outils, clic droit), Subtract dans la table ↔ couleur, Explode libère les volumes. Étape 2b (2026-10-23) : Base figée en ligne 1 (choix « Base » sur une ligne), sélection gardée après un recalcul |
 
 Historique de Solid Batch (v1.0.0 à v2.3.0) : `JOURNAL.md` et dépôt `sketchup-solid-batch`.

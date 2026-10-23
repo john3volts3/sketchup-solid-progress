@@ -202,7 +202,8 @@
   // Written for the browser of SketchUp 2021 (no optional chaining, no
   // flex gap).
   var SYMBOLS = { union: '∪', outer_shell: 'shell', subtract: '−' };
-  var OPERATIONS = [['union', 'Union'], ['outer_shell', 'Shell'], ['subtract', 'Subtract']];
+  // 'base' is not an operation: it makes the row the first one.
+  var OPERATIONS = [['base', 'Base'], ['union', 'Union'], ['outer_shell', 'Shell'], ['subtract', 'Subtract']];
   var data = null;
   var dragKey = null;
   // True while the rows are replaced: the blur of a removed input is not
@@ -230,11 +231,12 @@
     send({ type: 'order', group: data.group, keys: keys });
   }
 
+  // The base (row 1) never moves and no row goes above it.
   function move(key, delta) {
     var keys = rowKeys();
     var i = keys.indexOf(key);
     var j = i + delta;
-    if (i < 0 || j < 0 || j >= keys.length) return;
+    if (i < 1 || j < 1 || j >= keys.length) return;
     keys.splice(i, 1);
     keys.splice(j, 0, key);
     sendOrder(keys);
@@ -269,32 +271,44 @@
     if (row.selected) tr.classList.add('selected');
     if (!row.enabled) tr.classList.add('off');
 
-    // # : drag handle, position, up / down.
+    // # : drag handle, position, up / down; the base row is fixed.
     var order = element('td', 'order');
     var handle = element('span', 'handle', '⋮⋮');
-    handle.title = 'Drag to reorder';
-    handle.addEventListener('mousedown', function () { tr.draggable = true; });
+    if (row.base) {
+      handle.style.visibility = 'hidden';
+    } else {
+      handle.title = 'Drag to reorder';
+      handle.addEventListener('mousedown', function () { tr.draggable = true; });
+    }
     order.appendChild(handle);
     order.appendChild(element('span', 'position', String(row.position)));
     var up = element('button', 'arrow', '▲');
     up.type = 'button';
     up.title = 'Move up';
-    up.disabled = index === 0;
+    up.disabled = index <= 1;
     up.addEventListener('click', function () { move(row.key, -1); });
     var down = element('button', 'arrow', '▼');
     down.type = 'button';
     down.title = 'Move down';
-    down.disabled = index === count - 1;
+    down.disabled = index === 0 || index === count - 1;
     down.addEventListener('click', function () { move(row.key, 1); });
+    if (row.base) {
+      up.style.visibility = 'hidden';
+      down.style.visibility = 'hidden';
+    }
     order.appendChild(up);
     order.appendChild(down);
     tr.appendChild(order);
 
-    // On
+    // On: the base is always enabled.
     var on = element('td');
     var box = element('input');
     box.type = 'checkbox';
     box.checked = row.enabled;
+    if (row.base && row.enabled) {
+      box.disabled = true;
+      box.title = 'The base is always enabled';
+    }
     box.addEventListener('change', function () {
       send({ type: 'toggle', group: data.group, key: row.key, on: box.checked });
     });
@@ -334,10 +348,13 @@
     name.appendChild(input);
     tr.appendChild(name);
 
-    // Operation: the first enabled row is the base.
+    // Operation: the first row is the base; choosing Base on another row
+    // makes it the first one.
     var operation = element('td');
     if (row.base && row.op !== 'subtract') {
-      operation.appendChild(element('span', 'base', 'Base'));
+      var label = element('span', 'base', 'Base');
+      label.title = 'To change the base, choose Base on another row';
+      operation.appendChild(label);
     } else {
       var select = element('select');
       OPERATIONS.forEach(function (o) {
@@ -347,7 +364,11 @@
       });
       select.value = row.op;
       select.addEventListener('change', function () {
-        send({ type: 'op', group: data.group, key: row.key, op: select.value });
+        if (select.value === 'base') {
+          send({ type: 'base', group: data.group, key: row.key });
+        } else {
+          send({ type: 'op', group: data.group, key: row.key, op: select.value });
+        }
       });
       operation.appendChild(select);
     }
@@ -377,11 +398,12 @@
       dragKey = null;
       clearDrop();
     });
+    // Nothing goes above the base: a drop on it lands after it.
     tr.addEventListener('dragover', function (event) {
       if (!dragKey || dragKey === row.key) return;
       event.preventDefault();
       event.dataTransfer.dropEffect = 'move';
-      var after = dropAfter(tr, event);
+      var after = row.base || dropAfter(tr, event);
       tr.classList.toggle('drop-after', after);
       tr.classList.toggle('drop-before', !after);
     });
@@ -392,7 +414,7 @@
       event.preventDefault();
       if (!dragKey || dragKey === row.key) return;
       var keys = rowKeys().filter(function (k) { return k !== dragKey; });
-      var target = keys.indexOf(row.key) + (dropAfter(tr, event) ? 1 : 0);
+      var target = keys.indexOf(row.key) + (row.base || dropAfter(tr, event) ? 1 : 0);
       keys.splice(target, 0, dragKey);
       dragKey = null;
       clearDrop();

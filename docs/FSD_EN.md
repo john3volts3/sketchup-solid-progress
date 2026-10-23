@@ -144,13 +144,14 @@ Changing the subtract color (Set Subtract Color) or opening the model on another
 
 #### EF-14: Ordered rebuild (`rebuild_in_operation`)
 
-1. `make_unique` of the group; sources normalized (`role`, `rank` 1..n, `enabled`, color → operation).
+1. Selection remembered; `make_unique` of the group; sources normalized (`role`, `rank` 1..n, `uid`, `enabled` — the Base is always enabled —, color → operation).
 2. Validation of the enabled sources: at least one; none procedural (step 3); all `manifold?`; the first one is not `subtract`.
 3. Signature computed.
 4. **Combination on copies** (§ 7.4) in `rank` order: `acc = copy(1)`, then for each next source `acc.union(copy)`, `acc.outer_shell(copy)` or `copy.subtract(acc)`. Progress in the status bar (`Solid Procedural — Subtract 2/3 (67%)`).
 5. Result material = base material; faces that inherited the subtract color reset (`nil`).
 6. Circle restoration (EF-18) on a copy of the result.
 7. Former Result erased; new Result marked (`role=result`, name `Result`); signature stored; display applied.
+8. Selection restored (entities still valid), even on an error: the booleans clear the selection, and a selected group must stay selected (table, Rebuild).
 
 On a failure in step 4, every copy is erased in an `ensure`, the unused component definitions created are removed, and the former Result stays in place.
 
@@ -192,19 +193,21 @@ Modeless window (`UI::HtmlDialog`, utility style, size and position remembered),
 | Element | Description |
 |---------|-------------|
 | **Header** | Group name; badge "Open — applied on exit" (open group) or "Closed — applied now" (closed group) |
-| **#** | Handle ⋮⋮ (drag and drop), position, ▲▼ |
-| **On** | Checkbox: `enabled` |
+| **#** | Handle ⋮⋮ (drag and drop), position, ▲▼; row 1 (Base) has neither handle nor ▲▼ |
+| **On** | Checkbox: `enabled`; greyed on the Base, always enabled |
 | **Color** | Swatch of the volume material (hatched = default material) |
 | **Name** | Instance name, editable (Enter, Tab or a click elsewhere = rename, Escape = cancel); the definition name is the placeholder |
-| **Operation** | "Base" on the first enabled row; otherwise Union / Shell / Subtract |
+| **Operation** | "Base" on row 1; on the other rows, Base / Union / Shell / Subtract (choosing Base makes the row the new Base) |
 | **State** | `Solid`, `Not solid`, `Disabled`, `Base must be added`, `Nested: not supported yet` |
 | **Formula** | Operations actually computed, enabled rows in order: `(((1 ∪ 2) shell 3) − 4) ∪ 6` |
-| **Unions first** | Every Union and Shell, then every Subtract, each in its current order |
+| **Unions first** | The Base, then every Union and Shell, then every Subtract, each in its current order |
 
 **Applying the changes (EF-24)**: each action is **one undoable operation** (`change_table`).
 
 - **Closed** group: the Result is rebuilt at once, in the same operation, when the signature changed. An error (non-solid volume, no enabled volume left…) cancels the whole change with a message.
 - **Open** group: only the attributes change; the signature (which holds the order, the operation and On) triggers the rebuild on exit.
+
+**Fixed base (EF-27)**: row 1 is the Base, always first and always enabled. A move or a drag and drop never goes above it (a drop on the Base places the row right after it), *Unions first* keeps it first, and disabling it is refused ("The base volume is always enabled…"). Choosing **Base** on another row (`table_set_base`) moves it to row 1, enabled and added (if it was Subtract, it gets its former material back); the former Base goes to row 2 with its own operation. The Ruby code applies the same rules as the page. A Base repainted with the subtract color stays an error (`Base must be added`).
 
 **Table → color (EF-13, reverse direction)**: choosing Subtract paints the volume with the subtract color (an existing material of that color without texture, else a new `Solid Procedural Subtract` material) and keeps the former material in `prev_material`; leaving Subtract restores it (or the default material). `seen_color` is updated so that the color → operation rule does not flip it back. When a volume is repainted with the subtract color in the model, its former material is kept in `prev_material` too.
 
@@ -393,7 +396,6 @@ A setting missing from `SolidProcedural` is read from `SolidBatch` (Solid Batch 
 
 ## 10. Known limitations (steps 1 and 2)
 
-- The Base is the first enabled row: it can be moved or disabled like the other rows, which changes the Base.
 - In an open group, the effect of a table change shows only on exit (the Result is hidden while editing); on a closed group, it is applied at once.
 - A row selects its volume only in an open group (a double-click opens it).
 - After an Explode, the hidden loose geometry of the group stays hidden: only grouped volumes are released.
@@ -406,6 +408,6 @@ A setting missing from `SolidProcedural` is read from `SolidBatch` (Solid Batch 
 
 | Version | Date | Changes |
 |---------|------|---------|
-| 1.0.0 | in progress | New plugin derived from Solid Batch v2.3.0. Step 1 (2026-10-23): Create / Rebuild / Finalize Procedural Solid, automatic sources / Result switch, automatic rebuild on exit by MD5 signature, option B for Ctrl+Z, color → operation, circle restoration on each Result, settings taken over from Solid Batch. Combine All removed. Step 2 (2026-10-23): Procedural Table (order, On, color, name, operation, state, formula, Unions first, two-way selection; menu, toolbar, context menu), Subtract in the table ↔ color, Explode releases the volumes |
+| 1.0.0 | in progress | New plugin derived from Solid Batch v2.3.0. Step 1 (2026-10-23): Create / Rebuild / Finalize Procedural Solid, automatic sources / Result switch, automatic rebuild on exit by MD5 signature, option B for Ctrl+Z, color → operation, circle restoration on each Result, settings taken over from Solid Batch. Combine All removed. Step 2 (2026-10-23): Procedural Table (order, On, color, name, operation, state, formula, Unions first, two-way selection; menu, toolbar, context menu), Subtract in the table ↔ color, Explode releases the volumes. Step 2b (2026-10-23): Base fixed on row 1 (Base chosen on a row), selection kept after a rebuild |
 
 Solid Batch history (v1.0.0 to v2.3.0): `JOURNAL.md` and the `sketchup-solid-batch` repository.

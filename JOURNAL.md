@@ -90,6 +90,17 @@
 - **docs/FSD_FR.md, docs/FSD_EN.md** — EF-20 à EF-24 (Procedural Table), EF-26 (Explode), attributs `uid` et `prev_material`, NF-07, API, fichiers, modules, flux, interface (menu, barre d'outils, clic droit, fenêtre), limitations, historique.
 - **PRD.md** — EF-12, EF-13, EF-20 à EF-24 testées ; nouvelle EF-26 (Explode libère les volumes) et CA-18 ; Q-4 et Q-5 résolues (décisions « Entrées de la table » et « Explode ») ; API (`onTransactionCommit`, `SelectionObserver`, `Model#active_path=`) ; ligne d'historique de l'étape 2.
 
+### Étape 2b — Sélection gardée après un recalcul, Base figée en première ligne
+
+- **Retours de test** : (1) sur un groupe fermé sélectionné, cocher / décocher On dans la table recalculait le Result mais **désélectionnait le groupe**, et la table se vidait ; cause : `combine` vide la sélection avant chaque booléen et ne la remettait pas. (2) La Base pouvait être déplacée dans la liste ; elle doit rester figée en première place (plan validé).
+- **solid_procedural/procedural.rb** — `rebuild_in_operation` : sélection mémorisée au début et remise à la fin (`ensure`, entités encore valides) ; corrige aussi Rebuild sur des groupes sélectionnés. `normalize_sources` : la première ligne (Base) est toujours activée. `table_toggle` : désactiver la Base est refusé (message, rien n'est modifié). Nouveau `table_set_base` : la ligne choisie passe en première place, activée et ajoutée (si elle était en Subtract, elle reprend son ancien matériau) ; l'ancienne Base passe en deuxième ligne avec sa propre opération. `table_order` et `table_unions_first` gardent toujours la Base en tête.
+- **solid_procedural/procedural_table.rb** — Base = première ligne (et non plus première ligne active) ; action `base`.
+- **solid_procedural/html/procedural_table.html** — Ligne de Base sans poignée ni ▲▼, case On grisée (sauf ancienne Base désactivée, pour pouvoir la réactiver) ; ▲ grisé sur la ligne 2 ; un dépôt sur la Base place la ligne juste après ; choix « Base » dans le menu Operation des autres lignes.
+- Vérifications : `ruby -wc` OK ; test hors SketchUp OK (51 vérifications, dont ordre, Unions first, On, choix de la Base, normalisation) ; `node --check` OK, formule vérifiée.
+- **Plugins SketchUp 2021** — fichiers copiés. Redémarrage de SketchUp nécessaire (la page HTML a changé ; un rechargement des `.rb` ne suffit pas pour une fenêtre déjà ouverte). **Test utilisateur OK.**
+- **docs/FSD_FR.md, docs/FSD_EN.md** — EF-14 (sélection mémorisée et remise, Base toujours activée), table (ligne 1 fixe, On grisée, choix « Base », Unions first), paragraphe « Base figée (EF-27) », limitation sur la Base retirée, historique.
+- **PRD.md** — EF-27 (Base figée), EF-28 (sélection gardée) testées ; EF-29 (cadre vert, option 1) validée ; CA-19, CA-20 ; décisions « Base » et « Cadre vert » ; ligne d'historique de l'étape 2b.
+
 ---
 
 ## Session du 2026-10-11

@@ -91,6 +91,9 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 | EF-24 | **Application des changements de la table** : immédiate quand on est hors du groupe, à la sortie quand on est dedans. Tout changement marque le groupe comme modifié | I | testée (étape 2) |
 | EF-25 | **Imbrication** : un groupe procédural peut être la source d'un autre, et c'est alors son Result qui est utilisé. Le recalcul se fait de l'intérieur vers l'extérieur | Im | validée (étape 3) |
 | EF-26 | **Explode libère les volumes** : après un Explode d'un groupe procédural (ou un copier-coller d'une source hors du groupe), les volumes libérés sont rendus visibles et redeviennent des objets ordinaires (attributs retirés). Un seul Ctrl+Z annule l'Explode et la libération | Im | testée (étape 2) |
+| EF-27 | **Base figée** : la ligne 1 est la Base, toujours en tête et toujours active (ni déplacement, ni glisser-déposer au-dessus, ni désactivation ; *Unions first* la garde en tête). Choisir « Base » sur une autre ligne en fait la nouvelle Base, l'ancienne passe en ligne 2 | I | testée (étape 2b) |
+| EF-28 | **Sélection gardée** : après un recalcul (table sur un groupe fermé, Rebuild), le groupe sélectionné reste sélectionné et la table reste dessus | I | testée (étape 2b) |
+| EF-29 | **Cadre vert** : un groupe procédural sélectionné se distingue des autres objets (couleur de sélection verte) | S | validée (option 1, prémisse à vérifier) |
 
 ## 6. Exigences non fonctionnelles
 
@@ -145,6 +148,8 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 | CA-16 | Set Subtract Color et Set Repair Options fonctionnent, avec les réglages repris de Solid Batch. Solid Batch v2 reste installé et Combine All y fonctionne toujours | EF-03, EF-04, NF-09, NF-10 |
 | CA-17 | Changer la couleur de soustraction : les volumes existants gardent leur opération. Repeindre une source en rouge la passe en Subtract, la repeindre d'une autre couleur (ou lui rendre le matériau par défaut) la remet en Union ou Shell | EF-13 |
 | CA-18 | Explode d'un groupe procédural → le Result et tous les volumes sont visibles, en objets ordinaires. Un seul Ctrl+Z remet le groupe procédural | EF-26 |
+| CA-19 | Ligne 1 sans poignée ni ▲▼, case On grisée ; glisser une ligne tout en haut → elle se place en ligne 2 ; *Unions first* garde la Base ; choisir « Base » sur une ligne Subtract → elle passe en ligne 1 avec son ancienne couleur, un seul Ctrl+Z annule | EF-27 |
+| CA-20 | Groupe fermé sélectionné, cocher / décocher On dans la table → le résultat suit, le groupe reste sélectionné et la table reste remplie | EF-24, EF-28 |
 
 ## 9. Questions ouvertes et décisions
 
@@ -181,6 +186,8 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 | 2026-10-23 | Planning | Étape 1 = cœur + modèle de données complet, étape 2 = table, étape 3 = imbrication, étape 4 = livraison 1.0.0 |
 | 2026-10-23 | Entrées de la table | Menu *Extensions > Solid Procedural* (après Create), bouton de barre d'outils (après Create), clic droit sur un groupe procédural sélectionné ou ouvert |
 | 2026-10-23 | Explode | Option (a) : les volumes libérés sont rendus visibles et perdent leurs attributs (opération transparente fusionnée avec l'Explode). Options écartées : effacer les sources comme Finalize (destructif), ne rien faire |
+| 2026-10-23 | Base | Figée en ligne 1 et toujours active ; on en change en choisissant « Base » sur une autre ligne |
+| 2026-10-23 | Cadre vert | Option 1 : couleur de sélection du style (`HighlightColor`) passée au vert tant que la sélection ne contient que des groupes procéduraux. Pas d'API pour une couleur de sélection par objet dans SketchUp 2021 ; les overlays (SketchUp 2023+) ne sont pas disponibles. Option écartée : message dans la barre d'état |
 | 2026-10-23 | Approches écartées | Bascule manuelle Sources / Résultat (gardée en repli), recalcul en direct, opération codée dans le nom, attributs de Dynamic Components |
 
 ## 10. Historique des livraisons
@@ -195,4 +202,5 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 | 2026-10-11 | Solid Batch v2.3.0 (`13748c4`, dépôt `sketchup-solid-batch`) | EF-05 : cercles et arcs natifs (méthode Re-Cercle v2.0.0) |
 | 2026-10-23 | Solid Procedural 1.0.0, étape 1 (commit de développement, non publié) | EF-03 à EF-11, EF-13 (couleur → opération), EF-14 à EF-19 testées dans SketchUp 2021 Pro |
 | 2026-10-23 | Solid Procedural 1.0.0, étape 2 (commit de développement, non publié) | EF-12, EF-13 (table → couleur), EF-20 à EF-24, EF-26 testées dans SketchUp 2021 Pro |
-| — | **Solid Procedural 1.0.0** (prévue) | EF-03 à EF-06 (reprises), EF-07 à EF-26 |
+| 2026-10-23 | Solid Procedural 1.0.0, étape 2b (commit de développement, non publié) | EF-27, EF-28 testées dans SketchUp 2021 Pro |
+| — | **Solid Procedural 1.0.0** (prévue) | EF-03 à EF-06 (reprises), EF-07 à EF-29 |
