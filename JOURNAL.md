@@ -146,6 +146,15 @@
 - **GitHub** — Dépôt privé `john3volts3/sketchup-solid-procedural` créé, `master` et le tag `v1.0.0` poussés ; release **v1.0.0** publiée avec `solid_procedural.rbz` (43 632 octets), à la demande de l'utilisateur.
 - Sauvegarde de l'environnement Claude : 6 fichiers copiés, envoyés sur GitHub.
 
+### Après la livraison — Vers une version pour SketchUp Make (M0)
+
+- **Décision utilisateur** : viser aussi les makers, qui utilisent SketchUp Make 2017 (pas de booléens natifs). Plan : M1 compatibilité 2017, M2 moteur Ruby (Eneroth Solid Tools, MIT, corrigé et optimisé), M3 livraison 1.1.0.
+- **Analyse** : Solid Batch v1.0.0 avait un moteur Ruby bâti sur l'algorithme d'Eneroth ; Eneroth Solid Tools est en pur Ruby, MIT, non maintenu depuis 2020 ; Make 2017 n'est plus téléchargeable chez Trimble. Défauts relevés dans `solid_operations.rb` (lenteur O(F²), test à un seul rayon, bogue `find_coplanar_edges`, plantage possible de `point_at_face`, pas de retour arrière).
+- **Environnement** : SketchUp Pro 2017 (licence absente) désinstallé, plugins et restes sauvegardés dans `un dossier de sauvegarde local` ; SketchUp **Make 2017** 17.2.2555 installé (installateur signé Trimble, SHA-256 vérifié, mode Make) ; fichier des 36 raccourcis de SketchUp 2021 préparé pour l'import dans Make.
+- **Test de démarrage** : Solid Procedural 1.0.0 copié dans les plugins de Make 2017 → se charge sans erreur (console Ruby propre). Suite du test (Create, table, fichier au format 2017) à faire par l'utilisateur.
+- **M1 préparé** (non codé) : gardes `DefinitionList#remove` et `Model#active_path=`, préfixe `-webkit-user-select`, garde `weld` limitée à la soudure de secours (cercles natifs sous 2017 : la reconstruction n'utilise que des API anciennes).
+- **Nouveau projet Solid for Maker** créé dans `../sketchup-solid-for-maker` (cadrage, `TACHES.md` avec la suite de M1 à M3 de Solid Procedural, `CLAUDE.md`, PRD brouillon, référence Eneroth). La suite se fait dans ce dossier.
+
 ---
 
 ## Session du 2026-10-11
