@@ -3,7 +3,7 @@
 > Le *quoi* et le *pourquoi*. Le *comment* (algorithme, entrées/sorties, limitations) est dans `docs/FSD_FR.md` / `docs/FSD_EN.md`.
 > Cadrage initial : `SOLID_PROCEDURAL_PROJET.md` (rédigé sous le nom « Solid Batch v3 »). Historique détaillé : `JOURNAL.md`.
 
-Dernière mise à jour : 2026-10-23 (étapes 1, 2, 2b et 2c testées dans SketchUp 2021 Pro).
+Dernière mise à jour : 2026-10-23 (étapes 1, 2, 2b, 2c et 2d testées dans SketchUp 2021 Pro).
 
 ---
 
@@ -53,7 +53,7 @@ Besoin : modéliser de façon **non destructive et interactive**. On modifie les
 
 - **Combine All** (Union / Shell) : il reste dans Solid Batch v2. Finalize fournit l'équivalent non destructif.
 - SketchUp Make et les versions sans booléens natifs (Pro obligatoire).
-- SketchUp 2017 : Solid Batch v2.3.0 y reste installé.
+- ~~SketchUp 2017 : Solid Batch v2.3.0 y reste installé.~~ Compatibilité SketchUp 2017 Pro demandée le 2026-10-23 (EF-31).
 - Composants comme **conteneurs** procéduraux. Ils restent acceptés comme **sources**.
 - Opération **Intersect** (non retenue pour la 1.0.0).
 - Recalcul en direct pendant l'édition (trop lent, trop fragile).
@@ -94,6 +94,8 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 | EF-27 | **Base figée** : la ligne 1 est la Base, toujours en tête et toujours active (ni déplacement, ni glisser-déposer au-dessus, ni désactivation ; *Unions first* la garde en tête). Choisir « Base » sur une autre ligne en fait la nouvelle Base, l'ancienne passe en ligne 2 | I | testée (étape 2b) |
 | EF-28 | **Sélection gardée** : après un recalcul (table sur un groupe fermé, Rebuild), le groupe sélectionné reste sélectionné et la table reste dessus | I | testée (étape 2b) |
 | EF-29 | **Cadre vert** : un groupe procédural sélectionné se distingue des autres objets (couleur de sélection verte) | S | testée (étape 2c) |
+| EF-30 | **Raccourcis clavier avec la table ouverte** : après une action dans la table (et quand la souris en sort), le clavier revient à SketchUp, pour que ses raccourcis (W…) marchent sans cliquer dans le modèle ; jamais pendant la saisie d'un nom | Im | testée (étape 2d) |
+| EF-31 | **Compatibilité SketchUp 2017 Pro** : le plugin marche aussi sous SketchUp 2017 (gardes pour `DefinitionList#remove` 2018+, `Model#active_path=` 2020+, navigateur ancien ; cercles natifs à essayer sans `Entities#weld`) | Im | validée (à faire, test quand SketchUp 2017 aura sa licence) |
 
 ## 6. Exigences non fonctionnelles
 
@@ -151,6 +153,7 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 | CA-19 | Ligne 1 sans poignée ni ▲▼, case On grisée ; glisser une ligne tout en haut → elle se place en ligne 2 ; *Unions first* garde la Base ; choisir « Base » sur une ligne Subtract → elle passe en ligne 1 avec son ancienne couleur, un seul Ctrl+Z annule | EF-27 |
 | CA-20 | Groupe fermé sélectionné, cocher / décocher On dans la table → le résultat suit, le groupe reste sélectionné et la table reste remplie | EF-24, EF-28 |
 | CA-21 | Groupe procédural sélectionné → cadre vert ; groupe ordinaire ou sélection mixte → cadre bleu ; enregistrer avec le cadre vert puis rouvrir → couleur d'origine ; sélectionner puis fermer sans rien modifier → pas de demande d'enregistrement | EF-29 |
+| CA-22 | Table ouverte : après On, ▲▼, une opération, Unions first, un double-clic ou un nom validé, W agit sur SketchUp ; un clic sur le fond de la table ne fait rien ; la souris sortie de la table, W agit sur SketchUp | EF-30 |
 
 ## 9. Questions ouvertes et décisions
 
@@ -158,7 +161,7 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 
 | # | Question | À traiter |
 |---|---|---|
-| Q-1 | Que fait l'export STL de SketchUp 2021 avec les entités cachées ? Si elles partent dans l'export, Finalize est obligatoire avant l'export | Non vérifié à l'étape 1 : à tester (en attendant, Finalize avant l'export) |
+| Q-1 | ~~Que fait l'export STL de SketchUp 2021 avec les entités cachées ?~~ | **Résolue** (2026-10-23) : il faut **toujours lancer Finalize avant l'export STL** ; le cadre vert (EF-29) sert de rappel |
 | Q-2 | ~~`onActivePathChanged` existe-t-il dans SketchUp 2021 ?~~ | **Résolue** (2026-10-23) : oui, le recalcul automatique à la sortie fonctionne |
 | Q-3 | ~~Quel opérande les booléens natifs effacent-ils (`union`, `outer_shell`) ? Quels matériaux gardent les faces du résultat ?~~ | **Résolue en pratique** (2026-10-23) : le calcul efface toutes ses copies quel que soit l'opérande effacé ; Result à la couleur de la base, sans face rouge (test utilisateur) |
 | Q-4 | ~~Que se passe-t-il quand on fait Explode sur un groupe procédural ?~~ | **Résolue** (2026-10-23) : le Result restait visible, les sources restaient cachées avec leurs attributs → décision : Explode libère les volumes (EF-26) |
@@ -189,6 +192,9 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 | 2026-10-23 | Explode | Option (a) : les volumes libérés sont rendus visibles et perdent leurs attributs (opération transparente fusionnée avec l'Explode). Options écartées : effacer les sources comme Finalize (destructif), ne rien faire |
 | 2026-10-23 | Base | Figée en ligne 1 et toujours active ; on en change en choisissant « Base » sur une autre ligne |
 | 2026-10-23 | Cadre vert | Option 1 : couleur de sélection du style (`HighlightColor`) passée au vert tant que la sélection ne contient que des groupes procéduraux. Pas d'API pour une couleur de sélection par objet dans SketchUp 2021 ; les overlays (SketchUp 2023+) ne sont pas disponibles. Option écartée : message dans la barre d'état |
+| 2026-10-23 | Export STL | Toujours lancer Finalize avant l'export STL (Q-1) |
+| 2026-10-23 | Clavier | `Sketchup.focus` absent de SketchUp 21.0.391 → API Windows par Fiddle (bibliothèque standard de Ruby, aucun paquet externe), `Sketchup.focus` utilisé quand il existe |
+| 2026-10-23 | SketchUp 2017 | Compatibilité demandée (remplace « SketchUp 2021 Pro seulement »). Cercles natifs sous 2017 : à essayer (choix laissé à Claude). Licence Pro de SketchUp 2017 absente sur le PC (`liclog.txt`) : test plus tard |
 | 2026-10-23 | Approches écartées | Bascule manuelle Sources / Résultat (gardée en repli), recalcul en direct, opération codée dans le nom, attributs de Dynamic Components |
 
 ## 10. Historique des livraisons
@@ -205,4 +211,5 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 | 2026-10-23 | Solid Procedural 1.0.0, étape 2 (commit de développement, non publié) | EF-12, EF-13 (table → couleur), EF-20 à EF-24, EF-26 testées dans SketchUp 2021 Pro |
 | 2026-10-23 | Solid Procedural 1.0.0, étape 2b (commit de développement, non publié) | EF-27, EF-28 testées dans SketchUp 2021 Pro |
 | 2026-10-23 | Solid Procedural 1.0.0, étape 2c (commit de développement, non publié) | EF-29 testée dans SketchUp 2021 Pro |
-| — | **Solid Procedural 1.0.0** (prévue) | EF-03 à EF-06 (reprises), EF-07 à EF-29 |
+| 2026-10-23 | Solid Procedural 1.0.0, étape 2d (commit de développement, non publié) | EF-30 testée dans SketchUp 2021 Pro |
+| — | **Solid Procedural 1.0.0** (prévue) | EF-03 à EF-06 (reprises), EF-07 à EF-31 |

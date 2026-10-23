@@ -53,7 +53,7 @@ Solid Procedural derives from **Solid Batch v2.3.0** and installs **next to** it
 |-------------|-------|
 | SketchUp version | Pro 2021 (target and tested version) |
 | OS | Windows (any OS supported by SketchUp should work, not tested) |
-| Ruby API methods | `Group#union`, `#outer_shell`, `#subtract`, `#manifold?`, `#copy`, `#make_unique`, `#explode`; `ModelObserver#onActivePathChanged`, `#onTransactionCommit`, `#onTransactionUndo`, `#onTransactionRedo`, `#onPreSaveModel`, `#onPostSaveModel`; `SelectionObserver`; `RenderingOptions['HighlightColor']`; `AppObserver#onNewModel`, `#onOpenModel`; `UI::HtmlDialog`; `Model#active_path=` (2020.0+) |
+| Ruby API methods | `Group#union`, `#outer_shell`, `#subtract`, `#manifold?`, `#copy`, `#make_unique`, `#explode`; `ModelObserver#onActivePathChanged`, `#onTransactionCommit`, `#onTransactionUndo`, `#onTransactionRedo`, `#onPreSaveModel`, `#onPostSaveModel`; `SelectionObserver`; `RenderingOptions['HighlightColor']`; `Sketchup.focus` (2021.1+, else the `user32` Windows API through Fiddle); `AppObserver#onNewModel`, `#onOpenModel`; `UI::HtmlDialog`; `Model#active_path=` (2020.0+) |
 | Circle/arc restoration | SketchUp 2020.1+ (`Entities#weld`, fallback welding) |
 | Ruby | `digest/md5`, `json` (standard libraries shipped with SketchUp) |
 | HTML window | SketchUp 2021 embedded browser (Chromium 88 in 2021.1); ES2017 JavaScript, no dependency |
@@ -216,6 +216,8 @@ Modeless window (`UI::HtmlDialog`, utility style, size and position remembered),
 
 **Row keys**: `uid` attribute of each source (kept by copies and `make_unique`, made unique again at normalization), else `id:<entityID>`. An action for another group than the one shown, or for a key not found, changes nothing and refreshes the table.
 
+**Keyboard back to SketchUp (EF-30)**: so that the SketchUp shortcuts (W, etc.) work while the table is open, the page gives the keyboard back to SketchUp right after each action (On, operation, Base, ▲▼, drag and drop, Unions first, double-click, name validated with Enter or cancelled with Escape), 0.6 s after a single click on a row (the double-click stays possible; a new click cancels), when the mouse really leaves the window (a false `mouseleave` sent after a click, pointer still in the window, is ignored) and when the table opens. Never while a name is typed or an operation list is open; a click on the table background does nothing. Ruby side: `Sketchup.focus` (SketchUp 2021.1+), else the Windows API through Fiddle (Ruby standard library): the SketchUp main window, noted when the table opens (`GetForegroundWindow`, `GetAncestor`, checked with `GetWindowThreadProcessId`), is brought back to the foreground (`SetForegroundWindow`). Nothing on macOS before 2021.1.
+
 **Refresh**: deferred and coalesced (`UI.start_timer`), only while the window is open, after every change of the active path, operation, undo, redo or selection change (`SelectionObserver`: all four events, `onSelectionAdded` is not always notified). A name being typed is kept.
 
 #### EF-26: Explode of a procedural group
@@ -312,7 +314,8 @@ SolidProcedural::Procedural
   ModelObserver, SelectionObserver, AppObserver, attach, defer, run
 
 SolidProcedural::ProceduralTable
-  show, target_group, refresh_later, refresh, payload, color_hex, on_action, select_row, open_row
+  show, target_group, refresh_later, refresh, payload, color_hex, on_action, select_row, open_row, focus_sketchup
+  Win32: functions, sketchup_window, activate
 
 SolidProcedural::Highlight
   GREEN, wanted?, green?, update_later, update, show_green, restore, before_save, repair
@@ -420,12 +423,13 @@ A setting missing from `SolidProcedural` is read from `SolidBatch` (Solid Batch 
 - Nested procedural groups refused (step 3).
 - The rebuild runs on exiting the group, not while editing.
 - Loose geometry inside a procedural group is not used (make it a group).
-- STL export of a non-finalized group: behavior of the hidden sources still to be confirmed (PRD Q-1); Finalize before exporting is recommended.
+- **STL export: always run Finalize first** (the hidden sources of a non-finalized group go into the export, PRD Q-1). The green frame is a reminder that a group is still procedural.
+- Shortcuts while a name is typed: the field keeps the keyboard until Enter or Escape.
 
 ## 11. Version history
 
 | Version | Date | Changes |
 |---------|------|---------|
-| 1.0.0 | in progress | New plugin derived from Solid Batch v2.3.0. Step 1 (2026-10-23): Create / Rebuild / Finalize Procedural Solid, automatic sources / Result switch, automatic rebuild on exit by MD5 signature, option B for Ctrl+Z, color → operation, circle restoration on each Result, settings taken over from Solid Batch. Combine All removed. Step 2 (2026-10-23): Procedural Table (order, On, color, name, operation, state, formula, Unions first, two-way selection; menu, toolbar, context menu), Subtract in the table ↔ color, Explode releases the volumes. Step 2b (2026-10-23): Base fixed on row 1 (Base chosen on a row), selection kept after a rebuild. Step 2c (2026-10-23): green selection frame for procedural groups |
+| 1.0.0 | in progress | New plugin derived from Solid Batch v2.3.0. Step 1 (2026-10-23): Create / Rebuild / Finalize Procedural Solid, automatic sources / Result switch, automatic rebuild on exit by MD5 signature, option B for Ctrl+Z, color → operation, circle restoration on each Result, settings taken over from Solid Batch. Combine All removed. Step 2 (2026-10-23): Procedural Table (order, On, color, name, operation, state, formula, Unions first, two-way selection; menu, toolbar, context menu), Subtract in the table ↔ color, Explode releases the volumes. Step 2b (2026-10-23): Base fixed on row 1 (Base chosen on a row), selection kept after a rebuild. Step 2c (2026-10-23): green selection frame for procedural groups. Step 2d (2026-10-23): SketchUp shortcuts usable while the table is open (keyboard given back to SketchUp) |
 
 Solid Batch history (v1.0.0 to v2.3.0): `JOURNAL.md` and the `sketchup-solid-batch` repository.

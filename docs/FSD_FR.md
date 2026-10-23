@@ -53,7 +53,7 @@ Solid Procedural est issu de **Solid Batch v2.3.0** et s'installe **à côté** 
 |----------|--------|
 | Version SketchUp | Pro 2021 (version cible et testée) |
 | Système | Windows (tout OS supporté par SketchUp devrait fonctionner, non testé) |
-| Méthodes Ruby API | `Group#union`, `#outer_shell`, `#subtract`, `#manifold?`, `#copy`, `#make_unique`, `#explode` ; `ModelObserver#onActivePathChanged`, `#onTransactionCommit`, `#onTransactionUndo`, `#onTransactionRedo`, `#onPreSaveModel`, `#onPostSaveModel` ; `SelectionObserver` ; `RenderingOptions['HighlightColor']` ; `AppObserver#onNewModel`, `#onOpenModel` ; `UI::HtmlDialog` ; `Model#active_path=` (2020.0+) |
+| Méthodes Ruby API | `Group#union`, `#outer_shell`, `#subtract`, `#manifold?`, `#copy`, `#make_unique`, `#explode` ; `ModelObserver#onActivePathChanged`, `#onTransactionCommit`, `#onTransactionUndo`, `#onTransactionRedo`, `#onPreSaveModel`, `#onPostSaveModel` ; `SelectionObserver` ; `RenderingOptions['HighlightColor']` ; `Sketchup.focus` (2021.1+, sinon API Windows `user32` par Fiddle) ; `AppObserver#onNewModel`, `#onOpenModel` ; `UI::HtmlDialog` ; `Model#active_path=` (2020.0+) |
 | Restauration cercles/arcs | SketchUp 2020.1+ (`Entities#weld`, soudure de secours) |
 | Ruby | `digest/md5`, `json` (bibliothèques standard fournies avec SketchUp) |
 | Fenêtre HTML | Navigateur intégré de SketchUp 2021 (Chromium 88 en 2021.1) ; JavaScript ES2017, sans dépendance |
@@ -216,6 +216,8 @@ Fenêtre non modale (`UI::HtmlDialog`, style utilitaire, taille et position mém
 
 **Clé des lignes** : attribut `uid` de chaque source (gardé par les copies et par `make_unique`, unicité rétablie à la normalisation), sinon `id:<entityID>`. Une action reçue pour un autre groupe que celui affiché, ou pour une clé introuvable, ne modifie rien et rafraîchit la table.
 
+**Clavier rendu à SketchUp (EF-30)** : pour que les raccourcis de SketchUp (W, etc.) marchent pendant que la table est ouverte, la page rend le clavier à SketchUp juste après chaque action (On, opération, Base, ▲▼, glisser-déposer, Unions first, double-clic, nom validé par Entrée ou annulé par Échap), 0,6 s après un clic simple sur une ligne (le double-clic reste possible ; un nouveau clic annule), quand la souris sort vraiment de la fenêtre (un faux `mouseleave` émis après un clic, pointeur encore dans la fenêtre, est ignoré) et à l'ouverture de la table. Jamais pendant la saisie d'un nom ni avec une liste d'opérations ouverte ; un clic sur le fond de la table ne fait rien. Côté Ruby : `Sketchup.focus` (SketchUp 2021.1+), sinon API Windows par Fiddle (bibliothèque standard de Ruby) : la fenêtre principale de SketchUp, notée à l'ouverture de la table (`GetForegroundWindow`, `GetAncestor`, vérifiée par `GetWindowThreadProcessId`), est remise au premier plan (`SetForegroundWindow`). Rien sur macOS avant 2021.1.
+
 **Rafraîchissement** : différé et regroupé (`UI.start_timer`), seulement si la fenêtre est ouverte, après chaque changement du chemin actif, opération, annulation, rétablissement ou changement de sélection (`SelectionObserver` : les quatre événements, `onSelectionAdded` n'étant pas toujours notifié). Un nom en cours de saisie est conservé.
 
 #### EF-26 : Explode d'un groupe procédural
@@ -312,7 +314,8 @@ SolidProcedural::Procedural
   ModelObserver, SelectionObserver, AppObserver, attach, defer, run
 
 SolidProcedural::ProceduralTable
-  show, target_group, refresh_later, refresh, payload, color_hex, on_action, select_row, open_row
+  show, target_group, refresh_later, refresh, payload, color_hex, on_action, select_row, open_row, focus_sketchup
+  Win32 : functions, sketchup_window, activate
 
 SolidProcedural::Highlight
   GREEN, wanted?, green?, update_later, update, show_green, restore, before_save, repair
@@ -420,12 +423,13 @@ Un réglage absent de `SolidProcedural` est lu dans `SolidBatch` (réglages de S
 - Groupes procéduraux imbriqués refusés (étape 3).
 - Le recalcul a lieu à la sortie du groupe, pas pendant l'édition.
 - La géométrie libre dans un groupe procédural n'est pas utilisée (il faut en faire un groupe).
-- Export STL d'un groupe non finalisé : comportement des sources cachées à confirmer (Q-1 du PRD) ; Finalize avant l'export est recommandé.
+- **Export STL : toujours lancer Finalize avant** (les sources cachées d'un groupe non finalisé partent dans l'export, Q-1 du PRD). Le cadre vert rappelle qu'un groupe est encore procédural.
+- Raccourcis pendant la saisie d'un nom : le champ garde le clavier jusqu'à Entrée ou Échap.
 
 ## 11. Historique des versions
 
 | Version | Date | Changements |
 |---------|------|-------------|
-| 1.0.0 | en cours | Nouveau plugin issu de Solid Batch v2.3.0. Étape 1 (2026-10-23) : Create / Rebuild / Finalize Procedural Solid, bascule automatique sources / Result, recalcul automatique à la sortie par empreinte MD5, option B pour Ctrl+Z, couleur → opération, restauration des cercles sur chaque Result, réglages repris de Solid Batch. Combine All retiré. Étape 2 (2026-10-23) : Procedural Table (ordre, On, couleur, nom, opération, état, formule, Unions first, sélection dans les deux sens ; menu, barre d'outils, clic droit), Subtract dans la table ↔ couleur, Explode libère les volumes. Étape 2b (2026-10-23) : Base figée en ligne 1 (choix « Base » sur une ligne), sélection gardée après un recalcul. Étape 2c (2026-10-23) : cadre de sélection vert pour les groupes procéduraux |
+| 1.0.0 | en cours | Nouveau plugin issu de Solid Batch v2.3.0. Étape 1 (2026-10-23) : Create / Rebuild / Finalize Procedural Solid, bascule automatique sources / Result, recalcul automatique à la sortie par empreinte MD5, option B pour Ctrl+Z, couleur → opération, restauration des cercles sur chaque Result, réglages repris de Solid Batch. Combine All retiré. Étape 2 (2026-10-23) : Procedural Table (ordre, On, couleur, nom, opération, état, formule, Unions first, sélection dans les deux sens ; menu, barre d'outils, clic droit), Subtract dans la table ↔ couleur, Explode libère les volumes. Étape 2b (2026-10-23) : Base figée en ligne 1 (choix « Base » sur une ligne), sélection gardée après un recalcul. Étape 2c (2026-10-23) : cadre de sélection vert pour les groupes procéduraux. Étape 2d (2026-10-23) : raccourcis de SketchUp utilisables quand la table est ouverte (clavier rendu à SketchUp) |
 
 Historique de Solid Batch (v1.0.0 à v2.3.0) : `JOURNAL.md` et dépôt `sketchup-solid-batch`.

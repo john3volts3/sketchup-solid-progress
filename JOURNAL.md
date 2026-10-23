@@ -113,6 +113,19 @@
 - **docs/FSD_FR.md, docs/FSD_EN.md** — EF-29 (cadre vert), API, fichier `highlight.rb`, module `Highlight`, persistance `highlight_original`, limitation, historique.
 - **PRD.md** — EF-29 testée, CA-21, ligne d'historique de l'étape 2c.
 
+### Étape 2d — Raccourcis clavier de SketchUp utilisables quand la table est ouverte
+
+- **Demande utilisateur** : quand la Procedural Table a le focus, les raccourcis de SketchUp (par exemple W pour la transparence) ne marchent plus.
+- **Prémisse** : `Sketchup.focus` (SketchUp 2021.1+) n'existe pas dans la version de l'utilisateur (21.0.391, vérifié dans la console) → API Windows par Fiddle (bibliothèque standard de Ruby fournie avec SketchUp, pas de paquet externe) : `GetForegroundWindow`, `GetAncestor` (propriétaire racine), `GetWindowThreadProcessId` (fenêtre de SketchUp seulement), `SetForegroundWindow`.
+- **solid_procedural/procedural_table.rb** — Module `ProceduralTable::Win32` (chargé à la première utilisation, rien sur macOS ou si l'API ne se charge pas) ; fenêtre principale notée à l'ouverture de la table ; action `focus` → `focus_sketchup` (`Sketchup.focus` si disponible, sinon API Windows).
+- **solid_procedural/html/procedural_table.html** — `releaseSoon` : clavier rendu à SketchUp après chaque action (On, opération, Base, ▲▼, glisser-déposer, Unions first, double-clic, nom validé ou annulé), 0,6 s après un clic simple sur une ligne (le double-clic reste possible, un nouveau clic annule), quand la souris sort de la table et à l'ouverture ; jamais pendant la saisie d'un nom ou avec une liste d'opérations ouverte. Touches Entrée / Échap lues aussi par `keyCode` (navigateur de SketchUp 2017).
+- **Décision B (cercles natifs sous 2017)** : laissée au choix de Claude par l'utilisateur → à essayer avec la compatibilité 2017 (étape C), testées plus tard par l'utilisateur. SketchUp 2017 désinstallé par l'utilisateur (diagnostic : licence Pro absente, période d'essai expirée — `liclog.txt` —, installation 17.2.2555 Pro saine).
+- Vérifications : `ruby -wc` OK ; test hors SketchUp OK (62 vérifications, dont chargement réel de l'API Windows et fenêtre d'un autre processus ignorée) ; `node --check` OK.
+- **Premier test** : partiellement OK — après une action sur une ligne, W marchait ; mais chaque clic sur le fond de la table faisait basculer le focus entre la table et SketchUp. Correctif : `mouseleave` pris en compte seulement si le pointeur est vraiment hors de la fenêtre (Chromium émet un faux `mouseleave` après un clic) ; le champ Name ne rend le clavier qu'après Entrée ou Échap. Ligne de console temporaire (raison de chaque retour du clavier) pour le test, retirée ensuite.
+- **Plugins SketchUp 2021** — fichiers copiés. **Test utilisateur OK.**
+- **docs/FSD_FR.md, docs/FSD_EN.md** — Paragraphe « Clavier rendu à SketchUp (EF-30) », API, module `Win32`, limitations (Finalize obligatoire avant l'export STL, saisie d'un nom), historique.
+- **PRD.md** — EF-30 testée, EF-31 (compatibilité SketchUp 2017) validée, CA-22 ; Q-1 résolue (Finalize avant l'export STL) ; décisions « Export STL », « Clavier », « SketchUp 2017 » ; périmètre corrigé ; ligne d'historique de l'étape 2d.
+
 ---
 
 ## Session du 2026-10-11

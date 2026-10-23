@@ -10,16 +10,66 @@ module SolidProcedural
   # one. It never changes the model by itself: each action of the page is
   # one undoable operation (Procedural.change_table), and the page is
   # refreshed, deferred, after every change of the model or the selection.
+  # After an action, the page gives the keyboard back to SketchUp, so that
+  # its shortcuts keep working while the table is open.
   module ProceduralTable
     HTML_FILE = File.join(PLUGIN_DIR, 'solid_procedural', 'html', 'procedural_table.html').freeze
     LOG = '[Solid Procedural]'.freeze
     OPERATIONS = %w[union outer_shell subtract].freeze
+
+    # Windows API through Fiddle (Ruby standard library), to give the
+    # keyboard back to SketchUp before Sketchup.focus (SketchUp 2021.1).
+    # Nothing is done on macOS or when the API cannot be loaded.
+    module Win32
+      GA_ROOTOWNER = 3
+
+      def self.functions
+        return @functions if defined?(@functions)
+        @functions = nil
+        return nil unless Sketchup.platform == :platform_win
+        require 'fiddle'
+        user32 = Fiddle.dlopen('user32')
+        function = lambda do |name, args, result|
+          Fiddle::Function.new(user32[name], args, result)
+        end
+        @functions = {
+          foreground: function.call('GetForegroundWindow', [], Fiddle::TYPE_VOIDP),
+          root_owner: function.call('GetAncestor', [Fiddle::TYPE_VOIDP, Fiddle::TYPE_INT], Fiddle::TYPE_VOIDP),
+          process: function.call('GetWindowThreadProcessId', [Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP], Fiddle::TYPE_INT),
+          activate: function.call('SetForegroundWindow', [Fiddle::TYPE_VOIDP], Fiddle::TYPE_INT)
+        }
+      rescue LoadError, StandardError => e
+        puts "#{LOG} Windows API not available: #{e.message}"
+        @functions = nil
+      end
+
+      # Top-level window of SketchUp when it is in the foreground, else nil.
+      def self.sketchup_window
+        f = functions
+        return nil unless f
+        window = f[:foreground].call.to_i
+        return nil if window.zero?
+        root = f[:root_owner].call(window, GA_ROOTOWNER).to_i
+        root = window if root.zero?
+        pid = Fiddle::Pointer.malloc(4, Fiddle::RUBY_FREE)
+        f[:process].call(root, pid)
+        pid[0, 4].unpack('L').first == Process.pid ? root : nil
+      end
+
+      def self.activate(window)
+        f = functions
+        f[:activate].call(window) if f && window
+      end
+    end
 
     def self.show
       if @dialog && @dialog.visible?
         @dialog.bring_to_front
         return
       end
+      # Opened from SketchUp (menu, toolbar, context menu): its window is
+      # the one to give the keyboard back to.
+      @main_window = Win32.sketchup_window unless Sketchup.respond_to?(:focus)
       @ready = false
       @dialog = UI::HtmlDialog.new(
         dialog_title: "#{PLUGIN_NAME} — Procedural Table",
@@ -127,6 +177,10 @@ module SolidProcedural
         refresh
         return
       end
+      if data['type'] == 'focus'
+        focus_sketchup
+        return
+      end
       group = target_group(model)
       # The page shows another solid than the model now: refresh only.
       if group.nil? || group.entityID != data['group']
@@ -179,6 +233,17 @@ module SolidProcedural
         model.active_path = path + [group]
       end
       select_row(model, group, key)
+    end
+
+    # Keyboard back to SketchUp (the page asks for it after each action):
+    # Sketchup.focus, else the Windows API on the window noted when the
+    # table was opened, or on the owner of the table.
+    def self.focus_sketchup
+      if Sketchup.respond_to?(:focus)
+        Sketchup.focus
+      else
+        Win32.activate(@main_window || Win32.sketchup_window)
+      end
     end
   end
 end

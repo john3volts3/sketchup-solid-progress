@@ -216,6 +216,33 @@
     }
   }
 
+  // Keyboard back to SketchUp after an action, so that its shortcuts work
+  // while the table is open; never while a name is typed or an operation
+  // list is open.
+  var releaseTimer = null;
+
+  function busy() {
+    var a = document.activeElement;
+    return !!a && (a.tagName === 'SELECT' || (a.classList && a.classList.contains('name')));
+  }
+
+  function releaseSoon(delay, reason) {
+    clearTimeout(releaseTimer);
+    releaseTimer = setTimeout(function () {
+      if (!busy()) send({ type: 'focus', reason: reason || 'action' });
+    }, delay || 0);
+  }
+
+  // A new click in the table cancels a pending release (double-click).
+  document.addEventListener('mousedown', function () { clearTimeout(releaseTimer); }, true);
+  // The browser may report a mouseleave after a click while the pointer is
+  // still in the window: only a real exit counts.
+  document.documentElement.addEventListener('mouseleave', function (event) {
+    var inside = event.clientX > 0 && event.clientY > 0 &&
+                 event.clientX < window.innerWidth - 1 && event.clientY < window.innerHeight - 1;
+    if (!inside) releaseSoon(0, 'mouse out');
+  });
+
   function element(tag, className, text) {
     var e = document.createElement(tag);
     if (className) e.className = className;
@@ -229,6 +256,7 @@
 
   function sendOrder(keys) {
     send({ type: 'order', group: data.group, keys: keys });
+    releaseSoon(0);
   }
 
   // The base (row 1) never moves and no row goes above it.
@@ -311,6 +339,7 @@
     }
     box.addEventListener('change', function () {
       send({ type: 'toggle', group: data.group, key: row.key, on: box.checked });
+      releaseSoon(0);
     });
     on.appendChild(box);
     tr.appendChild(on);
@@ -330,19 +359,29 @@
     input.value = row.name;
     input.placeholder = row.placeholder;
     input.spellcheck = false;
+    // Enter or Escape also gives the keyboard back to SketchUp; a click
+    // elsewhere does not (the click itself decides).
+    var validated = false;
     input.addEventListener('keydown', function (event) {
-      if (event.key === 'Enter') {
+      // keyCode: browser of SketchUp 2017.
+      var key = event.key || event.keyCode;
+      if (key === 'Enter' || key === 13) {
+        validated = true;
         input.blur();
-      } else if (event.key === 'Escape') {
+      } else if (key === 'Escape' || key === 'Esc' || key === 27) {
+        validated = true;
         input.value = row.name;
         input.blur();
       }
     });
     // Enter, Tab or a click elsewhere renames the volume.
     input.addEventListener('blur', function () {
-      if (!rendering && input.value.trim() !== row.name) {
+      if (rendering) return;
+      if (input.value.trim() !== row.name) {
         send({ type: 'rename', group: data.group, key: row.key, name: input.value });
       }
+      if (validated) releaseSoon(0, 'name');
+      validated = false;
     });
     inputs[row.key] = input;
     name.appendChild(input);
@@ -369,6 +408,8 @@
         } else {
           send({ type: 'op', group: data.group, key: row.key, op: select.value });
         }
+        select.blur();
+        releaseSoon(0);
       });
       operation.appendChild(select);
     }
@@ -377,14 +418,17 @@
     // State
     tr.appendChild(element('td', 'state ' + row.level, row.state));
 
-    // Selection in the model.
+    // Selection in the model. The keyboard goes back to SketchUp a little
+    // later after a click, so that a double-click still reaches the table.
     tr.addEventListener('click', function (event) {
       if (event.target.closest('input, select, button')) return;
       send({ type: 'select', group: data.group, key: row.key });
+      releaseSoon(600, 'row click');
     });
     tr.addEventListener('dblclick', function (event) {
       if (event.target.closest('input, select, button')) return;
       send({ type: 'open', group: data.group, key: row.key });
+      releaseSoon(0, 'double-click');
     });
 
     // Drag and drop, started from the handle only.
@@ -489,10 +533,13 @@
 
   document.getElementById('unions-first').addEventListener('click', function () {
     if (data && data.group) send({ type: 'unions_first', group: data.group });
+    releaseSoon(0);
   });
 
+  // The shortcuts work as soon as the table is open.
   document.addEventListener('DOMContentLoaded', function () {
     send({ type: 'ready' });
+    releaseSoon(0, 'open');
   });
 }());
 </script>
