@@ -60,7 +60,44 @@
 - **Constat** : le Shell **natif** garde un solide enfermé dans un autre (1064 = 1000 + 4³), le moteur Ruby l'efface (1000, `remove_cavities` de Solid for Maker) ; valeur attendue par moteur dans T12. La Base de deux volumes « + » est le premier dans l'ordre du groupe, pas de la sélection (test corrigé).
 - **Résultats** : SketchUp 2021 Pro **22/22 (127 vérifications)** ; Make 2017 **16 OK, 1 sauté (T07, `active_path=`), 0 échec (89 vérifications)** ; test manuel Make 2017 : **recalcul à la sortie avec le moteur Ruby OK** (875,77 → 937,88, attendu 1000 − la moitié du trou).
 - **PRD.md** — EF-33 testée, NF-01 (natifs sous Pro, moteur Solid for Maker sous Make).
-- Reste pour M3 : FSD, README, manuels (tableau Pro / Make), description du loader, livraison 1.1.0.
+- Commit `fcbb4a8` (validé par l'utilisateur).
+- **Question utilisateur** : pourquoi T12 tourne en natif *et* en moteur Ruby sous Pro ? Réponse : sous Pro, le plugin n'utilise que les natifs (`ruby_engine?` = `!Sketchup.is_pro?`) ; le moteur Ruby n'est forcé que par le script de test (méthode remplacée le temps du test puis remise), pour comparer les deux moteurs et tester le moteur sous Ruby 2.7.
+
+### M3 — Documentation et livraison 1.1.0
+
+- **Décisions utilisateur** : message du double-clic de la table sous 2017 affiché **dans la table** ; accélération de `repair_holes` **plus tard** (1.1.1 ou après).
+- **solid_procedural/procedural_table.rb** — `status_no_active_path(group, text)` garde aussi le message dans `@notice` (groupe + texte) ; `payload` le renvoie (`notice`) pour le groupe concerné ; `on_action` l'efface à chaque action de la page (hors `ready` / `focus`).
+- **solid_procedural/html/procedural_table.html** — bandeau `#notice` (entre la liste et la ligne de formule, couleurs du badge « Open ») affiché quand `data.notice` existe.
+- **tools/tests/run_tests.rb** — T04 sous 2017 : message dans la table, effacé par l'action suivante.
+- **solid_procedural/version.rb, solid_procedural.rb** — version **1.1.0** ; description du loader : « native booleans with SketchUp Pro, built-in engine with SketchUp Make ».
+- **README.md** (EN + FR) — titre et accroche Pro + Make, tableau des prérequis (Pro 2021 natif, Make 2017 moteur intégré), différences de Make, crédits et licence du moteur.
+- **docs/USER_MANUAL_EN.md, docs/USER_MANUAL_FR.md** — version 1.1.0 ; prérequis ; nouvelle section « SketchUp Make 2017 » (moteur intégré, vitesse, table, Shell et volumes enfermés, cercles sans soudure de secours) ; sélection de la table ; dépannage (double-clic sous 2017, « requires SketchUp Pro ») ; limitations.
+- **docs/FSD_FR.md, docs/FSD_EN.md** — version 1.1.0 ; objectif, périmètre (inclus / prévu / exclu), exigences système (Pro 2021 et Make 2017, API gardées, Ruby 2.2 à 2.7), EF-07 (préconditions, `PRO_ONLY`), EF-14 (moteur intégré, nettoyage, définitions), EF-16, EF-23 (bandeau sous 2017), EF-04 (toutes versions), **nouvelle section EF-31 à EF-33**, NF-01, NF-13, structure des fichiers et des modules, § 7.4 (moteur intégré), menu, limitations, historique 1.1.0.
+- **PRD.md** — EF-31, EF-32, EF-33 livrées en 1.1.0 ; CA-24 (Make), CA-25 (`PRO_ONLY`) ; ligne d'historique 1.1.0.
+- **Demande utilisateur** : un bouton Finalize dans la fenêtre de la table ; décision : **grisé quand le solide est ouvert** (comme Rebuild, et SketchUp 2017 ne peut pas fermer un groupe par script), pas de confirmation (un Ctrl+Z annule ; un dialogue modal de la page bloquerait SketchUp).
+- **solid_procedural/html/procedural_table.html** — bouton `#finalize` à droite de *Unions first* (conteneur `.actions`), grisé et infobulle « Close the procedural solid to finalize it » quand `data.open`, action `finalize` puis clavier rendu à SketchUp.
+- **solid_procedural/procedural_table.rb** — action `finalize` → `finalize_group` : solide ouvert → bandeau « Close the procedural solid to finalize it. » ; sinon `Procedural.do_finalize` (le solide affiché fermé est le seul solide procédural sélectionné). Aucun changement dans `procedural.rb`.
+- **tools/tests/run_tests.rb** — T01 : la page a le bouton ; **T13** : Finalize depuis la table, solide ouvert (2021) → refus avec bandeau, solide fermé → solide simple sélectionné, Ctrl+Z le remet. JavaScript de la page vérifié par `node --check`.
+- **PRD.md** — EF-34, CA-26 ; **FSD FR/EN** — élément Finalize de la table, `finalize_group`, historique ; **manuels FR/EN** et **README** — bouton Finalize.
+- **build/solid_procedural.rbz** reconstruit (26 fichiers, dont `solid_operations.rb` et `LICENSE-solid-operations.txt`).
+- Tests avec le bouton Finalize : 2021 **23/23**, Make 2017 **17 OK, 1 sauté**.
+
+### Bug utilisateur sous Make 2017 : solide « plus procédural » après réouverture, cadre resté vert (Q-6 résolue)
+
+- **Constat utilisateur** : sous 2017, un solide procédural enregistré, puis SketchUp quitté et le document rouvert, n'est plus procédural et ressemble à un Finalize enfermé dans un groupe (« un solide dans un solide ») ; après quelques manipulations, le cadre de sélection reste vert pour tous les objets.
+- **Analyse** : fichier de l'utilisateur (`mes tests/test-2017.skp`, copie) ouvert sous 2021 par `-RubyStartup` (deuxième instance, celle de l'utilisateur laissée ouverte) → **fichier intact** (`role=procedural`, Result, 3 sources cachées avec leurs attributs). Sonde sous Make 2017 : après `Sketchup.open_file`, **même objet `Model`** (`equal?` vrai), le plugin le croit branché, mais sélectionner le solide ne met plus le vert → **observateurs perdus**. `attach` sautait un modèle déjà connu (`return if @attached[model]`) → plus de bascule à l'entrée (Result visible, sources cachées) ni de suivi de la sélection (le vert mis par une commande n'est plus enlevé).
+- **solid_procedural/procedural_observer.rb** — `attach` retire puis remet les observateurs du modèle et de la sélection à chaque appel (`remove_observer` puis `add_observer`), au chargement, à `onNewModel` et à `onOpenModel` ; appelle `Highlight.forget`.
+- **solid_procedural/highlight.rb** — `forget(model)` : la couleur d'origine gardée pour l'ancien document est oubliée (sinon imposée au nouveau) ; un vert laissé est réparé par `repair` (couleur du registre).
+- **tools/tests/run_tests.rb** — **T14** (dernier test) : enregistrer un modèle avec un solide procédural, `Sketchup.file_new`, `Sketchup.open_file` → solide trouvé, Result montré, cadre vert puis normal, entrée et sortie du groupe (2021) ; `procedural_observer` rechargé avec les autres fichiers du plugin.
+- **Résultats** : 2021 **24/24 (146 vérifications)**, Make 2017 **18 OK, 1 sauté (T07), 0 échec (106 vérifications)**. **SketchUp 2021 garde lui aussi le même objet `Model`** ; T14 rejoué sous 2021 avec l'ancien `attach` (copie installée seulement) → **échec** (sélection et entrée) : le défaut existait dans les 1.0.0 et 1.0.1 publiées (File > Open dans une même session) et explique l'incident Q-6. Version corrigée redéployée (24/24).
+- **PRD.md** — Q-6 résolue ; historique 1.1.0. **FSD FR/EN** — `attach`, `forget`, historique 1.1.0.
+- **Test utilisateur OK** (Make 2017).
+
+### Livraison 1.1.0
+
+- Version **1.1.0** (`version.rb`, loader) ; PRD (EF-31 à EF-34 livrées, Q-6 résolue, historique), FSD FR/EN, manuels FR/EN, README à jour.
+- `build/solid_procedural.rbz` reconstruit ; plugin installé dans SketchUp 2021 et Make 2017 (identique au dépôt, T01).
+- Commit, push, tag `v1.1.0` et release GitHub avec le `.rbz`. Non commité : `mes tests/` (fichiers de l'utilisateur).
 - **PRD.md** — EF-31 (M1 codée et testée), EF-32 (`PRO_ONLY`), EF-33 (moteur Make, M2), NF-13 (tests automatiques), périmètre exclu mis à jour.
 - Plugin déployé dans SketchUp 2021 et Make 2017 par le lanceur. Version inchangée (1.0.1) jusqu'à la 1.1.0.
 

@@ -93,10 +93,15 @@ module SolidProcedural
       return unless model
       @model_observer ||= ModelObserver.new
       @selection_observer ||= SelectionObserver.new
-      return if @attached[model]
+      # SketchUp 2017 keeps the same Model object when a file is opened, but
+      # drops its observers: attach them again each time, never twice.
+      model.remove_observer(@model_observer)
       model.add_observer(@model_observer)
+      model.selection.remove_observer(@selection_observer)
       model.selection.add_observer(@selection_observer)
       @attached[model] = true
+      # The original selection color kept was the one of the former document.
+      Highlight.forget(model)
       @synced_paths[model] = open_groups(model)
       # A model saved while a procedural solid was open shows its sources.
       defer(model, :all)

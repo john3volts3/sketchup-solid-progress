@@ -1,8 +1,8 @@
-# Solid Procedural — SketchUp Pro Plugin
+# Solid Procedural — SketchUp Plugin
 
-**Non-destructive procedural solids for SketchUp Pro: your boolean sources stay editable.**
+**Non-destructive procedural solids for SketchUp Pro and SketchUp Make: your boolean sources stay editable.**
 
-*[Version française ci-dessous](#solid-procedural--plugin-sketchup-pro)*
+*[Version française ci-dessous](#solid-procedural--plugin-sketchup)*
 
 ---
 
@@ -21,7 +21,7 @@ It derives from [Solid Batch](https://github.com/john3volts3/sketchup-solid-batc
 
 - **Create Procedural Solid** — groups the selected solids into a procedural solid and computes its Result. Volumes painted with the *subtract color* are subtracted, the others added.
 - **Automatic rebuild** — when you close a procedural solid whose sources changed (signature of the sources), its Result is rebuilt. Nothing is recomputed when nothing changed.
-- **Procedural Table** — the operation list of a procedural solid: order (▲▼, drag and drop, *Unions first*), **On** to disable a volume, color, editable name, operation per row (**Base / Union / Shell / Subtract**), state, and the formula actually computed, e.g. `(((1 ∪ 2) shell 3) − 4) ∪ 6`. Row 1 is the **Base**, always first. Selection works both ways between the rows and the volumes. On a closed solid, every change is applied at once.
+- **Procedural Table** — the operation list of a procedural solid: order (▲▼, drag and drop, *Unions first*), **On** to disable a volume, color, editable name, operation per row (**Base / Union / Shell / Subtract**), state, and the formula actually computed, e.g. `(((1 ∪ 2) shell 3) − 4) ∪ 6`. Row 1 is the **Base**, always first. Selection works both ways between the rows and the volumes. On a closed solid, every change is applied at once, and **Finalize** turns it into a plain solid.
 - **Rebuild / Finalize** — force a rebuild, or replace a procedural solid by a plain solid (sources removed) before exporting.
 - **Consistent undo** — the automatic rebuild is merged with your last edit: one Ctrl+Z undoes the edit and its Result.
 - **Green selection frame** — a selected procedural solid shows a green frame, so you know it is still procedural.
@@ -29,14 +29,18 @@ It derives from [Solid Batch](https://github.com/john3volts3/sketchup-solid-batc
 - **Explode releases the volumes** — exploding a procedural solid gives back the Result and all the source volumes as plain, visible objects.
 - **Set Subtract Color / Set Repair Options** — as in Solid Batch; the settings of Solid Batch are taken over until you change them.
 
-All operations use SketchUp Pro's native boolean engine.
+With **SketchUp Pro**, the operations use SketchUp's native booleans. **SketchUp Make**, which has none, uses the built-in engine of [Solid for Maker](https://github.com/john3volts3/sketchup-solid-for-maker), based on [Eneroth Solid Tools](https://github.com/Eneroth3/eneroth-solid-tools).
 
 > **Always run Finalize before an STL export**: the hidden sources of a procedural solid would be exported too.
 
 ## Requirements
 
-- **SketchUp Pro 2021** (tested with 21.0) on Windows — the native booleans (`union`, `outer_shell`, `subtract`) are Pro-only.
-- SketchUp 2017 support is planned for a later version.
+| SketchUp (Windows) | Booleans | Tested with |
+|---|---|---|
+| **SketchUp Pro 2021** | native (`union`, `outer_shell`, `subtract`) | 21.0.391 |
+| **SketchUp Make 2017** | built-in engine (slower on heavy parts) | 17.2.2555 |
+
+Other versions from 2017 on should work but are not tested. With SketchUp Make 2017, the Procedural Table cannot open a procedural solid (double-click it in the model), and Shell removes a volume enclosed in another one (SketchUp Pro's native Outer Shell keeps it): see the user manual.
 
 ## Installation
 
@@ -62,13 +66,13 @@ All operations use SketchUp Pro's native boolean engine.
 
 ## License
 
-MIT License — see [LICENSE.md](LICENSE.md)
+MIT License — see [LICENSE.md](LICENSE.md). The built-in engine for SketchUp Make (`solid_procedural/solid_operations.rb`) comes from Solid for Maker and Eneroth Solid Tools, MIT License — see `solid_procedural/LICENSE-solid-operations.txt`.
 
 ---
 
-# Solid Procedural — Plugin SketchUp Pro
+# Solid Procedural — Plugin SketchUp
 
-**Solides procéduraux non destructifs pour SketchUp Pro : les volumes sources de vos opérations booléennes restent modifiables.**
+**Solides procéduraux non destructifs pour SketchUp Pro et SketchUp Make : les volumes sources de vos opérations booléennes restent modifiables.**
 
 ## Pourquoi Solid Procedural ?
 
@@ -85,7 +89,7 @@ Il est issu de [Solid Batch](https://github.com/john3volts3/sketchup-solid-batch
 
 - **Create Procedural Solid** — regroupe les solides sélectionnés dans un solide procédural et calcule son Result. Les volumes peints de la *couleur de soustraction* sont soustraits, les autres ajoutés.
 - **Recalcul automatique** — quand vous fermez un solide procédural dont les sources ont changé (empreinte des sources), son Result est recalculé. Rien n'est recalculé si rien n'a changé.
-- **Procedural Table** — la liste des opérations d'un solide procédural : ordre (▲▼, glisser-déposer, *Unions first*), **On** pour désactiver un volume, couleur, nom modifiable, opération par ligne (**Base / Union / Shell / Subtract**), état, et la formule réellement calculée, par ex. `(((1 ∪ 2) shell 3) − 4) ∪ 6`. La ligne 1 est la **Base**, toujours en tête. La sélection marche dans les deux sens entre les lignes et les volumes. Sur un solide fermé, chaque changement est appliqué tout de suite.
+- **Procedural Table** — la liste des opérations d'un solide procédural : ordre (▲▼, glisser-déposer, *Unions first*), **On** pour désactiver un volume, couleur, nom modifiable, opération par ligne (**Base / Union / Shell / Subtract**), état, et la formule réellement calculée, par ex. `(((1 ∪ 2) shell 3) − 4) ∪ 6`. La ligne 1 est la **Base**, toujours en tête. La sélection marche dans les deux sens entre les lignes et les volumes. Sur un solide fermé, chaque changement est appliqué tout de suite, et **Finalize** le transforme en solide simple.
 - **Rebuild / Finalize** — forcer un recalcul, ou remplacer un solide procédural par un solide simple (sources supprimées) avant l'export.
 - **Annulation cohérente** — le recalcul automatique est fusionné avec votre dernière modification : un seul Ctrl+Z annule la modification et son Result.
 - **Cadre de sélection vert** — un solide procédural sélectionné a un cadre vert : vous savez qu'il est encore procédural.
@@ -93,14 +97,18 @@ Il est issu de [Solid Batch](https://github.com/john3volts3/sketchup-solid-batch
 - **Explode libère les volumes** — éclater un solide procédural rend le Result et tous les volumes sources en objets ordinaires visibles.
 - **Set Subtract Color / Set Repair Options** — comme dans Solid Batch ; les réglages de Solid Batch sont repris tant que vous ne les changez pas.
 
-Toutes les opérations utilisent le moteur booléen natif de SketchUp Pro.
+Avec **SketchUp Pro**, les opérations utilisent les booléens natifs de SketchUp. **SketchUp Make**, qui n'en a pas, utilise le moteur intégré de [Solid for Maker](https://github.com/john3volts3/sketchup-solid-for-maker), basé sur [Eneroth Solid Tools](https://github.com/Eneroth3/eneroth-solid-tools).
 
 > **Lancez toujours Finalize avant un export STL** : les sources cachées d'un solide procédural seraient exportées aussi.
 
 ## Prérequis
 
-- **SketchUp Pro 2021** (testé avec la 21.0) sous Windows — les booléens natifs (`union`, `outer_shell`, `subtract`) sont réservés à la version Pro.
-- La prise en charge de SketchUp 2017 est prévue dans une version ultérieure.
+| SketchUp (Windows) | Booléens | Testé avec |
+|---|---|---|
+| **SketchUp Pro 2021** | natifs (`union`, `outer_shell`, `subtract`) | 21.0.391 |
+| **SketchUp Make 2017** | moteur intégré (plus lent sur les pièces chargées) | 17.2.2555 |
+
+Les autres versions depuis 2017 devraient marcher mais ne sont pas testées. Avec SketchUp Make 2017, la Procedural Table ne peut pas ouvrir un solide procédural (double-cliquez-le dans le modèle), et Shell supprime un volume enfermé dans un autre (l'Outer Shell natif de SketchUp Pro le garde) : voir le manuel utilisateur.
 
 ## Installation
 
@@ -126,4 +134,4 @@ Toutes les opérations utilisent le moteur booléen natif de SketchUp Pro.
 
 ## Licence
 
-MIT License — voir [LICENSE.md](LICENSE.md)
+MIT License — voir [LICENSE.md](LICENSE.md). Le moteur intégré pour SketchUp Make (`solid_procedural/solid_operations.rb`) vient de Solid for Maker et d'Eneroth Solid Tools, licence MIT — voir `solid_procedural/LICENSE-solid-operations.txt`.

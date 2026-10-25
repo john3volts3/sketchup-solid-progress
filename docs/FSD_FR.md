@@ -2,28 +2,28 @@
 
 *[English version](FSD_EN.md)*
 
-> Ce document décrit **Solid Procedural 1.0.1**, livré le 2026-10-25 pour SketchUp Pro 2021. L'imbrication est reportée (EF-25 du `PRD.md`) ; la compatibilité SketchUp 2017 est prévue (EF-31).
+> Ce document décrit **Solid Procedural 1.1.0**, livré le 2026-10-25 pour SketchUp Pro 2021 et SketchUp Make 2017. L'imbrication est reportée (EF-25 du `PRD.md`).
 
-**Version :** 1.0.1
-**Date :** 2026-10-23
+**Version :** 1.1.0
+**Date :** 2026-10-25
 **Auteur :** DRO
 
 ---
 
 ## 1. Objectif
 
-Solid Procedural est un plugin SketchUp Pro de **solides procéduraux non destructifs**. Un *groupe procédural* contient ses volumes sources (à ajouter ou à soustraire) et leur combinaison, le **Result** :
+Solid Procedural est un plugin SketchUp de **solides procéduraux non destructifs**. Un *groupe procédural* contient ses volumes sources (à ajouter ou à soustraire) et leur combinaison, le **Result** :
 
 - **dans le groupe** (édition) : les sources sont visibles et modifiables, le Result est caché ;
 - **hors du groupe** : seul le Result est visible ; il est recalculé automatiquement à la sortie si les sources ont changé.
 
-Les booléens sont ceux de SketchUp Pro (`union`, `outer_shell`, `subtract`). Le Result reçoit ensuite la restauration des cercles et arcs natifs. Usage principal : pièces pour l'impression 3D sous SketchUp 2021 Pro.
+Les booléens sont ceux de SketchUp Pro (`union`, `outer_shell`, `subtract`) ; sous SketchUp Make, qui n'en a pas, ceux du moteur Ruby intégré, repris de Solid for Maker (EF-33). Le Result reçoit ensuite la restauration des cercles et arcs natifs. Usage principal : pièces pour l'impression 3D sous SketchUp Pro 2021 et SketchUp Make 2017.
 
 Solid Procedural est issu de **Solid Batch v2.3.0** et s'installe **à côté** de lui. Solid Batch garde Combine All (fusion destructive en un clic).
 
 ## 2. Périmètre
 
-### Inclus (1.0.1)
+### Inclus (1.1.0)
 
 - Create, Rebuild et Finalize Procedural Solid
 - Bascule automatique de l'affichage sources / Result à l'entrée et à la sortie du groupe
@@ -35,29 +35,30 @@ Solid Procedural est issu de **Solid Batch v2.3.0** et s'installe **à côté** 
 - Ctrl+Z / Ctrl+Y cohérents : le recalcul automatique est fusionné avec la dernière modification (option B)
 - Set Subtract Color et Set Repair Options, repris de Solid Batch ; réglages de Solid Batch lus par défaut
 - Restauration des cercles et arcs natifs sur chaque Result (méthode Re-Cercle v2.0.0)
+- **SketchUp Make 2017** : moteur booléen Ruby intégré (Solid for Maker 1.0.0) quand `Sketchup.is_pro?` est faux ; gardes des API postérieures à 2017 (EF-31, EF-33)
+- Interrupteur **`PRO_ONLY`** dans `main.rb` : `true` remet le mode SketchUp Pro seulement (EF-32)
 
 ### Prévu
 
 - **Imbrication** (un groupe procédural source d'un autre) : reportée (EF-25 du PRD)
-- **Compatibilité SketchUp 2017 Pro** (EF-31 du PRD)
+- Accélération de `Volume.repair_holes` (`OPTIMISATION_REPAIR_HOLES.md`), après validation
 
 ### Exclu
 
 - Combine All (reste dans Solid Batch v2)
 - Composants comme conteneurs procéduraux (acceptés comme sources)
-- Intersect, recalcul en direct pendant l'édition, moteur booléen custom
-- SketchUp Make et versions sans booléens natifs
+- Intersect, recalcul en direct pendant l'édition, moteur booléen écrit pour ce plugin (le moteur Ruby est celui, éprouvé, de Solid for Maker)
 
 ## 3. Exigences système
 
 | Exigence | Valeur |
 |----------|--------|
-| Version SketchUp | Pro 2021 (version cible et testée) |
+| Version SketchUp | **Pro 2021** (booléens natifs, testé : 21.0.391) et **Make 2017** (moteur intégré, testé : 17.2.2555) ; autres versions depuis 2017 non testées |
 | Système | Windows (tout OS supporté par SketchUp devrait fonctionner, non testé) |
-| Méthodes Ruby API | `Group#union`, `#outer_shell`, `#subtract`, `#manifold?`, `#copy`, `#make_unique`, `#explode` ; `ModelObserver#onActivePathChanged`, `#onTransactionCommit`, `#onTransactionUndo`, `#onTransactionRedo`, `#onPreSaveModel`, `#onPostSaveModel` ; `SelectionObserver` ; `RenderingOptions['HighlightColor']` ; `Sketchup.focus` (2021.1+, sinon API Windows `user32` par Fiddle) ; `AppObserver#onNewModel`, `#onOpenModel` ; `UI::HtmlDialog` ; `Model#active_path=` (2020.0+) |
-| Restauration cercles/arcs | SketchUp 2020.1+ (`Entities#weld`, soudure de secours) |
-| Ruby | `digest/md5`, `json` (bibliothèques standard fournies avec SketchUp) |
-| Fenêtre HTML | Navigateur intégré de SketchUp 2021 (Chromium 88 en 2021.1) ; JavaScript ES2017, sans dépendance |
+| Méthodes Ruby API | `Group#union`, `#outer_shell`, `#subtract`, `#manifold?`, `#copy`, `#make_unique`, `#explode` ; `ModelObserver#onActivePathChanged`, `#onTransactionCommit`, `#onTransactionUndo`, `#onTransactionRedo`, `#onPreSaveModel`, `#onPostSaveModel` ; `SelectionObserver` ; `RenderingOptions['HighlightColor']` ; `Sketchup.focus` (2021.1+, sinon API Windows `user32` par Fiddle) ; `AppObserver#onNewModel`, `#onOpenModel` ; `UI::HtmlDialog` ; `Model#active_path=` (2020.0+). Gardées pour SketchUp 2017 : `DefinitionList#remove` (2018+, sinon `entities.clear!`), `Model#active_path=` (2020.0+, sinon message dans la table), `Entities#weld` (2020.1+, sinon pas de soudure de secours), `Sketchup.focus` (2021.1+) |
+| Restauration cercles/arcs | Toutes versions ; soudure de secours seulement en 2020.1+ (`Entities#weld`) |
+| Ruby | 2.2 (SketchUp 2017) à 2.7 (SketchUp 2021) ; `digest/md5`, `json` (bibliothèques standard fournies avec SketchUp) |
+| Fenêtre HTML | Navigateurs intégrés de SketchUp 2017 et 2021 ; JavaScript ES2017, sans dépendance ; `-webkit-user-select` pour 2017 |
 
 ## 4. Modèle de données
 
@@ -98,7 +99,7 @@ La géométrie libre (arêtes et faces hors des sous-groupes) n'est **pas** un v
 | Champ | Description |
 |-------|-------------|
 | **Entrée** | Sélection d'un ou plusieurs groupes/composants solides |
-| **Préconditions** | SketchUp Pro (`respond_to?(:union)`) ; aucun groupe procédural dans la sélection (imbrication reportée) ; tous `manifold?` (sinon message listant les objets non solides) ; au moins un volume sans la couleur de soustraction |
+| **Préconditions** | SketchUp Pro (`respond_to?(:union)`), ou le moteur intégré (SketchUp Make) ; avec `PRO_ONLY` et sans Pro : refus « This function requires SketchUp Pro. » (aussi Rebuild et Finalize) ; aucun groupe procédural dans la sélection (imbrication reportée) ; tous `manifold?` (sinon message listant les objets non solides) ; au moins un volume sans la couleur de soustraction |
 | **Traitement** | `add_group(volumes)`, nom `Procedural Solid`, `role=procedural` ; attributs `SolidProcedural` des volumes effacés ; `rank` : tous les volumes « + » puis tous les « − » ; calcul (EF-14) |
 | **Sortie** | Groupe procédural sélectionné, Result visible, sources cachées |
 | **Annulation** | Une seule opération « Solid Procedural — Create Procedural Solid » |
@@ -149,13 +150,13 @@ Changer la couleur de soustraction (Set Subtract Color) ou ouvrir le modèle sur
 1. Sélection mémorisée ; `make_unique` du groupe ; normalisation des sources (`role`, `rank` 1..n, `uid`, `enabled` — la Base est toujours activée —, couleur → opération).
 2. Validation des sources actives : au moins une ; aucune procédurale (imbrication reportée) ; toutes `manifold?` ; la première n'est pas `subtract`.
 3. Calcul de l'empreinte.
-4. **Combinaison sur des copies** (§ 7.4) dans l'ordre `rank` : `acc = copie(1)`, puis pour chaque source suivante `acc.union(copie)`, `acc.outer_shell(copie)` ou `copie.subtract(acc)`. Progression dans la barre d'état (`Solid Procedural — Subtract 2/3 (67%)`).
+4. **Combinaison sur des copies** (§ 7.4) dans l'ordre `rank` : `acc = copie(1)`, puis pour chaque source suivante `acc.union(copie)`, `acc.outer_shell(copie)` ou `copie.subtract(acc)` ; avec le moteur intégré (`ruby_engine?`), `SolidOperations.union / outer_shell / subtract(acc, copie)`, qui modifient `acc` sur place et effacent la copie. Progression dans la barre d'état (`Solid Procedural — Subtract 2/3 (67%)`, suivi de « — SketchUp Make engine » avec le moteur intégré). Ensuite, tout ce que la combinaison a laissé dans le groupe en plus du résultat est effacé (un groupe temporaire du moteur oublié après une erreur deviendrait sinon une source).
 5. Matériau du résultat = matériau de la base ; faces ayant hérité de la couleur de soustraction repeintes (`nil`).
 6. Restauration des cercles (EF-18) sur une copie du résultat.
-7. Ancien Result effacé ; nouveau Result marqué (`role=result`, nom `Result`) ; empreinte enregistrée ; affichage appliqué.
+7. Ancien Result effacé (si c'est une instance de composant, sa définition est supprimée quand plus aucune instance ne l'utilise) ; nouveau Result marqué (`role=result`, nom `Result`) ; empreinte enregistrée ; affichage appliqué.
 8. Sélection remise (les entités encore valides), même en cas d'erreur : les booléens vident la sélection, et un groupe sélectionné doit le rester (table, Rebuild).
 
-En cas d'échec à l'étape 4, toutes les copies sont effacées dans un `ensure`, les définitions de composants créées et inutilisées sont supprimées, et l'ancien Result reste en place.
+En cas d'échec à l'étape 4, toutes les copies sont effacées dans un `ensure`, les définitions de composants créées et inutilisées sont supprimées (`remove_definition` : `DefinitionList#remove`, ou sous SketchUp 2017 `entities.clear!`, une définition vide sans instance disparaissant), et l'ancien Result reste en place. Un seul volume composant donne un Result instance de composant : ses faces sont lues dans sa définition.
 
 #### EF-16 : Échec de calcul
 
@@ -164,7 +165,7 @@ En cas d'échec à l'étape 4, toutes les copies sont effacées dans un `ensure`
 | Aucun volume actif | `There is no enabled volume to combine.` |
 | Source non solide | `Volume #2 Cylinder is not a solid.` |
 | Première source Subtract | `The first volume #1 … has the subtract color: the first volume must be added.` |
-| Booléen natif en échec | `Subtract of volume #3 … failed.` |
+| Booléen en échec (natif ou moteur intégré) | `Subtract of volume #3 … failed.` |
 | Groupe procédural imbriqué | `… nested procedural solids are not supported yet.` |
 
 #### EF-17 : Copies indépendantes
@@ -203,6 +204,7 @@ Fenêtre non modale (`UI::HtmlDialog`, style utilitaire, taille et position mém
 | **State** | `Solid`, `Not solid`, `Disabled`, `Base must be added`, `Nested: not supported yet` |
 | **Formule** | Opérations réellement calculées, lignes actives dans l'ordre : `(((1 ∪ 2) shell 3) − 4) ∪ 6` |
 | **Unions first** | La Base, puis toutes les Union et Shell, puis toutes les Subtract, chacune dans son ordre actuel |
+| **Finalize** (EF-34) | Finalise le solide affiché (`ProceduralTable.finalize_group` → `Procedural.do_finalize` : affiché fermé, c'est le seul solide procédural sélectionné) ; grisé quand le solide est ouvert (infobulle « Close the procedural solid to finalize it »), et une action reçue pour un solide ouvert ne fait qu'afficher ce message dans le bandeau ; un seul Ctrl+Z |
 
 **Application des changements (EF-24)** : chaque action est **une seule opération annulable** (`change_table`).
 
@@ -213,7 +215,7 @@ Fenêtre non modale (`UI::HtmlDialog`, style utilitaire, taille et position mém
 
 **Table → couleur (EF-13, sens inverse)** : choisir Subtract peint le volume de la couleur de soustraction (matériau existant de cette couleur sans texture, sinon nouveau matériau `Solid Procedural Subtract`) et garde l'ancien matériau dans `prev_material` ; quitter Subtract remet ce matériau (ou le matériau par défaut). `seen_color` est mis à jour pour que la règle couleur → opération ne revienne pas en arrière. Quand un volume est repeint de la couleur de soustraction dans le modèle, son ancien matériau est aussi gardé dans `prev_material`.
 
-**Sélection dans les deux sens (EF-23)** : groupe ouvert → un clic sur une ligne sélectionne le volume (si une source est en cours d'édition, son contexte est d'abord fermé), et les volumes sélectionnés ou en cours d'édition ont leur ligne en surbrillance. Groupe fermé → un double-clic ouvre le groupe (`Model#active_path=`) et sélectionne le volume.
+**Sélection dans les deux sens (EF-23)** : groupe ouvert → un clic sur une ligne sélectionne le volume (si une source est en cours d'édition, son contexte est d'abord fermé), et les volumes sélectionnés ou en cours d'édition ont leur ligne en surbrillance. Groupe fermé → un double-clic ouvre le groupe (`Model#active_path=`) et sélectionne le volume. **SketchUp 2017** (pas de `Model#active_path=`) : le double-clic et le clic qui sort d'une source ne font rien d'autre qu'un message, dans la barre d'état et dans un bandeau de la table (`notice` du `payload`, effacé à l'action suivante de la table ou pour un autre groupe) : « Double-click the procedural solid in the model to open it (not available from the table in this SketchUp version). » ou « Close the edited volume first (…) ».
 
 **Clé des lignes** : attribut `uid` de chaque source (gardé par les copies et par `make_unique`, unicité rétablie à la normalisation), sinon `id:<entityID>`. Une action reçue pour un autre groupe que celui affiché, ou pour une clé introuvable, ne modifie rien et rafraîchit la table.
 
@@ -232,7 +234,7 @@ SketchUp 2021 n'a qu'une couleur de sélection, celle du style du modèle (optio
 - la couleur passe au **vert `(0, 170, 0)`** tant que la sélection ne contient **que** des groupes procéduraux ; la couleur d'origine revient sinon (sélection mixte, sources sélectionnées dans un groupe ouvert, rien de sélectionné) ;
 - mise à jour différée et regroupée après chaque changement de sélection ou de chemin actif, annulation, rétablissement et enregistrement, et **après chaque commande** du plugin (la sélection changée par Ruby n'est pas toujours notifiée) ;
 - changer cette couleur ne crée aucune étape d'annulation et ne marque pas le modèle comme modifié (vérifié dans SketchUp 2021) ;
-- la couleur d'origine est gardée en mémoire et dans le registre (`SolidProcedural/highlight_original`) ;
+- la couleur d'origine est gardée en mémoire et dans le registre (`SolidProcedural/highlight_original`) ; elle est oubliée (`forget`) quand un document est ouvert ou créé ;
 - **le vert n'est jamais enregistré** : `onPreSaveModel` remet la couleur d'origine (directement dans le callback, une modification différée arriverait trop tard), `onPostSaveModel` remet le vert si la sélection le demande ;
 - un modèle qui contient ce vert exact sans que le plugin le gère (plantage, enregistrement automatique) retrouve, à l'ouverture ou après une annulation, la couleur du registre, sinon `(0, 0, 255)`.
 
@@ -242,13 +244,23 @@ Couleur du matériau du premier groupe/composant sélectionné qui en a un, enre
 
 #### EF-04 : Set Repair Options
 
-`UI.inputbox` à trois champs : `Auto-repair circles on large objects` (Yes/No, défaut Yes), `Large object threshold (edges)` (défaut 10000), `Min segments for arc detection` (≥ 3, défaut 6). Masqué avant SketchUp 2020.1.
+`UI.inputbox` à trois champs : `Auto-repair circles on large objects` (Yes/No, défaut Yes), `Large object threshold (edges)` (défaut 10000), `Min segments for arc detection` (≥ 3, défaut 6). Disponible dans toutes les versions (masqué avant 2020.1 jusqu'en 1.0.1).
+
+#### EF-31 à EF-33 : SketchUp Make 2017, moteur intégré, interrupteur `PRO_ONLY`
+
+| Élément | Description |
+|---------|-------------|
+| **Choix du moteur** | `Procedural.ruby_engine?` = `!Sketchup.is_pro?` (sous Make, `Group#union` existe mais ne fait rien : `respond_to?` ne sert pas à détecter Make). Sous Pro : booléens natifs seulement |
+| **Moteur intégré** | `solid_procedural/solid_operations.rb`, copie de Solid for Maker 1.0.0 (commit `47e9002`, porté d'Eneroth Solid Tools 3.0.0), module renommé `SolidProcedural::SolidOperations`, corps inchangé ; licence MIT dans `LICENSE-solid-operations.txt`. Union, Shell (union puis `remove_cavities`) et Subtract (trim puis effacement de l'outil), avec mise à l'échelle × 1000 des petites pièces |
+| **Différence connue** | Un volume entièrement enfermé dans un autre : gardé par l'Outer Shell natif (Result de volume 1000 + 64 dans T12), effacé par le Shell du moteur intégré (1000) |
+| **`PRO_ONLY`** | Constante de `main.rb` (`false` par défaut), lue par `SolidProcedural.pro_only?`. `true` et SketchUp non Pro : Create, Rebuild et Finalize affichent « This function requires SketchUp Pro. » ; `rebuild_in_operation` lève la même erreur (recalcul à la sortie, table). Le moteur intégré n'est alors jamais utilisé |
+| **Tests** | `tools/tests/` (hors `.rbz`, NF-13) : T01 à T12 ; T12 compare des volumes calculés d'avance, en natif puis moteur intégré forcé sous 2021, en moteur intégré sous Make 2017 |
 
 ## 6. Exigences non fonctionnelles
 
 | ID | Exigence |
 |----|----------|
-| NF-01 | Booléens natifs de SketchUp Pro uniquement |
+| NF-01 | Booléens natifs sous SketchUp Pro ; moteur intégré (Solid for Maker) seulement sous SketchUp Make |
 | NF-02 | Chaque commande est une seule opération annulable ; les bascules d'affichage sont transparentes |
 | NF-03 | Aucune modification du modèle dans un callback d'observateur : `UI.start_timer(0, false)`, timer arrêté dès son déclenchement (un timer non répétitif qui ouvre une boîte de dialogue modale se répète sinon) ; demandes regroupées par modèle ; garde `@busy` contre les notifications provoquées par le plugin |
 | NF-04 | Pas de recalcul sans modification (empreinte) ; progression dans la barre d'état |
@@ -260,6 +272,7 @@ Couleur du matériau du premier groupe/composant sélectionné qui en a un, enre
 | NF-10 | Données procédurales dans le modèle, options dans le registre `SolidProcedural`, repli sur `SolidBatch` |
 | NF-11 | Un `.skp` ouvert sans le plugin montre le Result (sources cachées) |
 | NF-12 | Une source non solide, supprimée ou un groupe vide ne provoquent jamais d'exception non gérée |
+| NF-13 | Tests automatiques : `tools/tests/run_tests.ps1` déploie le plugin, lance SketchUp 2021 puis Make 2017 (`-RubyStartup`), lit le rapport (`tools/tests/results/`) et ferme SketchUp ; `-Manual` pour le test à la main de la sortie d'un groupe sous 2017 |
 
 ## 7. Architecture
 
@@ -268,7 +281,7 @@ Couleur du matériau du premier groupe/composant sélectionné qui en a un, enre
 ```
 solid_procedural.rb             # Point d'entrée — enregistrement de l'extension
 solid_procedural/
-  version.rb                    # VERSION = '1.0.1'
+  version.rb                    # VERSION = '1.1.0'
   main.rb                       # Menu, barre d'outils, clic droit, options (registre), Set Subtract Color, Set Repair Options
   procedural.rb                 # Groupes procéduraux : données, empreinte, affichage, calcul, commandes, synchronisation
   procedural_table.rb           # Procedural Table : fenêtre, données des lignes, actions de la page
@@ -281,6 +294,8 @@ solid_procedural/
     detector.rb
     rebuilder.rb
     volume.rb
+  solid_operations.rb           # Moteur booléen Ruby pour SketchUp Make (copie de Solid for Maker 1.0.0)
+  LICENSE-solid-operations.txt  # Licence MIT du moteur (Eneroth Solid Tools, Solid for Maker)
   icons/
     create_procedural_16/24.png
     table_procedural_16/24.png
@@ -288,13 +303,14 @@ solid_procedural/
     finalize_procedural_16/24.png
     setcolor_16/24.png
     repair_circles_16/24.png
+tools/tests/                    # Hors .rbz : run_tests.ps1, run_tests.rb, manual_open.rb, results/ (ignoré par git)
 ```
 
 ### 7.2 Structure des modules
 
 ```
 SolidProcedural
-  PLUGIN_NAME, PLUGIN_DIR, VERSION
+  PLUGIN_NAME, PLUGIN_DIR, VERSION, PRO_ONLY, pro_only?
   REGISTRY_SECTION ('SolidProcedural'), LEGACY_REGISTRY_SECTION ('SolidBatch')
   read_option(key, default)            # SolidProcedural, puis SolidBatch, puis défaut
   subtract_color / save_subtract_color, auto_repair_large, large_threshold, min_arc_segments (+ save_*)
@@ -307,22 +323,27 @@ SolidProcedural::Procedural
   signature, geometry_digest, stale?
   display_entities, hidden_wanted?, display_changes, apply_display, loose_geometry?
   normalize_sources, sync_op_with_color, validate
-  rebuild_in_operation, combine, copy_of, duplicate, restore_circles
-  do_create, do_rebuild, do_finalize, finalize, run_command
+  rebuild_in_operation, combine, ruby_engine?, ruby_boolean, copy_of, duplicate, remove_definition, restore_circles
+  PRO_REQUIRED, pro_required?, pro_refused?, do_create, do_rebuild, do_finalize, finalize, run_command
   row_keys, row_lookup, state_of, change_table, table_toggle, table_operation, table_rename,
   table_order, table_unions_first, set_operation, subtract_material
   sync_path, sync_all, release_orphans
-  ModelObserver, SelectionObserver, AppObserver, attach, defer, run
+  ModelObserver, SelectionObserver, AppObserver, attach (observateurs retirés puis remis : SketchUp 2017 et 2021
+    gardent le même objet Model après File > Open mais perdent ses observateurs), defer, run
 
 SolidProcedural::ProceduralTable
-  show, target_group, refresh_later, refresh, payload, color_hex, on_action, select_row, open_row, focus_sketchup
+  show, target_group, refresh_later, refresh, payload, color_hex, on_action, select_row, open_row,
+  active_path_settable?, status_no_active_path, finalize_group, focus_sketchup
   Win32 : functions, sketchup_window, activate
 
 SolidProcedural::Highlight
-  GREEN, wanted?, green?, update_later, update, show_green, restore, before_save, repair
+  GREEN, wanted?, green?, update_later, update, show_green, restore, forget, before_save, repair
 
 SolidProcedural::CircleRestore         # Copie de Re-Cercle v2.0.0
   restore_in_solid, count_edges, summary, Detector, Rebuilder, Volume
+
+SolidProcedural::SolidOperations       # Copie de Solid for Maker 1.0.0 (Eneroth Solid Tools)
+  union, subtract, trim, intersect, outer_shell, remove_cavities, solid?, within?
 ```
 
 ### 7.3 Empreinte (`signature`)
@@ -339,6 +360,16 @@ MD5 sur, pour chaque source dans l'ordre : `rank`, `op`, `enabled`, clé du mat�
 | `manifold?` | groupe/composant | — | booléen | aucun |
 
 Le calcul ne travaille que sur des copies ; toutes les copies et résultats intermédiaires sont listés et effacés à la fin, quel que soit l'opérande que SketchUp efface.
+
+**Moteur intégré (SketchUp Make)** :
+
+| Méthode | Cible (modifiée sur place) | Outil | Retour |
+|---------|----------------------------|-------|--------|
+| `SolidOperations.union(acc, copie)` | accumulateur | copie (effacée) | `true`, `false` (pas un solide), `nil` (échec) |
+| `SolidOperations.outer_shell(acc, copie)` | accumulateur | copie (effacée) | idem, solides intérieurs supprimés |
+| `SolidOperations.subtract(acc, copie)` | accumulateur | copie (effacée) | idem |
+
+`ruby_boolean` renvoie l'accumulateur si le retour est `true`, sinon `nil` (« … failed. »).
 
 ### 7.5 Flux
 
@@ -384,7 +415,7 @@ Action de la Procedural Table (callback de la page, hors observateur)
 4. Finalize Procedural Solid
 5. *(séparateur)*
 6. Set Subtract Color
-7. Set Repair Options (SketchUp 2020.1+)
+7. Set Repair Options
 
 ### 8.2 Barre d'outils « Solid Procedural »
 
@@ -415,10 +446,11 @@ Voir EF-20 à EF-24. Titre « Solid Procedural — Procedural Table ».
 
 Un réglage absent de `SolidProcedural` est lu dans `SolidBatch` (réglages de Solid Batch v2 repris). Les écritures vont toujours dans `SolidProcedural`.
 
-## 10. Limitations connues (1.0.1)
+## 10. Limitations connues (1.1.0)
 
 - Dans un groupe ouvert, l'effet d'un changement de la table ne se voit qu'à la sortie (le Result est caché pendant l'édition) ; sur un groupe fermé, il est appliqué tout de suite.
-- Une ligne ne sélectionne son volume que dans un groupe ouvert (un double-clic l'ouvre).
+- Une ligne ne sélectionne son volume que dans un groupe ouvert (un double-clic l'ouvre, sauf sous SketchUp 2017 : message dans la table).
+- **SketchUp Make 2017** : moteur intégré plus lent (quelques secondes pour une pièce chargée) ; un volume enfermé dans un autre est supprimé par Shell (gardé par l'Outer Shell natif de Pro) ; pas de soudure de secours des cercles (un cercle non reconstructible reste en segments) ; la table ne peut pas ouvrir un groupe.
 - Après un Explode, la géométrie libre cachée du groupe reste cachée : seuls les volumes groupés sont libérés.
 - Le cadre vert est la couleur de sélection du style : pendant qu'il est affiché, le panneau Styles montre ce vert, et mettre à jour le style à ce moment l'y enregistrerait. Un style dont la couleur de sélection est exactement `(0, 170, 0)` est considéré comme laissé par le plugin.
 - Groupes procéduraux imbriqués refusés (imbrication reportée) : Create refuse une sélection qui en contient, le recalcul s'arrête avec un message (ancien résultat gardé) et la table affiche la ligne en erreur. Pour réutiliser une sous-pièce, la finaliser puis l'utiliser comme volume. Un Explode d'un groupe procédural collé à l'intérieur d'un groupe procédural ouvert mélangerait ses volumes avec ceux de ce groupe.
@@ -431,6 +463,7 @@ Un réglage absent de `SolidProcedural` est lu dans `SolidBatch` (réglages de S
 
 | Version | Date | Changements |
 |---------|------|-------------|
+| 1.1.0 | 2026-10-25 | **SketchUp Make 2017** : moteur booléen intégré (Solid for Maker 1.0.0) quand SketchUp n'est pas Pro, gardes des API postérieures à 2017 (`DefinitionList#remove`, `Model#active_path=` avec message dans la table, `Entities#weld`), cercles natifs sous 2017, Set Repair Options dans toutes les versions ; interrupteur `PRO_ONLY` ; bouton **Finalize** dans la Procedural Table ; correctifs : solide procédural à un seul volume composant (plantait), matière du Result perdue par la restauration des cercles, définition de l'ancien Result laissée inutilisée par Rebuild, **observateurs perdus après File > Open / New** (même objet `Model` gardé par SketchUp 2017 et 2021 : plus de bascule à l'entrée, cadre resté vert ; Q-6) ; tests automatiques (`tools/tests/`) |
 | 1.0.1 | 2026-10-25 | Correctifs : Finalize d'un solide procédural copié (erreur « reference to deleted Group ») ; cadre de sélection qui restait vert après Finalize |
 | 1.0.0 | 2026-10-23 | Nouveau plugin issu de Solid Batch v2.3.0. Étape 1 (2026-10-23) : Create / Rebuild / Finalize Procedural Solid, bascule automatique sources / Result, recalcul automatique à la sortie par empreinte MD5, option B pour Ctrl+Z, couleur → opération, restauration des cercles sur chaque Result, réglages repris de Solid Batch. Combine All retiré. Étape 2 (2026-10-23) : Procedural Table (ordre, On, couleur, nom, opération, état, formule, Unions first, sélection dans les deux sens ; menu, barre d'outils, clic droit), Subtract dans la table ↔ couleur, Explode libère les volumes. Étape 2b (2026-10-23) : Base figée en ligne 1 (choix « Base » sur une ligne), sélection gardée après un recalcul. Étape 2c (2026-10-23) : cadre de sélection vert pour les groupes procéduraux. Étape 2d (2026-10-23) : raccourcis de SketchUp utilisables quand la table est ouverte (clavier rendu à SketchUp) |
 

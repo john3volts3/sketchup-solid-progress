@@ -166,7 +166,7 @@ module SolidProcedural
 
     PLUGIN_FILES = %w[
       version circle_restore/detector circle_restore/rebuilder circle_restore/volume
-      circle_restore solid_operations procedural procedural_table highlight main
+      circle_restore solid_operations procedural procedural_table highlight main procedural_observer
     ].freeze
 
     def self.plugin_dir
@@ -371,6 +371,7 @@ module SolidProcedural
                 different.map { |f| f[(project.length + 1)..-1] }.join(', '))
         html = File.read(File.join(tests.plugin_dir, 'html', 'procedural_table.html'))
         c.check(html.include?('-webkit-user-select'), 'table page has -webkit-user-select')
+        c.check(html.include?('id="finalize"'), 'table page has the Finalize button')
       end
 
       test 'T02 Create with one component volume (no boolean needed)' do |c, model|
@@ -435,6 +436,10 @@ module SolidProcedural
           c.check((model.active_path || []).empty?, 'no active_path=: the solid stays closed, no error')
           c.check(tests.status.any? { |s| s.include?('Double-click') }, 'no active_path=: message in the status bar',
                   tests.status.last.to_s)
+          notice = ProceduralTable.payload(model)[:notice].to_s
+          c.check(notice.include?('Double-click'), 'no active_path=: message in the table', notice)
+          ProceduralTable.on_action({ type: 'toggle', group: g.entityID, key: rows[0][:key], on: true }.to_json)
+          c.check(ProceduralTable.payload(model)[:notice].nil?, 'message cleared by the next table action')
         end
       end
 
@@ -623,6 +628,44 @@ module SolidProcedural
         c.check(SolidProcedural.pro_only? == SolidProcedural::PRO_ONLY, 'switch restored')
       end
 
+      test 'T13 Finalize button of the Procedural Table' do |c, model|
+        base = tests.box(model.entities, 0, 120, 0, 10, 10, 10, tests.base_material(model))
+        hole = tests.cylinder(model.entities, 5, 125, -2, 2, 14, tests.red(model))
+        tests.select(model, base, hole)
+        tests.messages.clear
+        Procedural.do_create
+        g = tests.procedural_groups(model).last
+        next c.check(false, 'procedural solid created', tests.messages.join(' / ')) unless g
+        @state[:count] = tests.procedural_groups(model).length
+        if tests.path_settable?(model)
+          model.active_path = [g]
+          ProceduralTable.on_action({ type: 'finalize', group: g.entityID }.to_json)
+          c.check(g.valid? && Procedural.procedural?(g), 'open: not finalized')
+          notice = ProceduralTable.payload(model)[:notice].to_s
+          c.check(notice.include?('Close the procedural solid'), 'open: message in the table', notice)
+          tests.close_all(model)
+        else
+          c.note('open case not tested: no Model#active_path=')
+        end
+        c.later do
+          tests.select(model, g)
+          tests.messages.clear
+          ProceduralTable.on_action({ type: 'finalize', group: g.entityID }.to_json)
+          c.check(tests.messages.empty?, 'closed: no message', tests.messages.join(' / '))
+          solid = model.selection.first
+          c.check(!g.valid?, 'closed: procedural solid replaced')
+          c.check(solid && Procedural.instance?(solid) && !Procedural.procedural?(solid) && solid.manifold?,
+                  'closed: plain solid selected')
+          c.check(tests.procedural_groups(model).length == @state[:count] - 1, 'one procedural solid less')
+          Sketchup.undo if Sketchup.respond_to?(:undo)
+        end
+        c.later do
+          next unless Sketchup.respond_to?(:undo)
+          c.check(tests.procedural_groups(model).length == @state[:count], 'Ctrl+Z: the procedural solid is back')
+          model.selection.clear
+        end
+      end
+
       # T12: volumes known in advance, for each engine (both in SketchUp
       # Pro, the Ruby engine forced for the second run; Ruby only in Make).
       hole_volume = 0.5 * 24 * 2 * 2 * Math.sin(2 * Math::PI / 24) * 10
@@ -702,6 +745,74 @@ module SolidProcedural
         left = tests.unused_new_definitions(model)
         c.check(left.empty?, 'no unused component definition after all the tests',
                 left.map { |d| "#{d.name} (#{d.entities.length} entities)" }.join(', '))
+      end
+
+      # Last test: the model of the tests is replaced. SketchUp 2017 keeps
+      # the same Model object for the opened file but drops its observers.
+      test 'T14 Save, File > New, File > Open: still procedural' do |c, model|
+        Dir.mkdir(tests::RESULTS_DIR) unless File.directory?(tests::RESULTS_DIR)
+        path = File.join(tests::RESULTS_DIR, "t14-#{Sketchup.version.to_i}.skp")
+        File.delete(path) if File.exist?(path)
+        base = tests.box(model.entities, 0, 160, 0, 10, 10, 10, tests.base_material(model))
+        hole = tests.cylinder(model.entities, 5, 165, -2, 2, 14, tests.red(model))
+        tests.select(model, base, hole)
+        tests.messages.clear
+        Procedural.do_create
+        c.check(tests.procedural_groups(model).length >= 1 && tests.messages.empty?, 'procedural solid created',
+                tests.messages.join(' / '))
+        model.selection.clear
+        c.later do
+          c.check(model.save(path), 'model saved')
+        end
+        c.later do
+          # A modified model would ask to be saved: a modal dialog.
+          if c.check(!model.modified?, 'model unchanged after the save')
+            Sketchup.file_new
+          else
+            c.phases.clear
+          end
+        end
+        c.later do
+          if c.check(!Sketchup.active_model.modified?, 'new model unchanged')
+            c.check(Sketchup.open_file(path), 'file opened')
+          else
+            c.phases.clear
+          end
+        end
+        c.later do
+          m = Sketchup.active_model
+          c.note("same Model object after File > Open: #{m.equal?(model)}")
+          g = tests.procedural_groups(m).first
+          c.check(g, 'opened file: procedural solid found')
+          next c.phases.clear unless g
+          c.check(Procedural.result_of(g) && !Procedural.result_of(g).hidden? &&
+                  Procedural.sources_of(g).all?(&:hidden?), 'opened file: Result shown, sources hidden')
+          tests.select(m, g)
+        end
+        c.later do
+          m = Sketchup.active_model
+          c.check(tests.green?(m), 'opened file: procedural solid selected, green frame (selection observer)')
+          m.selection.clear
+        end
+        c.later do
+          m = Sketchup.active_model
+          c.check(!tests.green?(m), 'opened file: nothing selected, frame not green')
+          g = tests.procedural_groups(m).first
+          m.active_path = [g] if g && tests.path_settable?(m)
+        end
+        c.later do
+          m = Sketchup.active_model
+          g = tests.procedural_groups(m).first
+          next c.note('display on entering not tested: no Model#active_path=') unless tests.path_settable?(m)
+          c.check(g && Procedural.sources_of(g).none?(&:hidden?), 'opened file: entering shows the sources (model observer)')
+          tests.close_all(m)
+        end
+        c.later do
+          m = Sketchup.active_model
+          g = tests.procedural_groups(m).first
+          next unless tests.path_settable?(m)
+          c.check(g && !Procedural.result_of(g).hidden?, 'opened file: exiting shows the Result')
+        end
       end
     end
 

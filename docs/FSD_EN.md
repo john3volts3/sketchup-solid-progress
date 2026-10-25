@@ -2,28 +2,28 @@
 
 *[Version française](FSD_FR.md)*
 
-> This document describes **Solid Procedural 1.0.1**, delivered on 2026-10-25 for SketchUp Pro 2021. Nesting is postponed (EF-25 of `PRD.md`, French); SketchUp 2017 support is planned (EF-31).
+> This document describes **Solid Procedural 1.1.0**, delivered on 2026-10-25 for SketchUp Pro 2021 and SketchUp Make 2017. Nesting is postponed (EF-25 of `PRD.md`, French).
 
-**Version:** 1.0.1
-**Date:** 2026-10-23
+**Version:** 1.1.0
+**Date:** 2026-10-25
 **Author:** DRO
 
 ---
 
 ## 1. Purpose
 
-Solid Procedural is a SketchUp Pro plugin for **non-destructive procedural solids**. A *procedural group* holds its source volumes (to add or to subtract) and their combination, the **Result**:
+Solid Procedural is a SketchUp plugin for **non-destructive procedural solids**. A *procedural group* holds its source volumes (to add or to subtract) and their combination, the **Result**:
 
 - **inside the group** (editing): the sources are visible and editable, the Result is hidden;
 - **outside the group**: only the Result is visible; it is rebuilt automatically on exit when the sources changed.
 
-The booleans are SketchUp Pro's (`union`, `outer_shell`, `subtract`). The Result then goes through the native circle and arc restoration. Main use: parts for 3D printing in SketchUp 2021 Pro.
+The booleans are SketchUp Pro's (`union`, `outer_shell`, `subtract`); with SketchUp Make, which has none, those of the built-in Ruby engine taken from Solid for Maker (EF-33). The Result then goes through the native circle and arc restoration. Main use: parts for 3D printing in SketchUp Pro 2021 and SketchUp Make 2017.
 
 Solid Procedural derives from **Solid Batch v2.3.0** and installs **next to** it. Solid Batch keeps Combine All (one-click destructive combination).
 
 ## 2. Scope
 
-### Included (1.0.1)
+### Included (1.1.0)
 
 - Create, Rebuild and Finalize Procedural Solid
 - Automatic sources / Result display switch when entering and exiting the group
@@ -35,29 +35,30 @@ Solid Procedural derives from **Solid Batch v2.3.0** and installs **next to** it
 - Consistent Ctrl+Z / Ctrl+Y: the automatic rebuild is merged with the last edit (option B)
 - Set Subtract Color and Set Repair Options, taken over from Solid Batch; Solid Batch settings read by default
 - Native circle and arc restoration on each Result (Re-Cercle v2.0.0 method)
+- **SketchUp Make 2017**: built-in Ruby boolean engine (Solid for Maker 1.0.0) when `Sketchup.is_pro?` is false; guards for the APIs newer than 2017 (EF-31, EF-33)
+- **`PRO_ONLY`** switch in `main.rb`: `true` brings back the SketchUp Pro only mode (EF-32)
 
 ### Planned
 
 - **Nesting** (a procedural group used as a source of another): postponed (PRD EF-25)
-- **SketchUp 2017 Pro support** (PRD EF-31)
+- Faster `Volume.repair_holes` (`OPTIMISATION_REPAIR_HOLES.md`), once validated
 
 ### Excluded
 
 - Combine All (stays in Solid Batch v2)
 - Components as procedural containers (accepted as sources)
-- Intersect, live rebuild while editing, custom boolean engine
-- SketchUp Make and versions without native booleans
+- Intersect, live rebuild while editing, a boolean engine written for this plugin (the Ruby engine is Solid for Maker's proven one)
 
 ## 3. System requirements
 
 | Requirement | Value |
 |-------------|-------|
-| SketchUp version | Pro 2021 (target and tested version) |
+| SketchUp version | **Pro 2021** (native booleans, tested: 21.0.391) and **Make 2017** (built-in engine, tested: 17.2.2555); other versions from 2017 on not tested |
 | OS | Windows (any OS supported by SketchUp should work, not tested) |
-| Ruby API methods | `Group#union`, `#outer_shell`, `#subtract`, `#manifold?`, `#copy`, `#make_unique`, `#explode`; `ModelObserver#onActivePathChanged`, `#onTransactionCommit`, `#onTransactionUndo`, `#onTransactionRedo`, `#onPreSaveModel`, `#onPostSaveModel`; `SelectionObserver`; `RenderingOptions['HighlightColor']`; `Sketchup.focus` (2021.1+, else the `user32` Windows API through Fiddle); `AppObserver#onNewModel`, `#onOpenModel`; `UI::HtmlDialog`; `Model#active_path=` (2020.0+) |
-| Circle/arc restoration | SketchUp 2020.1+ (`Entities#weld`, fallback welding) |
-| Ruby | `digest/md5`, `json` (standard libraries shipped with SketchUp) |
-| HTML window | SketchUp 2021 embedded browser (Chromium 88 in 2021.1); ES2017 JavaScript, no dependency |
+| Ruby API methods | `Group#union`, `#outer_shell`, `#subtract`, `#manifold?`, `#copy`, `#make_unique`, `#explode`; `ModelObserver#onActivePathChanged`, `#onTransactionCommit`, `#onTransactionUndo`, `#onTransactionRedo`, `#onPreSaveModel`, `#onPostSaveModel`; `SelectionObserver`; `RenderingOptions['HighlightColor']`; `Sketchup.focus` (2021.1+, else the `user32` Windows API through Fiddle); `AppObserver#onNewModel`, `#onOpenModel`; `UI::HtmlDialog`; `Model#active_path=` (2020.0+). Guarded for SketchUp 2017: `DefinitionList#remove` (2018+, else `entities.clear!`), `Model#active_path=` (2020.0+, else a message in the table), `Entities#weld` (2020.1+, else no weld fallback), `Sketchup.focus` (2021.1+) |
+| Circle/arc restoration | Every version; weld fallback only in 2020.1+ (`Entities#weld`) |
+| Ruby | 2.2 (SketchUp 2017) to 2.7 (SketchUp 2021); `digest/md5`, `json` (standard libraries shipped with SketchUp) |
+| HTML window | Embedded browsers of SketchUp 2017 and 2021; ES2017 JavaScript, no dependency; `-webkit-user-select` for 2017 |
 
 ## 4. Data model
 
@@ -98,7 +99,7 @@ Loose geometry (edges and faces outside the sub-groups) is **not** a volume: it 
 | Field | Description |
 |-------|-------------|
 | **Input** | Selection of one or more solid groups/components |
-| **Preconditions** | SketchUp Pro (`respond_to?(:union)`); no procedural group in the selection (nesting postponed); all `manifold?` (otherwise a message lists the non-solid objects); at least one volume without the subtract color |
+| **Preconditions** | SketchUp Pro (`respond_to?(:union)`), or the built-in engine (SketchUp Make); with `PRO_ONLY` and no Pro: refused with "This function requires SketchUp Pro." (Rebuild and Finalize too); no procedural group in the selection (nesting postponed); all `manifold?` (otherwise a message lists the non-solid objects); at least one volume without the subtract color |
 | **Processing** | `add_group(volumes)`, name `Procedural Solid`, `role=procedural`; `SolidProcedural` attributes of the volumes deleted; `rank`: every "+" volume, then every "−" one; rebuild (EF-14) |
 | **Output** | Procedural group selected, Result visible, sources hidden |
 | **Undo** | One operation "Solid Procedural — Create Procedural Solid" |
@@ -149,13 +150,13 @@ Changing the subtract color (Set Subtract Color) or opening the model on another
 1. Selection remembered; `make_unique` of the group; sources normalized (`role`, `rank` 1..n, `uid`, `enabled` — the Base is always enabled —, color → operation).
 2. Validation of the enabled sources: at least one; none procedural (nesting postponed); all `manifold?`; the first one is not `subtract`.
 3. Signature computed.
-4. **Combination on copies** (§ 7.4) in `rank` order: `acc = copy(1)`, then for each next source `acc.union(copy)`, `acc.outer_shell(copy)` or `copy.subtract(acc)`. Progress in the status bar (`Solid Procedural — Subtract 2/3 (67%)`).
+4. **Combination on copies** (§ 7.4) in `rank` order: `acc = copy(1)`, then for each next source `acc.union(copy)`, `acc.outer_shell(copy)` or `copy.subtract(acc)`; with the built-in engine (`ruby_engine?`), `SolidOperations.union / outer_shell / subtract(acc, copy)`, which modify `acc` in place and erase the copy. Progress in the status bar (`Solid Procedural — Subtract 2/3 (67%)`, followed by "— SketchUp Make engine" with the built-in engine). Then whatever the combination left in the group besides the result is erased (a temporary group of the engine left after an error would otherwise become a source).
 5. Result material = base material; faces that inherited the subtract color reset (`nil`).
 6. Circle restoration (EF-18) on a copy of the result.
-7. Former Result erased; new Result marked (`role=result`, name `Result`); signature stored; display applied.
+7. Former Result erased (when it is a component instance, its definition is removed once no instance uses it any more); new Result marked (`role=result`, name `Result`); signature stored; display applied.
 8. Selection restored (entities still valid), even on an error: the booleans clear the selection, and a selected group must stay selected (table, Rebuild).
 
-On a failure in step 4, every copy is erased in an `ensure`, the unused component definitions created are removed, and the former Result stays in place.
+On a failure in step 4, every copy is erased in an `ensure`, the unused component definitions created are removed (`remove_definition`: `DefinitionList#remove`, or with SketchUp 2017 `entities.clear!`, an empty definition without instance being dropped), and the former Result stays in place. A single component volume gives a component instance as Result: its faces are read in its definition.
 
 #### EF-16: Rebuild failure
 
@@ -164,7 +165,7 @@ On a failure in step 4, every copy is erased in an `ensure`, the unused componen
 | No enabled volume | `There is no enabled volume to combine.` |
 | Non-solid source | `Volume #2 Cylinder is not a solid.` |
 | First source is Subtract | `The first volume #1 … has the subtract color: the first volume must be added.` |
-| Native boolean failed | `Subtract of volume #3 … failed.` |
+| Boolean failed (native or built-in engine) | `Subtract of volume #3 … failed.` |
 | Nested procedural group | `… nested procedural solids are not supported yet.` |
 
 #### EF-17: Independent copies
@@ -203,6 +204,7 @@ Modeless window (`UI::HtmlDialog`, utility style, size and position remembered),
 | **State** | `Solid`, `Not solid`, `Disabled`, `Base must be added`, `Nested: not supported yet` |
 | **Formula** | Operations actually computed, enabled rows in order: `(((1 ∪ 2) shell 3) − 4) ∪ 6` |
 | **Unions first** | The Base, then every Union and Shell, then every Subtract, each in its current order |
+| **Finalize** (EF-34) | Finalizes the solid shown (`ProceduralTable.finalize_group` → `Procedural.do_finalize`: shown closed, it is the only procedural solid selected); greyed while the solid is open (tooltip "Close the procedural solid to finalize it"), and an action received for an open solid only shows that message in the banner; one Ctrl+Z |
 
 **Applying the changes (EF-24)**: each action is **one undoable operation** (`change_table`).
 
@@ -213,7 +215,7 @@ Modeless window (`UI::HtmlDialog`, utility style, size and position remembered),
 
 **Table → color (EF-13, reverse direction)**: choosing Subtract paints the volume with the subtract color (an existing material of that color without texture, else a new `Solid Procedural Subtract` material) and keeps the former material in `prev_material`; leaving Subtract restores it (or the default material). `seen_color` is updated so that the color → operation rule does not flip it back. When a volume is repainted with the subtract color in the model, its former material is kept in `prev_material` too.
 
-**Two-way selection (EF-23)**: open group → a click on a row selects the volume (a source being edited is closed first), and the selected or edited volumes have their row highlighted. Closed group → a double-click opens the group (`Model#active_path=`) and selects the volume.
+**Two-way selection (EF-23)**: open group → a click on a row selects the volume (a source being edited is closed first), and the selected or edited volumes have their row highlighted. Closed group → a double-click opens the group (`Model#active_path=`) and selects the volume. **SketchUp 2017** (no `Model#active_path=`): the double-click and the click that leaves a source only show a message, in the status bar and in a banner of the table (`notice` of the `payload`, cleared by the next action of the table or for another group): "Double-click the procedural solid in the model to open it (not available from the table in this SketchUp version)." or "Close the edited volume first (…)".
 
 **Row keys**: `uid` attribute of each source (kept by copies and `make_unique`, made unique again at normalization), else `id:<entityID>`. An action for another group than the one shown, or for a key not found, changes nothing and refreshes the table.
 
@@ -232,7 +234,7 @@ SketchUp 2021 has a single selection color, the one of the model style (renderin
 - the color turns **green `(0, 170, 0)`** while the selection holds **only** procedural groups; the original color comes back otherwise (mixed selection, sources selected in an open group, nothing selected);
 - deferred and coalesced update after every change of the selection or the active path, undo, redo and save, and **after every command** of the plugin (a selection changed by Ruby is not always notified);
 - changing this color adds no undo step and does not mark the model as modified (checked in SketchUp 2021);
-- the original color is kept in memory and in the registry (`SolidProcedural/highlight_original`);
+- the original color is kept in memory and in the registry (`SolidProcedural/highlight_original`); it is forgotten (`forget`) when a document is opened or created;
 - **the green is never saved**: `onPreSaveModel` restores the original color (directly in the callback, a deferred change would come too late), `onPostSaveModel` shows the green again when the selection still asks for it;
 - a model holding this exact green that the plugin does not manage (crash, autosave) gets back, when opened or after an undo, the color of the registry, else `(0, 0, 255)`.
 
@@ -242,13 +244,23 @@ Color of the material of the first selected group/component that has one, stored
 
 #### EF-04: Set Repair Options
 
-`UI.inputbox` with three fields: `Auto-repair circles on large objects` (Yes/No, default Yes), `Large object threshold (edges)` (default 10000), `Min segments for arc detection` (≥ 3, default 6). Hidden before SketchUp 2020.1.
+`UI.inputbox` with three fields: `Auto-repair circles on large objects` (Yes/No, default Yes), `Large object threshold (edges)` (default 10000), `Min segments for arc detection` (≥ 3, default 6). Available in every version (hidden before 2020.1 up to 1.0.1).
+
+#### EF-31 to EF-33: SketchUp Make 2017, built-in engine, `PRO_ONLY` switch
+
+| Element | Description |
+|---------|-------------|
+| **Engine choice** | `Procedural.ruby_engine?` = `!Sketchup.is_pro?` (in Make, `Group#union` exists but does nothing: `respond_to?` cannot detect Make). With Pro: native booleans only |
+| **Built-in engine** | `solid_procedural/solid_operations.rb`, copy of Solid for Maker 1.0.0 (commit `47e9002`, ported from Eneroth Solid Tools 3.0.0), module renamed `SolidProcedural::SolidOperations`, body unchanged; MIT License in `LICENSE-solid-operations.txt`. Union, Shell (union then `remove_cavities`) and Subtract (trim then the tool erased), small parts scaled up × 1000 |
+| **Known difference** | A volume entirely enclosed in another one: kept by the native Outer Shell (Result volume 1000 + 64 in T12), erased by the Shell of the built-in engine (1000) |
+| **`PRO_ONLY`** | Constant in `main.rb` (`false` by default), read by `SolidProcedural.pro_only?`. `true` and SketchUp not Pro: Create, Rebuild and Finalize show "This function requires SketchUp Pro."; `rebuild_in_operation` raises the same error (rebuild on exit, table). The built-in engine is then never used |
+| **Tests** | `tools/tests/` (not in the `.rbz`, NF-13): T01 to T12; T12 compares volumes known in advance, native then built-in engine forced in 2021, built-in engine in Make 2017 |
 
 ## 6. Non-functional requirements
 
 | ID | Requirement |
 |----|-------------|
-| NF-01 | SketchUp Pro native booleans only |
+| NF-01 | Native booleans with SketchUp Pro; built-in engine (Solid for Maker) only with SketchUp Make |
 | NF-02 | Each command is one undoable operation; display switches are transparent |
 | NF-03 | No model change inside an observer callback: `UI.start_timer(0, false)`, timer stopped as soon as it fires (a non-repeating timer that opens a modal dialog repeats otherwise); requests coalesced per model; `@busy` guard against notifications caused by the plugin |
 | NF-04 | No rebuild without a change (signature); progress in the status bar |
@@ -260,6 +272,7 @@ Color of the material of the first selected group/component that has one, stored
 | NF-10 | Procedural data in the model, options in the `SolidProcedural` registry section, fallback to `SolidBatch` |
 | NF-11 | A `.skp` opened without the plugin shows the Result (sources hidden) |
 | NF-12 | A non-solid or deleted source, or an empty group, never raises an unhandled exception |
+| NF-13 | Automatic tests: `tools/tests/run_tests.ps1` deploys the plugin, starts SketchUp 2021 then Make 2017 (`-RubyStartup`), reads the report (`tools/tests/results/`) and closes SketchUp; `-Manual` for the by-hand test of a group exit in 2017 |
 
 ## 7. Architecture
 
@@ -268,7 +281,7 @@ Color of the material of the first selected group/component that has one, stored
 ```
 solid_procedural.rb             # Entry point — extension registration
 solid_procedural/
-  version.rb                    # VERSION = '1.0.1'
+  version.rb                    # VERSION = '1.1.0'
   main.rb                       # Menu, toolbar, context menu, options (registry), Set Subtract Color, Set Repair Options
   procedural.rb                 # Procedural groups: data, signature, display, rebuild, commands, synchronization
   procedural_table.rb           # Procedural Table: window, row data, page actions
@@ -281,6 +294,8 @@ solid_procedural/
     detector.rb
     rebuilder.rb
     volume.rb
+  solid_operations.rb           # Ruby boolean engine for SketchUp Make (copy of Solid for Maker 1.0.0)
+  LICENSE-solid-operations.txt  # MIT License of the engine (Eneroth Solid Tools, Solid for Maker)
   icons/
     create_procedural_16/24.png
     table_procedural_16/24.png
@@ -288,13 +303,14 @@ solid_procedural/
     finalize_procedural_16/24.png
     setcolor_16/24.png
     repair_circles_16/24.png
+tools/tests/                    # Not in the .rbz: run_tests.ps1, run_tests.rb, manual_open.rb, results/ (ignored by git)
 ```
 
 ### 7.2 Module structure
 
 ```
 SolidProcedural
-  PLUGIN_NAME, PLUGIN_DIR, VERSION
+  PLUGIN_NAME, PLUGIN_DIR, VERSION, PRO_ONLY, pro_only?
   REGISTRY_SECTION ('SolidProcedural'), LEGACY_REGISTRY_SECTION ('SolidBatch')
   read_option(key, default)            # SolidProcedural, then SolidBatch, then default
   subtract_color / save_subtract_color, auto_repair_large, large_threshold, min_arc_segments (+ save_*)
@@ -307,22 +323,27 @@ SolidProcedural::Procedural
   signature, geometry_digest, stale?
   display_entities, hidden_wanted?, display_changes, apply_display, loose_geometry?
   normalize_sources, sync_op_with_color, validate
-  rebuild_in_operation, combine, copy_of, duplicate, restore_circles
-  do_create, do_rebuild, do_finalize, finalize, run_command
+  rebuild_in_operation, combine, ruby_engine?, ruby_boolean, copy_of, duplicate, remove_definition, restore_circles
+  PRO_REQUIRED, pro_required?, pro_refused?, do_create, do_rebuild, do_finalize, finalize, run_command
   row_keys, row_lookup, state_of, change_table, table_toggle, table_operation, table_rename,
   table_order, table_unions_first, set_operation, subtract_material
   sync_path, sync_all, release_orphans
-  ModelObserver, SelectionObserver, AppObserver, attach, defer, run
+  ModelObserver, SelectionObserver, AppObserver, attach (observers removed then added again: SketchUp 2017 and 2021
+    keep the same Model object after File > Open but drop its observers), defer, run
 
 SolidProcedural::ProceduralTable
-  show, target_group, refresh_later, refresh, payload, color_hex, on_action, select_row, open_row, focus_sketchup
+  show, target_group, refresh_later, refresh, payload, color_hex, on_action, select_row, open_row,
+  active_path_settable?, status_no_active_path, finalize_group, focus_sketchup
   Win32: functions, sketchup_window, activate
 
 SolidProcedural::Highlight
-  GREEN, wanted?, green?, update_later, update, show_green, restore, before_save, repair
+  GREEN, wanted?, green?, update_later, update, show_green, restore, forget, before_save, repair
 
 SolidProcedural::CircleRestore         # Copy of Re-Cercle v2.0.0
   restore_in_solid, count_edges, summary, Detector, Rebuilder, Volume
+
+SolidProcedural::SolidOperations       # Copy of Solid for Maker 1.0.0 (Eneroth Solid Tools)
+  union, subtract, trim, intersect, outer_shell, remove_cavities, solid?, within?
 ```
 
 ### 7.3 Signature (`signature`)
@@ -339,6 +360,16 @@ MD5 over, for each source in order: `rank`, `op`, `enabled`, material key, trans
 | `manifold?` | group/component | — | boolean | none |
 
 The rebuild works on copies only; every copy and intermediate result is listed and erased at the end, whichever operand SketchUp erases.
+
+**Built-in engine (SketchUp Make)**:
+
+| Method | Target (modified in place) | Tool | Returns |
+|--------|----------------------------|------|---------|
+| `SolidOperations.union(acc, copy)` | accumulator | copy (erased) | `true`, `false` (not a solid), `nil` (failure) |
+| `SolidOperations.outer_shell(acc, copy)` | accumulator | copy (erased) | same, inner solids removed |
+| `SolidOperations.subtract(acc, copy)` | accumulator | copy (erased) | same |
+
+`ruby_boolean` returns the accumulator when the status is `true`, else `nil` ("… failed.").
 
 ### 7.5 Flow
 
@@ -384,7 +415,7 @@ Procedural Table action (page callback, not an observer)
 4. Finalize Procedural Solid
 5. *(separator)*
 6. Set Subtract Color
-7. Set Repair Options (SketchUp 2020.1+)
+7. Set Repair Options
 
 ### 8.2 "Solid Procedural" toolbar
 
@@ -415,10 +446,11 @@ See EF-20 to EF-24. Title "Solid Procedural — Procedural Table".
 
 A setting missing from `SolidProcedural` is read from `SolidBatch` (Solid Batch v2 settings carried over). Writes always go to `SolidProcedural`.
 
-## 10. Known limitations (1.0.1)
+## 10. Known limitations (1.1.0)
 
 - In an open group, the effect of a table change shows only on exit (the Result is hidden while editing); on a closed group, it is applied at once.
-- A row selects its volume only in an open group (a double-click opens it).
+- A row selects its volume only in an open group (a double-click opens it, except with SketchUp 2017: message in the table).
+- **SketchUp Make 2017**: slower built-in engine (a few seconds for a heavy part); a volume enclosed in another one is removed by Shell (kept by Pro's native Outer Shell); no weld fallback for circles (a circle that cannot be rebuilt stays as segments); the table cannot open a group.
 - After an Explode, the hidden loose geometry of the group stays hidden: only grouped volumes are released.
 - The green frame is the selection color of the style: while it is shown, the Styles panel shows this green, and updating the style at that time would store it there. A style whose selection color is exactly `(0, 170, 0)` is taken as left by the plugin.
 - Nested procedural groups refused (nesting postponed): Create refuses a selection holding one, the rebuild stops with a message (former result kept) and the table shows the row as an error. To reuse a sub-part, finalize it, then use it as a volume. An Explode of a procedural group pasted inside an open procedural group would mix its volumes with the ones of that group.
@@ -431,6 +463,7 @@ A setting missing from `SolidProcedural` is read from `SolidBatch` (Solid Batch 
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.1.0 | 2026-10-25 | **SketchUp Make 2017**: built-in boolean engine (Solid for Maker 1.0.0) when SketchUp is not Pro, guards for the APIs newer than 2017 (`DefinitionList#remove`, `Model#active_path=` with a message in the table, `Entities#weld`), native circles in 2017, Set Repair Options in every version; `PRO_ONLY` switch; **Finalize** button in the Procedural Table; fixes: procedural solid with a single component volume (crashed), Result material lost by the circle restoration, definition of the former Result left unused by Rebuild, **observers lost after File > Open / New** (same `Model` object kept by SketchUp 2017 and 2021: no switch on entering, frame left green; Q-6); automatic tests (`tools/tests/`) |
 | 1.0.1 | 2026-10-25 | Fixes: Finalize of a copied procedural solid ("reference to deleted Group" error); selection frame staying green after Finalize |
 | 1.0.0 | 2026-10-23 | New plugin derived from Solid Batch v2.3.0. Step 1 (2026-10-23): Create / Rebuild / Finalize Procedural Solid, automatic sources / Result switch, automatic rebuild on exit by MD5 signature, option B for Ctrl+Z, color → operation, circle restoration on each Result, settings taken over from Solid Batch. Combine All removed. Step 2 (2026-10-23): Procedural Table (order, On, color, name, operation, state, formula, Unions first, two-way selection; menu, toolbar, context menu), Subtract in the table ↔ color, Explode releases the volumes. Step 2b (2026-10-23): Base fixed on row 1 (Base chosen on a row), selection kept after a rebuild. Step 2c (2026-10-23): green selection frame for procedural groups. Step 2d (2026-10-23): SketchUp shortcuts usable while the table is open (keyboard given back to SketchUp) |
 

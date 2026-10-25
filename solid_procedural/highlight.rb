@@ -64,6 +64,13 @@ module SolidProcedural
       model.rendering_options[OPTION] = Sketchup::Color.new(*original) if original
     end
 
+    # A document is opened or created in +model+ (SketchUp 2017 keeps the
+    # Model object): its own selection color is the original one. A green
+    # left in it is repaired with the color of the registry (repair).
+    def self.forget(model)
+      @original.delete(model)
+    end
+
     # Before a save (called in the observer callback, a deferred change
     # would come too late): the original color is the one saved.
     def self.before_save(model)

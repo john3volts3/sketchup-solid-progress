@@ -2,14 +2,14 @@
 
 *[English version](USER_MANUAL_EN.md)*
 
-Version 1.0.1 — SketchUp Pro 2021
+Version 1.1.0 — SketchUp Pro 2021 et SketchUp Make 2017
 
 ## Présentation
 
-Solid Procedural est un plugin SketchUp Pro de **modélisation booléenne non destructive**. Un **solide procédural** est un groupe qui contient :
+Solid Procedural est un plugin SketchUp de **modélisation booléenne non destructive**. Un **solide procédural** est un groupe qui contient :
 
 - ses **volumes sources** — des groupes ou composants solides, ajoutés ou soustraits ;
-- son **Result** — la combinaison des sources, calculée avec les booléens natifs de SketchUp Pro.
+- son **Result** — la combinaison des sources, calculée avec les booléens natifs de SketchUp Pro (avec SketchUp Make, avec le moteur intégré).
 
 Dans le groupe, vous modifiez les sources ; hors du groupe, vous voyez le Result, recalculé automatiquement quand vous fermez le groupe. Quand la pièce est terminée, **Finalize** la transforme en solide simple, prêt pour l'export STL.
 
@@ -19,7 +19,7 @@ Solid Procedural s'installe à côté de **Solid Batch**, qui garde son Combine 
 
 ## Prérequis
 
-- **SketchUp Pro 2021** sous Windows (testé avec la 21.0). Les booléens natifs sont réservés à la version Pro.
+- **SketchUp Pro 2021** (testé avec la 21.0.391) ou **SketchUp Make 2017** (testé avec la 17.2.2555), sous Windows. SketchUp Pro utilise ses booléens natifs ; SketchUp Make utilise le moteur intégré (voir [SketchUp Make 2017](#sketchup-make-2017)).
 - Chaque source doit être un groupe ou composant **solide** (*Infos sur l'entité* affiche « Groupe solide » ou « Composant solide »).
 
 ## Notions
@@ -84,12 +84,13 @@ La table montre le solide procédural **ouvert**, sinon le solide procédural **
 Sous la table :
 
 - la **formule** des opérations réellement calculées, lignes actives dans l'ordre, par exemple `(((1 ∪ 2) shell 3) − 4) ∪ 6` ;
-- **Unions first** : la Base, puis toutes les Union et Shell, puis toutes les Subtract, chacune dans son ordre actuel.
+- **Unions first** : la Base, puis toutes les Union et Shell, puis toutes les Subtract, chacune dans son ordre actuel ;
+- **Finalize** : comme *Finalize Procedural Solid* sur le solide procédural affiché. Grisé tant qu'il est ouvert : fermez-le d'abord. Un Ctrl+Z le remet.
 
 **Sélection :**
 
 - dans un solide procédural ouvert, un clic sur une ligne sélectionne son volume, et sélectionner un volume met sa ligne en surbrillance ;
-- sur un solide procédural fermé, un double-clic sur une ligne l'ouvre et sélectionne le volume.
+- sur un solide procédural fermé, un double-clic sur une ligne l'ouvre et sélectionne le volume (pas avec SketchUp 2017 : voir [SketchUp Make 2017](#sketchup-make-2017)).
 
 **Clavier :** après une action dans la table (et quand la souris en sort), le clavier revient à SketchUp : ses raccourcis (W, etc.) marchent sans cliquer dans le modèle. Pendant la saisie d'un nom, le champ garde le clavier jusqu'à Entrée ou Échap.
 
@@ -129,7 +130,7 @@ Les réglages de Solid Batch sont utilisés tant que vous ne les changez pas ici
 
 ## Cercles et arcs du Result
 
-Les booléens natifs cassent les cercles et les arcs en segments. Chaque Result passe par la restauration de Solid Batch (méthode de Re-Cercle) :
+Les booléens cassent les cercles et les arcs en segments. Chaque Result passe par la restauration de Solid Batch (méthode de Re-Cercle) :
 
 | Cas dans le Result | Résultat |
 |--------------------|----------|
@@ -153,6 +154,15 @@ Un bilan s'affiche dans la barre d'état et, avec la raison de chaque soudure, d
 
 Tant que la sélection ne contient que des solides procéduraux, le cadre de sélection de SketchUp est vert ; sinon il garde sa couleur habituelle. Le vert n'est jamais enregistré dans le fichier, et sélectionner un solide procédural ne marque pas le modèle comme modifié.
 
+## SketchUp Make 2017
+
+SketchUp Make n'a pas de booléens natifs. Solid Procedural utilise alors son **moteur intégré** — le moteur de Solid for Maker, basé sur Eneroth Solid Tools (licence MIT) — pour Union, Shell et Subtract. Tout le reste marche comme avec SketchUp Pro, avec ces différences :
+
+- **Vitesse** — le moteur intégré est plus lent : sur une pièce avec beaucoup de volumes ou de trous, le recalcul à la fermeture du solide procédural peut prendre quelques secondes (progression dans la barre d'état).
+- **Procedural Table** — SketchUp 2017 ne permet pas à un plugin d'ouvrir un groupe : un double-clic sur une ligne n'ouvre pas le solide procédural, et un message dans la table (et dans la barre d'état) vous invite à double-cliquer sur le solide procédural dans le modèle. Une fois qu'il est ouvert, un clic sur une ligne sélectionne son volume comme d'habitude. Le message disparaît à l'action suivante dans la table.
+- **Shell et volumes enfermés** — un volume entièrement enfermé dans un autre est supprimé par le Shell intégré. L'Outer Shell natif de SketchUp Pro le garde dans le Result : caché, mais exporté.
+- **Cercles** — les cercles et arcs du Result sont aussi reconstruits en cercles natifs. La soudure de secours demande SketchUp 2020.1 : avec SketchUp 2017, un cercle qui ne peut pas être reconstruit nativement reste en segments.
+
 ## Dépannage
 
 | Message | Sens |
@@ -160,7 +170,9 @@ Tant que la sélection ne contient que des solides procéduraux, le cadre de sé
 | *These objects are not solids: …* | Réparez les objets listés (trous, arêtes en trop) ou désélectionnez-les |
 | *No base volume found: all the selected objects have the subtract color* | Repeignez au moins un objet d'une autre couleur |
 | *Volume #2 … is not a solid.* | Une source a été abîmée pendant la modification : réparez-la ; l'ancien Result est gardé |
-| *Subtract of volume #3 … failed.* | Le booléen natif a échoué (volumes qui ne se touchent pas, faces coplanaires…) : déplacez ou simplifiez le volume |
+| *Subtract of volume #3 … failed.* | Le booléen a échoué (natif avec SketchUp Pro, moteur intégré avec SketchUp Make ; volumes qui ne se touchent pas, faces coplanaires…) : déplacez ou simplifiez le volume |
+| *Double-click the procedural solid in the model to open it …* (table) | SketchUp 2017 : la table ne peut pas ouvrir un solide procédural ; double-cliquez-le dans le modèle |
+| *This function requires SketchUp Pro.* | Cette version du plugin est réglée pour SketchUp Pro seulement |
 | *The first volume … has the subtract color* | La Base est peinte de la couleur de soustraction : repeignez-la, ou choisissez *Base* sur une autre ligne |
 | *The base volume is always enabled* | Choisissez *Base* sur une autre ligne avant de désactiver ce volume |
 | *Close the procedural solid to rebuild it* | *Rebuild* agit sur des solides procéduraux fermés ; un solide ouvert est recalculé quand vous le fermez |
@@ -174,4 +186,4 @@ Les arêtes et faces libres dans un solide procédural ne sont pas des volumes :
 - L'imbrication de solides procéduraux n'est pas prise en charge (finalisez une sous-pièce pour la réutiliser).
 - Le Result est recalculé quand vous fermez le solide procédural, pas pendant la modification ; sur un solide procédural fermé, la Procedural Table applique ses changements tout de suite.
 - Les faces reconstruites autour d'un cercle réparé gardent leur matériau, leur balise et leur orientation, mais perdent la position de leur texture et leurs attributs. Un polygone régulier de 6 côtés ou plus ne peut pas être distingué d'un cercle.
-- Testé seulement sous SketchUp Pro 2021 (Windows).
+- Testé sous SketchUp Pro 2021 et SketchUp Make 2017 (Windows).

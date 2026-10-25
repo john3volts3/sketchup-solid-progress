@@ -3,7 +3,7 @@
 > Le *quoi* et le *pourquoi*. Le *comment* (algorithme, entrées/sorties, limitations) est dans `docs/FSD_FR.md` / `docs/FSD_EN.md`.
 > Cadrage initial : `SOLID_PROCEDURAL_PROJET.md` (rédigé sous le nom « Solid Batch v3 »). Historique détaillé : `JOURNAL.md`.
 
-Dernière mise à jour : 2026-10-25 (livraison de la 1.0.1 pour SketchUp 2021 Pro).
+Dernière mise à jour : 2026-10-25 (livraison de la 1.1.0 pour SketchUp Pro 2021 et SketchUp Make 2017).
 
 ---
 
@@ -95,9 +95,10 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 | EF-28 | **Sélection gardée** : après un recalcul (table sur un groupe fermé, Rebuild), le groupe sélectionné reste sélectionné et la table reste dessus | I | livrée en 1.0.0 |
 | EF-29 | **Cadre vert** : un groupe procédural sélectionné se distingue des autres objets (couleur de sélection verte) ; le cadre redevient bleu dès que le solide n'est plus procédural (Finalize) | S | livrée en 1.0.0, corrigée en 1.0.1 (Finalize) |
 | EF-30 | **Raccourcis clavier avec la table ouverte** : après une action dans la table (et quand la souris en sort), le clavier revient à SketchUp, pour que ses raccourcis (W…) marchent sans cliquer dans le modèle ; jamais pendant la saisie d'un nom | Im | livrée en 1.0.0 |
-| EF-31 | **Compatibilité SketchUp 2017** (Make 2017 installé à la place de Pro 2017, 2026-10-23) : le plugin marche aussi sous SketchUp 2017 (gardes pour `DefinitionList#remove` 2018+, `Model#active_path=` 2020+, navigateur ancien ; cercles natifs sans `Entities#weld`) ; *Set Repair Options* sous toutes les versions | Im | **M1 codée et testée** (2026-10-25, tests automatiques 2021 + Make 2017) ; livraison avec M2-M3 (1.1.0) |
-| EF-32 | **Interrupteur « Pro only »** : une constante `PRO_ONLY` (`solid_procedural/main.rb`) remet le plugin en mode SketchUp Pro seulement (comportement 1.0) : sans Pro, Create, Rebuild et Finalize refusent de s'exécuter | I | **testée** (2026-10-25, T10) |
-| EF-33 | **Moteur pour SketchUp Make** (M2) : sans booléens natifs (`Sketchup.is_pro?` faux), le moteur Ruby de Solid for Maker 1.0.0 (copié dans le plugin, `SolidProcedural::SolidOperations`, MIT) combine les volumes (Union, Shell, Subtract) ; sous Pro, booléens natifs inchangés. Différence connue : un solide enfermé dans un autre est gardé par le Shell natif, effacé par le moteur Ruby | I | **testée** (2026-10-25 : T12 natif / Ruby sous 2021, Ruby sous Make 2017, recalcul à la sortie testé à la main sous Make) |
+| EF-31 | **Compatibilité SketchUp 2017** (Make 2017 installé à la place de Pro 2017, 2026-10-23) : le plugin marche aussi sous SketchUp 2017 (gardes pour `DefinitionList#remove` 2018+, `Model#active_path=` 2020+, navigateur ancien ; cercles natifs sans `Entities#weld`) ; *Set Repair Options* sous toutes les versions | Im | **livrée en 1.1.0** (M1, tests automatiques 2021 + Make 2017) ; double-clic de la table sous 2017 : message dans la table |
+| EF-32 | **Interrupteur « Pro only »** : une constante `PRO_ONLY` (`solid_procedural/main.rb`) remet le plugin en mode SketchUp Pro seulement (comportement 1.0) : sans Pro, Create, Rebuild et Finalize refusent de s'exécuter | I | **livrée en 1.1.0** (T10) |
+| EF-33 | **Moteur pour SketchUp Make** (M2) : sans booléens natifs (`Sketchup.is_pro?` faux), le moteur Ruby de Solid for Maker 1.0.0 (copié dans le plugin, `SolidProcedural::SolidOperations`, MIT) combine les volumes (Union, Shell, Subtract) ; sous Pro, booléens natifs inchangés. Différence connue : un solide enfermé dans un autre est gardé par le Shell natif, effacé par le moteur Ruby | I | **livrée en 1.1.0** (2026-10-25 : T12 natif / Ruby sous 2021, Ruby sous Make 2017, recalcul à la sortie testé à la main sous Make) |
+| EF-34 | **Bouton Finalize dans la Procedural Table** : finalise le solide procédural affiché quand il est fermé ; grisé (infobulle « Close the procedural solid to finalize it ») quand il est ouvert ; un seul Ctrl+Z | Im | **livrée en 1.1.0** (T13) |
 
 ## 6. Exigences non fonctionnelles
 
@@ -158,6 +159,9 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 | CA-21 | Groupe procédural sélectionné → cadre vert ; groupe ordinaire ou sélection mixte → cadre bleu ; enregistrer avec le cadre vert puis rouvrir → couleur d'origine ; sélectionner puis fermer sans rien modifier → pas de demande d'enregistrement | EF-29 |
 | CA-22 | Table ouverte : après On, ▲▼, une opération, Unions first, un double-clic ou un nom validé, W agit sur SketchUp ; un clic sur le fond de la table ne fait rien ; la souris sortie de la table, W agit sur SketchUp | EF-30 |
 | CA-23 | Copier un solide procédural (Ctrl+C / Ctrl+V ou Move + Ctrl) puis Finalize sur la copie → pas d'erreur, l'original reste procédural ; le solide finalisé a un cadre bleu ; Ctrl+Z remet le solide procédural | EF-11, EF-17, EF-29 |
+| CA-24 | SketchUp Make 2017 : une boîte et un cylindre rouge → Create → le trou est soustrait (moteur intégré) ; ouvrir le solide, déplacer le trou, sortir → Result recalculé ; double-clic sur une ligne de la table → message dans la table | EF-31, EF-33 |
+| CA-25 | `PRO_ONLY = true` sous Make → Create, Rebuild et Finalize affichent « This function requires SketchUp Pro. » ; sous Pro → aucun changement | EF-32 |
+| CA-26 | Procedural Table d'un solide fermé → Finalize → solide simple sélectionné, Ctrl+Z le remet ; solide ouvert → bouton grisé, rien ne change | EF-34 |
 
 ## 9. Questions ouvertes et décisions
 
@@ -170,7 +174,7 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 | Q-3 | ~~Quel opérande les booléens natifs effacent-ils (`union`, `outer_shell`) ? Quels matériaux gardent les faces du résultat ?~~ | **Résolue en pratique** (2026-10-23) : le calcul efface toutes ses copies quel que soit l'opérande effacé ; Result à la couleur de la base, sans face rouge (test utilisateur) |
 | Q-4 | ~~Que se passe-t-il quand on fait Explode sur un groupe procédural ?~~ | **Résolue** (2026-10-23) : le Result restait visible, les sources restaient cachées avec leurs attributs → décision : Explode libère les volumes (EF-26) |
 | Q-5 | ~~Où placer l'entrée « Procedural Table » ?~~ | **Résolue** (2026-10-23) : menu, barre d'outils et clic droit |
-| Q-6 | Incident du 2026-10-24 (SketchUp 2021, 1.0.0) : après plusieurs Ctrl+Z, le cadre de sélection restait bleu et l'entrée dans le groupe n'affichait plus les sources (Result visible) ; la table et les recalculs marchaient. Diagnostic : observateurs attachés, rien en attente, minuteurs actifs. Disparu après un redémarrage de SketchUp. Cause inconnue — hypothèse : `@synced_paths` faux après les annulations (groupe cru déjà ouvert). Pas d'interférence possible avec SketchUp 2017 (processus et registre séparés) | **À surveiller** : si l'incident revient, ne pas redémarrer, lancer d'abord le diagnostic ci-dessous et noter les dernières actions (surtout les Ctrl+Z) ; aucun correctif tant que la cause n'est pas confirmée |
+| Q-6 | ~~Incident du 2026-10-24 (SketchUp 2021, 1.0.0) : après plusieurs Ctrl+Z, le cadre de sélection restait bleu et l'entrée dans le groupe n'affichait plus les sources (Result visible) ; la table et les recalculs marchaient. Diagnostic : observateurs attachés, rien en attente, minuteurs actifs. Disparu après un redémarrage de SketchUp. Cause inconnue — hypothèse : `@synced_paths` faux après les annulations (groupe cru déjà ouvert). Pas d'interférence possible avec SketchUp 2017 (processus et registre séparés) ~~ | **Résolue** (2026-10-25, 1.1.0) : SketchUp 2017 **et 2021** gardent le même objet `Model` après File > Open (ou New) mais perdent ses observateurs ; `attach` sautait le modèle déjà connu → plus de bascule à l'entrée, plus de suivi de la sélection (cadre resté vert). Constaté par l'utilisateur sous Make 2017 (fichier intact, vérifié), reproduit par T14 avec l'ancien code sous 2021. Correctif : observateurs retirés puis remis à chaque ouverture ou création, couleur d'origine oubliée |
 
 #### Diagnostic de Q-6 (console Ruby, une ligne à la fois)
 
@@ -252,3 +256,4 @@ UI.start_timer(0, false) { puts 'timer OK' }
 | 2026-10-23 | Solid Procedural 1.0.0, étape 2d (commit de développement, non publié) | EF-30 testée dans SketchUp 2021 Pro |
 | 2026-10-23 | **Solid Procedural 1.0.0** — SketchUp 2021 Pro, dépôt GitHub privé `sketchup-solid-procedural` | EF-03 à EF-24 et EF-26 à EF-30 livrées ; EF-25 (imbrication) reportée ; EF-31 (SketchUp 2017) à faire |
 | 2026-10-25 | **Solid Procedural 1.0.1** — correctifs testés dans SketchUp 2021 Pro, release GitHub `v1.0.1` | EF-11 (Finalize d'un solide copié), EF-29 (cadre bleu après Finalize) ; CA-23 |
+| 2026-10-25 | **Solid Procedural 1.1.0** — SketchUp Pro 2021 et SketchUp Make 2017 (M1 `084a488`, M2 `fcbb4a8`, M3), release GitHub `v1.1.0` | EF-31 à EF-34, NF-13 livrées ; correctifs (solide à un volume composant, matière du Result, définition de l'ancien Result, observateurs perdus après File > Open — Q-6) ; CA-24 à CA-26 |

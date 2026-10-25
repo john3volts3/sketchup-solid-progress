@@ -167,6 +167,24 @@
     padding: 3px 10px;
     cursor: pointer;
   }
+  .actions {
+    flex: none;
+    white-space: nowrap;
+  }
+  #finalize {
+    margin-left: 6px;
+    font: inherit;
+    padding: 3px 10px;
+    cursor: pointer;
+  }
+  #finalize:disabled { cursor: default; }
+  #notice {
+    flex: none;
+    padding: 5px 10px;
+    border-top: 1px solid var(--line);
+    background: var(--open-bg);
+    color: var(--open-fg);
+  }
   .hidden { display: none !important; }
 </style>
 </head>
@@ -191,9 +209,13 @@
       <tbody id="rows"></tbody>
     </table>
   </div>
+  <div id="notice" class="hidden"></div>
   <footer id="footer" class="hidden">
     <span id="formula" title="Operations computed, in order"></span>
-    <button id="unions-first" type="button" title="Every Union and Shell, then every Subtract, each in its current order">Unions first</button>
+    <span class="actions">
+      <button id="unions-first" type="button" title="Every Union and Shell, then every Subtract, each in its current order">Unions first</button>
+      <button id="finalize" type="button" title="Finalize Procedural Solid — replace by a plain solid, without its sources (Ctrl+Z to undo)">Finalize</button>
+    </span>
   </footer>
 
 <script>
@@ -474,6 +496,11 @@
     var empty = document.getElementById('empty');
     var table = document.getElementById('table');
     var footer = document.getElementById('footer');
+    var notice = document.getElementById('notice');
+
+    // Message of the last action, until the next one.
+    notice.textContent = (data && data.notice) || '';
+    notice.classList.toggle('hidden', !(data && data.notice));
 
     if (!data || !data.group) {
       title.textContent = 'Procedural Table';
@@ -515,6 +542,12 @@
       empty.classList.remove('hidden');
     }
     document.getElementById('formula').textContent = formula(data.rows);
+    // Finalize works on a closed procedural solid only (SketchUp 2017
+    // cannot close it from a plugin).
+    var finalize = document.getElementById('finalize');
+    finalize.disabled = !!data.open;
+    finalize.title = data.open ? 'Close the procedural solid to finalize it'
+                               : 'Finalize Procedural Solid — replace by a plain solid, without its sources (Ctrl+Z to undo)';
 
     if (keep && inputs[keep.key]) {
       var input = inputs[keep.key];
@@ -534,6 +567,11 @@
 
   document.getElementById('unions-first').addEventListener('click', function () {
     if (data && data.group) send({ type: 'unions_first', group: data.group });
+    releaseSoon(0);
+  });
+
+  document.getElementById('finalize').addEventListener('click', function () {
+    if (data && data.group && !data.open) send({ type: 'finalize', group: data.group });
     releaseSoon(0);
   });
 

@@ -2,14 +2,14 @@
 
 *[Version française](USER_MANUAL_FR.md)*
 
-Version 1.0.1 — SketchUp Pro 2021
+Version 1.1.0 — SketchUp Pro 2021 and SketchUp Make 2017
 
 ## Overview
 
-Solid Procedural is a SketchUp Pro plugin for **non-destructive boolean modelling**. A **procedural solid** is a group that holds:
+Solid Procedural is a SketchUp plugin for **non-destructive boolean modelling**. A **procedural solid** is a group that holds:
 
 - its **source volumes** — solid groups or components, added or subtracted;
-- its **Result** — the combination of the sources, computed with SketchUp Pro's native booleans.
+- its **Result** — the combination of the sources, computed with SketchUp Pro's native booleans (with SketchUp Make, with the built-in engine).
 
 Inside the group you edit the sources; outside, you see the Result, rebuilt automatically when you close the group. When the part is done, **Finalize** turns it into a plain solid, ready for the STL export.
 
@@ -19,7 +19,7 @@ Solid Procedural installs next to **Solid Batch**, which keeps its one-click, de
 
 ## Requirements
 
-- **SketchUp Pro 2021** on Windows (tested with 21.0). The native booleans are Pro-only.
+- **SketchUp Pro 2021** (tested with 21.0.391) or **SketchUp Make 2017** (tested with 17.2.2555), on Windows. SketchUp Pro uses its native booleans; SketchUp Make uses the built-in engine (see [SketchUp Make 2017](#sketchup-make-2017)).
 - Every source must be a **solid** group or component (Entity Info shows "Solid Group" or "Solid Component").
 
 ## Concepts
@@ -84,12 +84,13 @@ The table shows the **open** procedural solid, or else the **selected** one. Its
 Below the table:
 
 - the **formula** of the operations actually computed, enabled rows in order, for example `(((1 ∪ 2) shell 3) − 4) ∪ 6`;
-- **Unions first**: the Base, then every Union and Shell, then every Subtract, each in its current order.
+- **Unions first**: the Base, then every Union and Shell, then every Subtract, each in its current order;
+- **Finalize**: the same as *Finalize Procedural Solid* on the procedural solid shown. Greyed while it is open: close it first. One Ctrl+Z brings it back.
 
 **Selection:**
 
 - in an open procedural solid, clicking a row selects its volume, and selecting a volume highlights its row;
-- on a closed procedural solid, double-clicking a row opens it and selects the volume.
+- on a closed procedural solid, double-clicking a row opens it and selects the volume (not with SketchUp 2017: see [SketchUp Make 2017](#sketchup-make-2017)).
 
 **Keyboard:** after an action in the table (and when the mouse leaves it), the keyboard goes back to SketchUp, so its shortcuts (W, etc.) work without clicking in the model. While you type a name, the field keeps the keyboard until Enter or Escape.
 
@@ -129,7 +130,7 @@ The settings of Solid Batch are used until you change them here.
 
 ## Circles and arcs of the Result
 
-The native booleans break circles and arcs into segments. Each Result goes through the restoration of Solid Batch (method of Re-Cercle):
+The booleans break circles and arcs into segments. Each Result goes through the restoration of Solid Batch (method of Re-Cercle):
 
 | Case in the Result | Result |
 |--------------------|--------|
@@ -153,6 +154,15 @@ Exploding a procedural solid gives back the Result **and** all the source volume
 
 While the selection holds only procedural solids, SketchUp's selection frame is green; otherwise it keeps its usual color. The green is never saved in the file, and selecting a procedural solid does not mark the model as modified.
 
+## SketchUp Make 2017
+
+SketchUp Make has no native booleans. Solid Procedural then uses its **built-in engine** — the engine of Solid for Maker, based on Eneroth Solid Tools (MIT License) — for Union, Shell and Subtract. Everything else works as with SketchUp Pro, with these differences:
+
+- **Speed** — the built-in engine is slower: on a part with many volumes or holes, the rebuild when you close the procedural solid can take a few seconds (progress in the status bar).
+- **Procedural Table** — SketchUp 2017 does not let a plugin open a group: double-clicking a row does not open the procedural solid, and a message in the table (and in the status bar) tells you to double-click the procedural solid in the model. Once it is open, clicking a row selects its volume as usual. The message goes away at the next action in the table.
+- **Shell and enclosed volumes** — a volume entirely enclosed in another one is removed by the built-in Shell. SketchUp Pro's native Outer Shell keeps it inside the Result: hidden, but exported.
+- **Circles** — the circles and arcs of the Result are rebuilt as native circles too. The weld fallback needs SketchUp 2020.1: with SketchUp 2017, a circle that cannot be rebuilt natively stays as segments.
+
 ## Troubleshooting
 
 | Message | Meaning |
@@ -160,7 +170,9 @@ While the selection holds only procedural solids, SketchUp's selection frame is 
 | *These objects are not solids: …* | Repair the listed objects (holes, stray edges) or deselect them |
 | *No base volume found: all the selected objects have the subtract color* | Repaint at least one object with another color |
 | *Volume #2 … is not a solid.* | A source was damaged while editing: repair it; the former Result is kept |
-| *Subtract of volume #3 … failed.* | The native boolean failed (volumes that do not touch, coplanar faces…): move or simplify the volume |
+| *Subtract of volume #3 … failed.* | The boolean failed (native with SketchUp Pro, built-in engine with SketchUp Make; volumes that do not touch, coplanar faces…): move or simplify the volume |
+| *Double-click the procedural solid in the model to open it …* (table) | SketchUp 2017: the table cannot open a procedural solid; double-click it in the model |
+| *This function requires SketchUp Pro.* | This build of the plugin is set to SketchUp Pro only |
 | *The first volume … has the subtract color* | The Base is painted with the subtract color: repaint it, or choose *Base* on another row |
 | *The base volume is always enabled* | Choose *Base* on another row before disabling this volume |
 | *Close the procedural solid to rebuild it* | *Rebuild* works on closed procedural solids; an open one is rebuilt when you close it |
@@ -174,4 +186,4 @@ Loose edges and faces inside a procedural solid are not volumes: make them a gro
 - Nesting of procedural solids is not supported (finalize a sub-part to reuse it).
 - The Result is rebuilt when you close the procedural solid, not while you edit it; on a closed procedural solid, the Procedural Table applies its changes at once.
 - Faces rebuilt around a repaired circle keep their material, tag and orientation, but lose their texture position and attributes. A regular polygon of 6 sides or more cannot be told apart from a circle.
-- Tested on SketchUp Pro 2021 (Windows) only.
+- Tested on SketchUp Pro 2021 and SketchUp Make 2017 (Windows).

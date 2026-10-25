@@ -156,7 +156,9 @@ module SolidProcedural
           selected: model.selection.include?(s) || path.include?(s)
         }
       end
-      { group: group.entityID, name: Procedural.group_label(group), open: path.include?(group), rows: rows }
+      notice = @notice && @notice[0] == group ? @notice[1] : nil
+      { group: group.entityID, name: Procedural.group_label(group), open: path.include?(group), rows: rows,
+        notice: notice }
     end
 
     def self.color_hex(material)
@@ -181,6 +183,7 @@ module SolidProcedural
         focus_sketchup
         return
       end
+      @notice = nil
       group = target_group(model)
       # The page shows another solid than the model now: refresh only.
       if group.nil? || group.entityID != data['group']
@@ -204,6 +207,8 @@ module SolidProcedural
         Procedural.table_order(model, group, Array(data['keys']))
       when 'unions_first'
         Procedural.table_unions_first(model, group)
+      when 'finalize'
+        finalize_group(model, group)
       end
       refresh_later
     rescue => e
@@ -219,7 +224,7 @@ module SolidProcedural
       path = model.active_path || []
       return unless source && path.include?(group)
       unless path.last == group
-        return status_no_active_path('Close the edited volume first') unless active_path_settable?(model)
+        return status_no_active_path(group, 'Close the edited volume first') unless active_path_settable?(model)
         model.active_path = path[0..path.index(group)]
       end
       model.selection.clear
@@ -233,10 +238,21 @@ module SolidProcedural
       unless path.include?(group)
         context = path.empty? ? model : path.last.definition
         return unless group.parent == context
-        return status_no_active_path('Double-click the procedural solid in the model to open it') unless active_path_settable?(model)
+        return status_no_active_path(group, 'Double-click the procedural solid in the model to open it') unless active_path_settable?(model)
         model.active_path = path + [group]
       end
       select_row(model, group, key)
+    end
+
+    # Finalize button: the procedural solid shown, closed (the button is
+    # greyed while it is open: SketchUp 2017 cannot close it from a
+    # plugin). Shown closed, it is the only procedural solid selected.
+    def self.finalize_group(model, group)
+      if (model.active_path || []).include?(group)
+        @notice = [group, 'Close the procedural solid to finalize it.']
+        return
+      end
+      Procedural.do_finalize
     end
 
     # Model#active_path= exists from SketchUp 2020.
@@ -244,8 +260,11 @@ module SolidProcedural
       model.respond_to?(:active_path=)
     end
 
-    def self.status_no_active_path(text)
-      Sketchup.status_text = "Solid Procedural — #{text} (not available from the table in this SketchUp version)"
+    def self.status_no_active_path(group, text)
+      message = "#{text} (not available from the table in this SketchUp version)"
+      Sketchup.status_text = "Solid Procedural — #{message}"
+      # Also shown in the table, until its next action.
+      @notice = [group, "#{message}."]
       nil
     end
 
