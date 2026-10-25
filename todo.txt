@@ -1,0 +1,18 @@
+J'ai créé OPTIMISATION_REPAIR_HOLES.md et je l'ai copié dans chaque plugin concerné.
+
+Ce que contient le document (autonome : tout le code utile y est) :
+1. Un résumé et le tableau des gains : par exemple 34 s → 5 s pour un Subtract sur une plaque à 30 trous.
+2. Le problème : le profil (85 à 89 % du temps de reconstruction) et la cause (≈ 2,8 millions de calculs de distance par cylindre).
+3. Le principe de la correction : ranger sommets et points des trous dans des grilles, et ne chercher que dans les 27 cases voisines.
+4. Le code d'origine et le code accéléré, complets. J'ai vérifié qu'ils correspondent exactement au code réel de Solid Procedural et de Solid for Maker.
+5. Pourquoi le résultat est le même : même tolérance, même ordre ; seule l'arête choisie pour find_faces peut différer, et toute arête du trou convient.
+6. La validation faite dans Solid for Maker et sa limite : les trous du kit restent simples.
+7. La validation à faire avant d'appliquer dans un plugin, conformément à votre décision : comparer l'ancienne et la nouvelle méthode sur la même géométrie, avec une liste de cas difficiles.
+8. Le tableau d'adaptation par plugin : fichier, ligne, module et constante de tolérance. Circle Advanced utilise BASE_TOL au lieu de Detector::BASE_TOL, et chez Cylinder Resize la méthode est dans rebuilder.rb.
+9. Les étapes pour appliquer la correction.
+
+Où se trouve le fichier :
+- Solid for Maker : commité et poussé (7f67082), et cité dans TACHES.md.
+- Copié à la racine de Re-Cercle, Cylinder Resize, Solid Procedural, Solid Batch et Circle Advanced. Dans ces 5 dépôts, c'est un nouveau fichier non commiodifié. Vous le commiterez dans chaque projet quand vous y travaillerez.
+
+Dans la session Solid Procedural, il suffiraION_REPAIR_HOLES.md » en plus de M1 à M3. Ledocument y rappelle la validation à faire d'abord.

@@ -3,7 +3,7 @@
 > Le *quoi* et le *pourquoi*. Le *comment* (algorithme, entrées/sorties, limitations) est dans `docs/FSD_FR.md` / `docs/FSD_EN.md`.
 > Cadrage initial : `SOLID_PROCEDURAL_PROJET.md` (rédigé sous le nom « Solid Batch v3 »). Historique détaillé : `JOURNAL.md`.
 
-Dernière mise à jour : 2026-10-23 (livraison de la 1.0.0 pour SketchUp 2021 Pro).
+Dernière mise à jour : 2026-10-25 (livraison de la 1.0.1 pour SketchUp 2021 Pro).
 
 ---
 
@@ -75,7 +75,7 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 | EF-08 | **Bascule automatique** : dans le groupe, les sources sont visibles et le Result est caché ; dehors, c'est l'inverse | I | livrée en 1.0.0 |
 | EF-09 | **Recalcul automatique à la sortie** d'un groupe dont les sources ont changé, détecté par une **empreinte** des sources (ordre, opération, matériau, position, sommets) enregistrée au dernier calcul. Aucun recalcul si rien n'a changé | I | livrée en 1.0.0 |
 | EF-10 | **Rebuild Procedural Solid** : recalcul forcé des groupes sélectionnés (fermés ; un groupe ouvert est recalculé à sa sortie) | I | livrée en 1.0.0 |
-| EF-11 | **Finalize Procedural Solid** : remplace le groupe procédural par un solide simple, sans les sources | I | livrée en 1.0.0 |
+| EF-11 | **Finalize Procedural Solid** : remplace le groupe procédural par un solide simple, sans les sources, y compris sur une copie | I | livrée en 1.0.0, corrigée en 1.0.1 (copie) |
 | EF-12 | **Modèle de données des opérations** stocké sur chaque source (dictionnaire `SolidProcedural`) : `rank` (ordre), `op` (`union`, `outer_shell` ou `subtract` ; la ligne 1 est la Base), `last_add_op`, `enabled`, `seen_color`, `prev_material` (étape 2). Une nouvelle source sans `rank` va en fin de liste | I | livrée en 1.0.0 |
 | EF-13 | **Synchronisation couleur ↔ opération, dans les deux sens** : peindre un volume de la couleur de soustraction le passe en Subtract, le repeindre autrement le repasse en Union ou Shell (`last_add_op`). La règle ne s'applique **que si le matériau a changé** : changer la couleur de soustraction, ou ouvrir le modèle sur un autre PC, n'inverse aucun volume existant. Choisir Subtract dans la table peint le volume, et le quitter restaure `prev_material` | I | livrée en 1.0.0 |
 | EF-14 | **Calcul ordonné** : le résultat se calcule ligne par ligne dans l'ordre `rank` sur des copies des sources (`résultat = op(résultat, volume)`). Les volumes désactivés sont ignorés. La première ligne active doit être un volume « + » | I | livrée en 1.0.0 |
@@ -93,7 +93,7 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 | EF-26 | **Explode libère les volumes** : après un Explode d'un groupe procédural (ou un copier-coller d'une source hors du groupe), les volumes libérés sont rendus visibles et redeviennent des objets ordinaires (attributs retirés). Un seul Ctrl+Z annule l'Explode et la libération | Im | livrée en 1.0.0 |
 | EF-27 | **Base figée** : la ligne 1 est la Base, toujours en tête et toujours active (ni déplacement, ni glisser-déposer au-dessus, ni désactivation ; *Unions first* la garde en tête). Choisir « Base » sur une autre ligne en fait la nouvelle Base, l'ancienne passe en ligne 2 | I | livrée en 1.0.0 |
 | EF-28 | **Sélection gardée** : après un recalcul (table sur un groupe fermé, Rebuild), le groupe sélectionné reste sélectionné et la table reste dessus | I | livrée en 1.0.0 |
-| EF-29 | **Cadre vert** : un groupe procédural sélectionné se distingue des autres objets (couleur de sélection verte) | S | livrée en 1.0.0 |
+| EF-29 | **Cadre vert** : un groupe procédural sélectionné se distingue des autres objets (couleur de sélection verte) ; le cadre redevient bleu dès que le solide n'est plus procédural (Finalize) | S | livrée en 1.0.0, corrigée en 1.0.1 (Finalize) |
 | EF-30 | **Raccourcis clavier avec la table ouverte** : après une action dans la table (et quand la souris en sort), le clavier revient à SketchUp, pour que ses raccourcis (W…) marchent sans cliquer dans le modèle ; jamais pendant la saisie d'un nom | Im | livrée en 1.0.0 |
 | EF-31 | **Compatibilité SketchUp 2017 Pro** : le plugin marche aussi sous SketchUp 2017 (gardes pour `DefinitionList#remove` 2018+, `Model#active_path=` 2020+, navigateur ancien ; cercles natifs à essayer sans `Entities#weld`) | Im | validée (à faire, test quand SketchUp 2017 aura sa licence) |
 
@@ -154,6 +154,7 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 | CA-20 | Groupe fermé sélectionné, cocher / décocher On dans la table → le résultat suit, le groupe reste sélectionné et la table reste remplie | EF-24, EF-28 |
 | CA-21 | Groupe procédural sélectionné → cadre vert ; groupe ordinaire ou sélection mixte → cadre bleu ; enregistrer avec le cadre vert puis rouvrir → couleur d'origine ; sélectionner puis fermer sans rien modifier → pas de demande d'enregistrement | EF-29 |
 | CA-22 | Table ouverte : après On, ▲▼, une opération, Unions first, un double-clic ou un nom validé, W agit sur SketchUp ; un clic sur le fond de la table ne fait rien ; la souris sortie de la table, W agit sur SketchUp | EF-30 |
+| CA-23 | Copier un solide procédural (Ctrl+C / Ctrl+V ou Move + Ctrl) puis Finalize sur la copie → pas d'erreur, l'original reste procédural ; le solide finalisé a un cadre bleu ; Ctrl+Z remet le solide procédural | EF-11, EF-17, EF-29 |
 
 ## 9. Questions ouvertes et décisions
 
@@ -166,6 +167,39 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 | Q-3 | ~~Quel opérande les booléens natifs effacent-ils (`union`, `outer_shell`) ? Quels matériaux gardent les faces du résultat ?~~ | **Résolue en pratique** (2026-10-23) : le calcul efface toutes ses copies quel que soit l'opérande effacé ; Result à la couleur de la base, sans face rouge (test utilisateur) |
 | Q-4 | ~~Que se passe-t-il quand on fait Explode sur un groupe procédural ?~~ | **Résolue** (2026-10-23) : le Result restait visible, les sources restaient cachées avec leurs attributs → décision : Explode libère les volumes (EF-26) |
 | Q-5 | ~~Où placer l'entrée « Procedural Table » ?~~ | **Résolue** (2026-10-23) : menu, barre d'outils et clic droit |
+| Q-6 | Incident du 2026-10-24 (SketchUp 2021, 1.0.0) : après plusieurs Ctrl+Z, le cadre de sélection restait bleu et l'entrée dans le groupe n'affichait plus les sources (Result visible) ; la table et les recalculs marchaient. Diagnostic : observateurs attachés, rien en attente, minuteurs actifs. Disparu après un redémarrage de SketchUp. Cause inconnue — hypothèse : `@synced_paths` faux après les annulations (groupe cru déjà ouvert). Pas d'interférence possible avec SketchUp 2017 (processus et registre séparés) | **À surveiller** : si l'incident revient, ne pas redémarrer, lancer d'abord le diagnostic ci-dessous et noter les dernières actions (surtout les Ctrl+Z) ; aucun correctif tant que la cause n'est pas confirmée |
+
+#### Diagnostic de Q-6 (console Ruby, une ligne à la fois)
+
+Solide procédural sélectionné et fermé :
+
+```ruby
+m = Sketchup.active_model; pr = SolidProcedural::Procedural; s = m.selection.first
+```
+
+```ruby
+p sel: m.selection.length, cls: s.class.name, role: (s && pr.role(s)), wanted: SolidProcedural::Highlight.wanted?(m), color: m.rendering_options['HighlightColor'].to_a, files: $LOADED_FEATURES.grep(/solid_proc/i).length
+```
+
+```ruby
+s.entities.each { |e| p [e.class.name, e.name, pr.role(e), e.hidden?] }; nil
+```
+
+Après un double-clic dans le solide :
+
+```ruby
+g = m.active_path.to_a.last; p open: pr.open_groups(m).length, synced: pr.instance_variable_get(:@synced_paths)[m].to_a.length, changes: (g && pr.display_changes(g, true).length), last: (g && [g.name, pr.role(g)])
+```
+
+État des observateurs et des minuteurs (sortie normale lors de l'incident : `{:attached=>[true], :pending=>[], :busy=>false, :hl_pending=>false}` puis `timer OK`) :
+
+```ruby
+hl = SolidProcedural::Highlight; p attached: pr.instance_variable_get(:@attached).keys.map { |k| k.equal?(m) }, pending: pr.instance_variable_get(:@pending).map { |k, v| [k.equal?(m), v] }, busy: pr.instance_variable_get(:@busy), hl_pending: hl.instance_variable_get(:@pending)
+```
+
+```ruby
+UI.start_timer(0, false) { puts 'timer OK' }
+```
 
 ### Décisions
 
@@ -214,3 +248,4 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 | 2026-10-23 | Solid Procedural 1.0.0, étape 2c (commit de développement, non publié) | EF-29 testée dans SketchUp 2021 Pro |
 | 2026-10-23 | Solid Procedural 1.0.0, étape 2d (commit de développement, non publié) | EF-30 testée dans SketchUp 2021 Pro |
 | 2026-10-23 | **Solid Procedural 1.0.0** — SketchUp 2021 Pro, dépôt GitHub privé `sketchup-solid-procedural` | EF-03 à EF-24 et EF-26 à EF-30 livrées ; EF-25 (imbrication) reportée ; EF-31 (SketchUp 2017) à faire |
+| 2026-10-25 | **Solid Procedural 1.0.1** — correctifs testés dans SketchUp 2021 Pro, release GitHub `v1.0.1` | EF-11 (Finalize d'un solide copié), EF-29 (cadre bleu après Finalize) ; CA-23 |

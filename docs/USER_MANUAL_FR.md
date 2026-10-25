@@ -2,7 +2,7 @@
 
 *[English version](USER_MANUAL_EN.md)*
 
-Version 1.0.0 — SketchUp Pro 2021
+Version 1.0.1 — SketchUp Pro 2021
 
 ## Présentation
 

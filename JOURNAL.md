@@ -10,6 +10,38 @@
 
 ---
 
+## Session du 2026-10-25
+
+### Correctifs : Finalize d'une copie, cadre vert après Finalize
+
+- **Constat utilisateur** : (1) Finalize d'un solide procédural copié → « Finalize Procedural Solid error: reference to deleted Group » (OK si l'on entre puis sort de la copie avant) ; (2) après un Finalize réussi, le cadre de sélection reste vert au lieu de repasser en bleu.
+- **Cause (1)** : `finalize` cherchait le Result **avant** `group.make_unique` ; sur une copie (définition partagée), ce Result appartenait à l'autre exemplaire, `erase_entities` vidait alors toute la nouvelle définition, SketchUp supprimait le groupe vide et `explode` échouait. Entrer dans la copie appelait déjà `make_unique` (`apply_display`), d'où le contournement.
+- **Cause (2)** : la sélection changée par Ruby dans l'opération n'est pas toujours notifiée à l'observateur de sélection → couleur jamais recalculée.
+- **solid_procedural/procedural.rb** — `finalize` : `group.make_unique` déplacé avant `result_of(group)` ; `run_command` : `Highlight.update_later` dans un `ensure` (après commit ou abort, pour toutes les commandes).
+- Vérifications : `ruby -wc` OK. **Plugins SketchUp 2021** — `procedural.rb` copié (`load` suffisant). **Test utilisateur OK.**
+
+### Livraison 1.0.1
+
+- **solid_procedural/version.rb, solid_procedural.rb** — Version 1.0.1.
+- **PRD.md** — EF-11 et EF-29 « corrigées en 1.0.1 », CA-23 (Finalize d'une copie, cadre bleu), date de mise à jour, ligne d'historique 1.0.1.
+- **docs/FSD_FR.md, docs/FSD_EN.md** — Version 1.0.1 ; EF-11 : `make_unique` avant la recherche du Result ; EF-29 : mise à jour de la couleur après chaque commande ; historique.
+- **docs/USER_MANUAL_FR.md, docs/USER_MANUAL_EN.md** — Version 1.0.1.
+- **build/solid_procedural.rbz** reconstruit ; plugin copié dans SketchUp 2021 ; tag `v1.0.1` et release GitHub avec le `.rbz`.
+- Commités aussi : notes Q-6 du 2026-10-24 (JOURNAL, PRD), `OPTIMISATION_REPAIR_HOLES.md`, `todo.txt`.
+
+---
+
+## Session du 2026-10-24
+
+### Incident : cadre bleu et sources non affichées (Q-6, non résolu)
+
+- **Constat utilisateur** (SketchUp 2021, Solid Procedural 1.0.0, après des Ctrl+Z) : le solide procédural semblait être un simple solide ; cadre de sélection bleu au lieu de vert ; en entrant dans le groupe, le Result restait affiché et les sources n'apparaissaient pas ; la Procedural Table et les recalculs fonctionnaient.
+- **Vérifications** : plugin installé identique au dépôt (`diff -rq`), Solid for Maker absent de SketchUp 2021 ; console sans erreur ; observateurs attachés au modèle, rien en attente, `@busy` faux, minuteurs actifs (`timer OK`).
+- **Résultat** : incident disparu après un redémarrage de SketchUp ; cause inconnue (hypothèse : `@synced_paths` faux après les annulations). Pas d'interférence possible avec SketchUp 2017.
+- **PRD.md** — Q-6 ajoutée (à surveiller) avec les lignes de diagnostic à lancer avant tout redémarrage si l'incident revient. Aucun changement de code.
+
+---
+
 ## Session du 2026-10-23
 
 ### Étape 0 — Initialisation du projet v3 (aucun changement fonctionnel)

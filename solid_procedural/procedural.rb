@@ -497,11 +497,13 @@ module SolidProcedural
 
     # Replaces +group+ by its Result, a plain solid group. Returns it.
     def self.finalize(group)
+      # A copied group shares its definition: make it unique before looking
+      # up the Result, or the Result found belongs to the other copy.
+      group.make_unique
       result = result_of(group)
       raise RebuildError, "'#{group_label(group)}' has no result to keep." unless result
       name = group.name
       layer = group.layer
-      group.make_unique
       # Erase the sources first: exploding loose geometry would merge it
       # with the surrounding geometry.
       group.entities.erase_entities(group.entities.to_a - [result])
@@ -535,6 +537,10 @@ module SolidProcedural
       puts "#{LOG} #{title} error: #{e.message}"
       e.backtrace.first(10).each { |line| puts "  #{line}" }
       UI.messagebox("#{title} error: #{e.message}\n\nNothing was changed.", MB_OK)
+    ensure
+      # The selection changed by the command is not always notified to the
+      # selection observer: the selection color is updated here too.
+      Highlight.update_later
     end
 
     # -------------------------------------------------------------------
