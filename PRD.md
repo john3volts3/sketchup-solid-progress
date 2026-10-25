@@ -97,13 +97,13 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 | EF-30 | **Raccourcis clavier avec la table ouverte** : après une action dans la table (et quand la souris en sort), le clavier revient à SketchUp, pour que ses raccourcis (W…) marchent sans cliquer dans le modèle ; jamais pendant la saisie d'un nom | Im | livrée en 1.0.0 |
 | EF-31 | **Compatibilité SketchUp 2017** (Make 2017 installé à la place de Pro 2017, 2026-10-23) : le plugin marche aussi sous SketchUp 2017 (gardes pour `DefinitionList#remove` 2018+, `Model#active_path=` 2020+, navigateur ancien ; cercles natifs sans `Entities#weld`) ; *Set Repair Options* sous toutes les versions | Im | **M1 codée et testée** (2026-10-25, tests automatiques 2021 + Make 2017) ; livraison avec M2-M3 (1.1.0) |
 | EF-32 | **Interrupteur « Pro only »** : une constante `PRO_ONLY` (`solid_procedural/main.rb`) remet le plugin en mode SketchUp Pro seulement (comportement 1.0) : sans Pro, Create, Rebuild et Finalize refusent de s'exécuter | I | **testée** (2026-10-25, T10) |
-| EF-33 | **Moteur pour SketchUp Make** (M2) : sans booléens natifs, le moteur Ruby de Solid for Maker combine les volumes ; sous Pro, booléens natifs inchangés. En attendant, un solide à un seul volume marche sous Make, et plusieurs volumes donnent un message clair (« coming in version 1.1.0 ») | I | proposée (M2) |
+| EF-33 | **Moteur pour SketchUp Make** (M2) : sans booléens natifs (`Sketchup.is_pro?` faux), le moteur Ruby de Solid for Maker 1.0.0 (copié dans le plugin, `SolidProcedural::SolidOperations`, MIT) combine les volumes (Union, Shell, Subtract) ; sous Pro, booléens natifs inchangés. Différence connue : un solide enfermé dans un autre est gardé par le Shell natif, effacé par le moteur Ruby | I | **testée** (2026-10-25 : T12 natif / Ruby sous 2021, Ruby sous Make 2017, recalcul à la sortie testé à la main sous Make) |
 
 ## 6. Exigences non fonctionnelles
 
 | ID | Exigence | Équivalent FSD v2 |
 |---|---|---|
-| NF-01 | Booléens **natifs** de SketchUp Pro uniquement, sans moteur custom | ENF-01 |
+| NF-01 | Booléens **natifs** sous SketchUp Pro ; sous SketchUp Make seulement, le moteur Ruby éprouvé de Solid for Maker (pas de moteur écrit pour ce plugin) ; `PRO_ONLY` revient aux seuls booléens natifs | ENF-01 |
 | NF-02 | Chaque commande est **une seule opération annulable**. Le Rebuild est **une seule opération non transparente**, entièrement annulée en cas d'échec. Les bascules d'affichage sont transparentes et n'encombrent pas l'historique | ENF-02, ENF-05 |
 | NF-03 | **Aucune modification du modèle dans un callback d'observateur** : les changements sont différés (`UI.start_timer(0, false)`). Les opérations du plugin sont ignorées par ses propres observateurs | — |
 | NF-04 | Performance : pas de recalcul sans modification. Progression dans la barre d'état pendant un recalcul | ENF-06 |

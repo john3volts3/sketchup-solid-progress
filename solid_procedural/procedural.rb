@@ -277,7 +277,8 @@ module SolidProcedural
       active = sources.select { |s| enabled?(s) }
       validate(active)
       sig = signature(group)
-      puts "#{LOG} Rebuild '#{group_label(group)}': #{active.length} volume(s)"
+      puts "#{LOG} Rebuild '#{group_label(group)}': #{active.length} volume(s)" +
+           (ruby_engine? ? ', SketchUp Make engine' : '')
 
       if loose_geometry?(group)
         puts "#{LOG}   Loose geometry ignored: make it a group to use it as a volume"
@@ -287,10 +288,15 @@ module SolidProcedural
       begin
         copies = []
         result = nil
+        before = group.entities.to_a
         begin
           result = combine(model, group, active, copies, created)
         ensure
           copies.each { |c| c.erase! if c.valid? && c != result }
+          # Whatever an engine left in the group (a temporary group after an
+          # error would become a source): only the result stays.
+          left = (group.entities.to_a - before).select { |e| e.valid? && e != result }
+          group.entities.erase_entities(left) unless left.empty?
         end
 
         result.material = active.first.material
@@ -330,10 +336,7 @@ module SolidProcedural
     # result is listed in +copies+, component definitions made unique in
     # +created+, so that the caller can clean up.
     def self.combine(model, group, active, copies, created)
-      if active.length > 1 && !Sketchup.is_pro?
-        raise RebuildError, 'Combining volumes needs SketchUp Pro ' \
-                            '(the engine for SketchUp Make comes in version 1.1.0).'
-      end
+      ruby = ruby_engine?
       entities = group.entities
       acc = copy_of(active.first, entities, created)
       copies << acc
@@ -341,16 +344,21 @@ module SolidProcedural
       active.drop(1).each_with_index do |source, i|
         op = op_of(source)
         pct = ((i + 1) * 100.0 / total).round
-        Sketchup.status_text = "Solid Procedural — #{OP_LABELS[op]} #{i + 1}/#{total} (#{pct}%)"
+        Sketchup.status_text = "Solid Procedural — #{OP_LABELS[op]} #{i + 1}/#{total} (#{pct}%)" +
+                               (ruby ? ' — SketchUp Make engine' : '')
         copy = copy_of(source, entities, created)
         copies << copy
         model.selection.clear
         # Native subtract: tool.subtract(base) subtracts the tool from the
         # base, erases the tool and returns the modified base.
-        res = case op
-              when 'union' then acc.union(copy)
-              when 'outer_shell' then acc.outer_shell(copy)
-              else copy.subtract(acc)
+        res = if ruby
+                ruby_boolean(op, acc, copy)
+              else
+                case op
+                when 'union' then acc.union(copy)
+                when 'outer_shell' then acc.outer_shell(copy)
+                else copy.subtract(acc)
+                end
               end
         unless res && res.valid?
           raise RebuildError, "#{OP_LABELS[op]} of volume #{label(source)} failed."
@@ -359,6 +367,23 @@ module SolidProcedural
         acc = res
       end
       acc
+    end
+
+    # Boolean engine: the native booleans of SketchUp Pro, else the Ruby
+    # engine (SolidOperations, from Solid for Maker) for SketchUp Make.
+    def self.ruby_engine?
+      !Sketchup.is_pro?
+    end
+
+    # Ruby engine: the base +acc+ is modified in place and the tool +copy+
+    # erased. Returns the base, or nil on failure.
+    def self.ruby_boolean(op, acc, copy)
+      status = case op
+               when 'union' then SolidOperations.union(acc, copy)
+               when 'outer_shell' then SolidOperations.outer_shell(acc, copy)
+               else SolidOperations.subtract(acc, copy)
+               end
+      status ? acc : nil
     end
 
     # Visible copy of +source+ in +entities+, with its own definition (a
@@ -457,7 +482,7 @@ module SolidProcedural
         UI.messagebox('Select the solid groups or components to combine in a procedural solid.', MB_OK)
         return
       end
-      unless volumes.first.respond_to?(:union)
+      unless ruby_engine? || volumes.first.respond_to?(:union)
         UI.messagebox(PRO_REQUIRED, MB_OK)
         return
       end

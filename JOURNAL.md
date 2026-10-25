@@ -47,6 +47,20 @@
 - **Premiers résultats** : SketchUp 2021 Pro 11/11 ; Make 2017 9 OK, 1 sauté (T07, booléens), 1 échec T11 : Rebuild d'un solide à un seul volume composant laissait la définition de l'ancien Result sans instance (aussi sous 2021, défaut antérieur). Test manuel 2017 : **`onActivePathChanged` OK** (sources montrées à l'entrée, Result à la sortie).
 - **Décision utilisateur : option A** (supprimer cette définition, test d'annulation) → **solid_procedural/procedural.rb** : `rebuild_in_operation` supprime la définition de l'ancien Result (instance de composant) quand plus aucune instance ne l'utilise (`remove_definition`) ; **tools/tests/run_tests.rb** : T08b (Rebuild d'un volume composant, aucune définition inutilisée, Ctrl+Z remet l'ancien Result solide, Ctrl+Y le nouveau).
 - **Résultats finaux** : SketchUp 2021 Pro **12/12 (58 vérifications)** ; Make 2017 **11 OK, 1 sauté (T07, booléens de Pro), 0 échec (49 vérifications)**.
+- Commit `084a488` (validé par l'utilisateur : « commit si les tests passent »).
+
+### M2 — Moteur Ruby de Solid for Maker sous SketchUp Make
+
+- **Décision utilisateur** : option A, moteur **copié** dans le plugin (autonomie, NF-08), plutôt qu'un appel à Solid for Maker installé.
+- **solid_procedural/solid_operations.rb** (création) — copie de `solid_operations.rb` de Solid for Maker 1.0.0 (commit `47e9002`), module `SolidForMaker` → `SolidProcedural`, en-tête d'origine et de licence ; corps identique (vérifié par `diff`).
+- **solid_procedural/LICENSE-solid-operations.txt** (création) — notice MIT d'Eneroth Solid Tools et de Solid for Maker (exigée dans toute copie, donc dans le `.rbz`).
+- **solid_procedural/main.rb** — `require_relative 'solid_operations'`.
+- **solid_procedural/procedural.rb** — `ruby_engine?` (`!Sketchup.is_pro?`) et `ruby_boolean` (`SolidOperations.union / outer_shell / subtract(base, outil)`, base modifiée sur place) dans `combine` ; message « coming in 1.1.0 » de M1 retiré ; moteur indiqué dans la barre d'état et le log ; `rebuild_in_operation` efface tout ce qu'un recalcul laisse dans le groupe hors Result (groupe temporaire du moteur après une erreur) ; `do_create` : contrôle `respond_to?(:union)` ignoré avec le moteur Ruby.
+- **tools/tests/run_tests.rb** — T06 attend un succès sous Make, vérifie qu'il ne reste rien d'autre dans le groupe ; **T12** : 5 cas à volume calculé d'avance (trou traversant, union de boîtes décalées, encoche à faces coplanaires, Shell avec une boîte intérieure, union puis trou à faces coplanaires), natif puis moteur Ruby forcé sous 2021, moteur Ruby sous Make ; `force_engine` / `restore_engine` ; méthodes du plugin ré-aliasées après chaque rechargement ; test manuel : le trou est déplacé pendant que le groupe est ouvert, recalcul vérifié à la sortie.
+- **Constat** : le Shell **natif** garde un solide enfermé dans un autre (1064 = 1000 + 4³), le moteur Ruby l'efface (1000, `remove_cavities` de Solid for Maker) ; valeur attendue par moteur dans T12. La Base de deux volumes « + » est le premier dans l'ordre du groupe, pas de la sélection (test corrigé).
+- **Résultats** : SketchUp 2021 Pro **22/22 (127 vérifications)** ; Make 2017 **16 OK, 1 sauté (T07, `active_path=`), 0 échec (89 vérifications)** ; test manuel Make 2017 : **recalcul à la sortie avec le moteur Ruby OK** (875,77 → 937,88, attendu 1000 − la moitié du trou).
+- **PRD.md** — EF-33 testée, NF-01 (natifs sous Pro, moteur Solid for Maker sous Make).
+- Reste pour M3 : FSD, README, manuels (tableau Pro / Make), description du loader, livraison 1.1.0.
 - **PRD.md** — EF-31 (M1 codée et testée), EF-32 (`PRO_ONLY`), EF-33 (moteur Make, M2), NF-13 (tests automatiques), périmètre exclu mis à jour.
 - Plugin déployé dans SketchUp 2021 et Make 2017 par le lanceur. Version inchangée (1.0.1) jusqu'à la 1.1.0.
 

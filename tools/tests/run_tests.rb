@@ -166,7 +166,7 @@ module SolidProcedural
 
     PLUGIN_FILES = %w[
       version circle_restore/detector circle_restore/rebuilder circle_restore/volume
-      circle_restore procedural procedural_table highlight main
+      circle_restore solid_operations procedural procedural_table highlight main
     ].freeze
 
     def self.plugin_dir
@@ -199,7 +199,9 @@ module SolidProcedural
         Sketchup.send(:sp_tests_status_text=, text)
       end
       sp = SolidProcedural.singleton_class
-      sp.send(:alias_method, :sp_tests_pro_only?, :pro_only?) unless sp.method_defined?(:sp_tests_pro_only?)
+      # Plugin methods: aliased again after each reload of the plugin.
+      sp.send(:alias_method, :sp_tests_pro_only?, :pro_only?)
+      Procedural.singleton_class.send(:alias_method, :sp_tests_ruby_engine?, :ruby_engine?)
       @hooked = true
     end
 
@@ -208,11 +210,20 @@ module SolidProcedural
       UI.singleton_class.send(:alias_method, :messagebox, :sp_tests_messagebox)
       Sketchup.singleton_class.send(:alias_method, :status_text=, :sp_tests_status_text=)
       SolidProcedural.singleton_class.send(:alias_method, :pro_only?, :sp_tests_pro_only?)
+      restore_engine
       @hooked = false
     end
 
     def self.force_pro_only(value)
       SolidProcedural.define_singleton_method(:pro_only?) { value }
+    end
+
+    def self.force_engine(ruby)
+      Procedural.define_singleton_method(:ruby_engine?) { ruby }
+    end
+
+    def self.restore_engine
+      Procedural.singleton_class.send(:alias_method, :ruby_engine?, :sp_tests_ruby_engine?)
     end
 
     def self.restore_pro_only
@@ -445,35 +456,29 @@ module SolidProcedural
         base = tests.box(model.entities, 0, 30, 0, 10, 10, 10, tests.base_material(model))
         hole = tests.cylinder(model.entities, 5, 35, -2, 2, 14, tests.red(model))
         base_volume = base.volume
-        loose = model.entities.grep(Sketchup::Group).length
         tests.select(model, base, hole)
         before = tests.procedural_groups(model).length
         tests.messages.clear
         Procedural.do_create
         groups = tests.procedural_groups(model)
-        if tests.pro?
-          c.check(tests.messages.empty?, 'no message', tests.messages.join(' / '))
-          c.check(groups.length == before + 1, 'procedural solid created')
-          g = groups.last
-          next unless g
-          @state[:pair] = g
-          result = Procedural.result_of(g)
-          c.check(result && result.manifold?, 'Result is a solid')
-          c.check(result.volume < base_volume - 1, "hole subtracted (#{result.volume.round(2)} < #{base_volume.round(2)})")
-          c.check(result.material == tests.base_material(model), 'Result has the material of the base',
-                  "Result: #{result.material ? result.material.name : 'none'}, base source: "                   "#{Procedural.sources_of(g).first.material ? Procedural.sources_of(g).first.material.name : 'none'}")
-          c.check(tests.inner(result).grep(Sketchup::Face).none? { |f| Procedural.subtract_material?(f.material) },
-                  'no face of the subtract color')
-          c.check(tests.arc_edges(tests.inner(result)) > 0, 'native circles on the Result')
-          c.check(Procedural.sources_of(g).all?(&:hidden?), 'sources hidden outside')
-        else
-          c.check(tests.messages.any? { |m| m.include?('1.1.0') }, 'Make: message, engine coming in 1.1.0',
-                  tests.messages.join(' / '))
-          c.check(groups.length == before, 'Make: no procedural solid created')
-          plain = model.entities.grep(Sketchup::Group).reject { |e| Procedural.procedural?(e) || e.hidden? }
-          c.check(model.entities.grep(Sketchup::Group).length == loose && plain.length >= 2,
-                  'Make: volumes left as they were')
-        end
+        c.note("engine: #{Procedural.ruby_engine? ? 'SketchUp Make (Ruby)' : 'native'}")
+        c.check(tests.messages.empty?, 'no message', tests.messages.join(' / '))
+        c.check(groups.length == before + 1, 'procedural solid created')
+        g = groups.last
+        next unless g && groups.length == before + 1
+        @state[:pair] = g
+        result = Procedural.result_of(g)
+        c.check(result && result.manifold?, 'Result is a solid')
+        next unless result
+        c.check(result.volume < base_volume - 1, "hole subtracted (#{result.volume.round(2)} < #{base_volume.round(2)})")
+        c.check(result.material == tests.base_material(model), 'Result has the material of the base',
+                "Result: #{result.material ? result.material.name : 'none'}")
+        c.check(tests.inner(result).grep(Sketchup::Face).none? { |f| Procedural.subtract_material?(f.material) },
+                'no face of the subtract color')
+        c.check(tests.arc_edges(tests.inner(result)) > 0, 'native circles on the Result')
+        c.check(Procedural.sources_of(g).all?(&:hidden?), 'sources hidden outside')
+        others = g.entities.to_a - Procedural.sources_of(g) - [result]
+        c.check(others.empty?, 'nothing else left in the group', others.map { |e| e.class.name }.join(', '))
       end
 
       test 'T07 Automatic rebuild when the solid is closed' do |c, model|
@@ -618,6 +623,81 @@ module SolidProcedural
         c.check(SolidProcedural.pro_only? == SolidProcedural::PRO_ONLY, 'switch restored')
       end
 
+      # T12: volumes known in advance, for each engine (both in SketchUp
+      # Pro, the Ruby engine forced for the second run; Ruby only in Make).
+      hole_volume = 0.5 * 24 * 2 * 2 * Math.sin(2 * Math::PI / 24) * 10
+      cases = [
+        ['through hole', 1000 - hole_volume, nil, lambda do |m, x, y|
+          [tests.box(m.entities, x, y, 0, 10, 10, 10, tests.base_material(m)),
+           tests.cylinder(m.entities, x + 5, y + 5, -2, 2, 14, tests.red(m))]
+        end],
+        ['union of offset boxes', 1750, nil, lambda do |m, x, y|
+          [tests.box(m.entities, x, y, 0, 10, 10, 10, tests.base_material(m)),
+           tests.box(m.entities, x + 5, y + 5, 0, 10, 10, 10)]
+        end],
+        ['corner notch, coplanar faces', 840, nil, lambda do |m, x, y|
+          [tests.box(m.entities, x, y, 0, 10, 10, 10, tests.base_material(m)),
+           tests.box(m.entities, x - 1, y - 1, 0, 5, 5, 10, tests.red(m))]
+        end],
+        # Native Outer Shell keeps a solid enclosed in another (1000 + 4^3);
+        # the Ruby engine erases it (Solid for Maker remove_cavities).
+        ['shell with an inner box', { false => 1064, true => 1000 }, 'outer_shell', lambda do |m, x, y|
+          [tests.box(m.entities, x, y, 0, 10, 10, 10, tests.base_material(m)),
+           tests.box(m.entities, x + 3, y + 3, 3, 4, 4, 4)]
+        end],
+        ['union then hole, coplanar faces', 1500 - hole_volume, nil, lambda do |m, x, y|
+          [tests.box(m.entities, x, y, 0, 10, 10, 10, tests.base_material(m)),
+           tests.box(m.entities, x + 5, y, 0, 10, 10, 10),
+           tests.cylinder(m.entities, x + 10, y + 5, -2, 2, 14, tests.red(m))]
+        end]
+      ]
+      engines = tests.pro? ? [false, true] : [true]
+      engines.each_with_index do |ruby, e|
+        cases.each_with_index do |(name, expected, second_op, build), i|
+          label = ruby ? 'Ruby engine' : 'native'
+          test "T12 #{label}: #{name}" do |c, model|
+            tests.force_engine(ruby)
+            begin
+              volumes = build.call(model, i * 40, 200 + e * 40)
+              holes = volumes.count { |v| tests.inner(v).grep(Sketchup::Edge).any?(&:curve) }
+              tests.select(model, volumes)
+              before = tests.procedural_groups(model).length
+              tests.messages.clear
+              started = Time.now
+              Procedural.do_create
+              groups = tests.procedural_groups(model)
+              c.check(tests.messages.empty? && groups.length == before + 1, 'created without message',
+                      tests.messages.join(' / '))
+              g = groups.last
+              next unless g && groups.length == before + 1
+              if second_op
+                tests.select(model, g)
+                key = ProceduralTable.payload(model)[:rows][1][:key]
+                Procedural.table_operation(model, g, key, second_op)
+                c.check(Procedural.op_of(Procedural.sources_of(g)[1]) == second_op, "row 2 set to #{second_op}")
+                c.check(tests.messages.empty?, 'no message', tests.messages.join(' / '))
+              end
+              c.note(format('time %.2fs', Time.now - started))
+              result = Procedural.result_of(g)
+              c.check(result && result.manifold?, 'Result is a solid')
+              next unless result
+              wanted = expected.is_a?(Hash) ? expected[ruby] : expected
+              c.check((result.volume - wanted).abs < 0.01,
+                      format('volume %.4f (expected %.4f)', result.volume, wanted))
+              # The base is the first added volume in the group's order.
+              c.check(result.material == Procedural.sources_of(g).first.material, 'material of the base')
+              c.check(tests.inner(result).grep(Sketchup::Face).none? { |f| Procedural.subtract_material?(f.material) },
+                      'no face of the subtract color')
+              c.check(tests.arc_edges(tests.inner(result)) > 0, 'native circles') if holes > 0
+              others = g.entities.to_a - Procedural.sources_of(g) - [result]
+              c.check(others.empty?, 'nothing else left in the group', others.map { |x| x.class.name }.join(', '))
+            ensure
+              tests.restore_engine
+            end
+          end
+        end
+      end
+
       test 'T11 No unused definition left' do |c, model|
         left = tests.unused_new_definitions(model)
         c.check(left.empty?, 'no unused component definition after all the tests',
@@ -678,17 +758,21 @@ module SolidProcedural
     # Make 2017, by hand: onActivePathChanged
     # -------------------------------------------------------------------
 
+    # A box with a hole. Once the user has opened it, the hole is moved
+    # half out of the box (as an edit would); once closed, the Result must
+    # be shown and rebuilt (larger volume), with the engine of this SketchUp.
     def self.manual_open_test
       model = Sketchup.active_model
       model.start_operation('Solid Procedural tests — open me', true)
-      comp = box(model.entities, 0, -40, 0, 10, 10, 10).to_component
+      base = box(model.entities, 0, -40, 0, 10, 10, 10, base_material(model))
+      hole = cylinder(model.entities, 5, -35, -2, 2, 14, red(model))
       model.commit_operation
-      select(model, comp)
+      select(model, base, hole)
       Procedural.do_create
       g = procedural_groups(model).last
       return puts("#{LOG} manual test: no procedural solid created") unless g
       g.name = 'SP Test - open me'
-      @manual = { group: g, opened: false, deadline: Time.now + 120 }
+      @manual = { group: g, opened: false, deadline: Time.now + 120, volume: Procedural.result_of(g).volume }
       Sketchup.status_text = "#{LOG} Double-click 'SP Test - open me', then exit it (2 minutes)"
       puts "#{LOG} Double-click 'SP Test - open me', then exit it (2 minutes)"
       watch_manual
@@ -699,15 +783,25 @@ module SolidProcedural
       g = m[:group]
       timer = UI.start_timer(0.5, false) do
         UI.stop_timer(timer)
-        path = Sketchup.active_model.active_path || []
+        model = Sketchup.active_model
+        path = model.active_path || []
         if !m[:opened] && path.include?(g)
           m[:opened] = true
           m[:shown] = Procedural.sources_of(g).none?(&:hidden?)
+          hole = Procedural.sources_of(g).last
+          model.start_operation('Solid Procedural tests — move the hole', true)
+          hole.transform!(Geom::Transformation.translation(Geom::Vector3d.new(5, 0, 0)))
+          model.commit_operation
+          Sketchup.status_text = "#{LOG} The hole was moved: now exit 'SP Test - open me'"
         end
         if m[:opened] && !path.include?(g)
           result = Procedural.result_of(g)
-          ok_closed = result && !result.hidden?
-          text = "manual test: opened -> sources shown=#{m[:shown]}; closed -> Result shown=#{ok_closed ? true : false}"
+          shown = result && !result.hidden? ? true : false
+          rebuilt = result && result.volume > m[:volume] + 1 && !Procedural.stale?(g) ? true : false
+          engine = Procedural.ruby_engine? ? 'Ruby engine' : 'native'
+          text = "manual test (#{engine}): opened -> sources shown=#{m[:shown]}; " \
+                 "closed -> Result shown=#{shown}, rebuilt=#{rebuilt} " \
+                 "(volume #{m[:volume].round(2)} -> #{result ? result.volume.round(2) : 'none'})"
           puts "#{LOG} #{text}"
           File.open(File.join(RESULTS_DIR, "manual-#{Sketchup.version.to_i}.txt"), 'w:UTF-8') { |f| f.puts text }
           Sketchup.status_text = "#{LOG} #{text}"
