@@ -29,6 +29,27 @@
 - **build/solid_procedural.rbz** reconstruit ; plugin copié dans SketchUp 2021 ; tag `v1.0.1` et release GitHub avec le `.rbz`.
 - Commités aussi : notes Q-6 du 2026-10-24 (JOURNAL, PRD), `OPTIMISATION_REPAIR_HOLES.md`, `todo.txt`.
 
+### M1 — Compatibilité SketchUp 2017 (Make), interrupteur « Pro only », tests automatiques
+
+- **Demande utilisateur** : coder M1 avec une batterie de tests automatiques (le moins de manipulations possible) et garder un `if` simple pour remettre le plugin en mode « Pro only » ; *Set Repair Options* sous 2017 : oui.
+- **Sonde** (`-RubyStartup`) : Pro 2021 = 21.0.391, Ruby 2.7.1, toutes les API ; Make 2017 = 17.2.2555, Ruby 2.2.4, `is_pro?` faux, pas de `DefinitionList#remove`, `Model#active_path=`, `Entities#weld` ; `Group#union` **existe sous Make** (le contrôle `respond_to?(:union)` ne détecte pas Make). Aucune méthode Ruby 2.3+ dans le plugin.
+- **solid_procedural/main.rb** — `PRO_ONLY = false` et `SolidProcedural.pro_only?` (section « Edition ») ; *Set Repair Options* (menu et barre d'outils) sous toutes les versions.
+- **solid_procedural/procedural.rb** — `PRO_REQUIRED`, `pro_required?`, `pro_refused?` : avec `PRO_ONLY` et sans Pro, Create / Rebuild / Finalize refusent (message) et `rebuild_in_operation` lève une `RebuildError` (recalcul à la sortie, table) ; `combine` : plusieurs volumes sans Pro → message « the engine for SketchUp Make comes in version 1.1.0 » (place de M2) ; `remove_definition` : `DefinitionList#remove` si disponible, sinon `entities.clear!` (une définition vide sans instance disparaît sous 2017, vérifié par T02).
+- **Corrections trouvées par les tests (existaient en 1.0.1)** : (1) solide procédural à **un seul volume composant** → Create / Rebuild plantaient (`result.entities` sur une instance de composant ; message « Deleted Entity » trompeur, calculé après l'annulation) → `CircleRestore.inner_entities(result)` ; (2) le Result perdait la matière de son instance à la restauration des cercles (`Group#copy` ne la garde pas ; invisible car les faces portent la couleur) → `trial.material = result.material`.
+- **solid_procedural/procedural_table.rb** — `active_path_settable?` et `status_no_active_path` : sous 2017, double-clic sur une ligne et clic qui sort d'une source → message dans la barre d'état au lieu d'une erreur.
+- **solid_procedural/html/procedural_table.html** — `-webkit-user-select: none`.
+- **solid_procedural/circle_restore.rb** — la garde `weld` ne bloque plus toute la restauration : cercles natifs sous 2017 (seule la soudure de secours est indisponible, comptée `unwelded`).
+- **tools/tests/run_tests.rb** (création) — batterie T01 à T11 dans un modèle neuf, boîtes de message interceptées, étapes enchaînées par minuteur (le travail différé du plugin tourne entre elles) : chargement et copie installée = projet, Create à un volume composant, affichage dedans / dehors, table (ouverture d'une ligne), restauration des cercles, Create Base + Subtract (Pro) ou message M2 (Make), recalcul à la sortie (`active_path=`), Rebuild, Finalize d'une **copie à définition partagée** + cadre vert / bleu + Ctrl+Z, interrupteur `PRO_ONLY`, définitions inutilisées (suivies test par test). Rapport : `tools/tests/results/latest-<version>.txt` (+ `history-<version>.log`). `manual_open_test` : test de `onActivePathChanged` sous 2017.
+- **tools/tests/manual_open.rb** (création) — lance `manual_open_test` au démarrage.
+- **tools/tests/run_tests.ps1** (création) — déploie le plugin (2021 et 2017, `robocopy /MIR`), lance SketchUp avec `-RubyStartup`, attend le rapport, ferme SketchUp ; refuse si SketchUp est ouvert ; écran d'accueil de 2021 coupé (`WelcomeDialog.ShowOnStartup` de `PrivatePreferences.json`) puis remis ; sous Make 2017 (pas de réglage trouvé), cliquer sur son bouton ; `-Manual` pour le test de `onActivePathChanged`.
+- **Constats API** : l'écran d'accueil bloque `-RubyStartup` jusqu'à sa fermeture ; `Group#name=` rend la définition unique (une copie Ctrl+C / Ctrl+V partage la sienne) ; `Group#copy` ne garde ni attributs ni matière.
+- **.gitignore** — `tools/tests/results/`.
+- **Premiers résultats** : SketchUp 2021 Pro 11/11 ; Make 2017 9 OK, 1 sauté (T07, booléens), 1 échec T11 : Rebuild d'un solide à un seul volume composant laissait la définition de l'ancien Result sans instance (aussi sous 2021, défaut antérieur). Test manuel 2017 : **`onActivePathChanged` OK** (sources montrées à l'entrée, Result à la sortie).
+- **Décision utilisateur : option A** (supprimer cette définition, test d'annulation) → **solid_procedural/procedural.rb** : `rebuild_in_operation` supprime la définition de l'ancien Result (instance de composant) quand plus aucune instance ne l'utilise (`remove_definition`) ; **tools/tests/run_tests.rb** : T08b (Rebuild d'un volume composant, aucune définition inutilisée, Ctrl+Z remet l'ancien Result solide, Ctrl+Y le nouveau).
+- **Résultats finaux** : SketchUp 2021 Pro **12/12 (58 vérifications)** ; Make 2017 **11 OK, 1 sauté (T07, booléens de Pro), 0 échec (49 vérifications)**.
+- **PRD.md** — EF-31 (M1 codée et testée), EF-32 (`PRO_ONLY`), EF-33 (moteur Make, M2), NF-13 (tests automatiques), périmètre exclu mis à jour.
+- Plugin déployé dans SketchUp 2021 et Make 2017 par le lanceur. Version inchangée (1.0.1) jusqu'à la 1.1.0.
+
 ---
 
 ## Session du 2026-10-24

@@ -270,6 +270,7 @@ module SolidProcedural
     # for the user (circle restoration skipped or failed) or nil.
     # Raises RebuildError.
     def self.rebuild_in_operation(model, group)
+      raise RebuildError, PRO_REQUIRED if pro_required?
       selected = model.selection.to_a
       group.make_unique
       sources = normalize_sources(group)
@@ -293,19 +294,26 @@ module SolidProcedural
         end
 
         result.material = active.first.material
-        result.entities.grep(Sketchup::Face).each do |f|
+        # A single component volume gives a component instance, not a group.
+        CircleRestore.inner_entities(result).grep(Sketchup::Face).each do |f|
           f.material = nil if subtract_material?(f.material)
           f.back_material = nil if subtract_material?(f.back_material)
         end
         result, note, warning = restore_circles(result, created)
       ensure
         created.each do |d|
-          model.definitions.remove(d) if d.valid? && d.count_instances.zero?
+          remove_definition(model, d) if d.valid? && d.count_instances.zero?
         end
       end
 
       old = result_of(group)
-      old.erase! if old
+      if old
+        # The Result of a single component volume is a component instance:
+        # its definition must not stay unused (a copy may still use it).
+        unused = old.definition if old.is_a?(Sketchup::ComponentInstance)
+        old.erase!
+        remove_definition(model, unused) if unused && unused.valid? && unused.count_instances.zero?
+      end
       result.set_attribute(DICT, 'role', ROLE_RESULT)
       result.name = RESULT_NAME
       group.set_attribute(DICT, 'signature', sig)
@@ -322,6 +330,10 @@ module SolidProcedural
     # result is listed in +copies+, component definitions made unique in
     # +created+, so that the caller can clean up.
     def self.combine(model, group, active, copies, created)
+      if active.length > 1 && !Sketchup.is_pro?
+        raise RebuildError, 'Combining volumes needs SketchUp Pro ' \
+                            '(the engine for SketchUp Make comes in version 1.1.0).'
+      end
       entities = group.entities
       acc = copy_of(active.first, entities, created)
       copies << acc
@@ -373,6 +385,17 @@ module SolidProcedural
       copy
     end
 
+    # DefinitionList#remove exists from SketchUp 2018; before, the
+    # definition is emptied, and SketchUp drops an empty definition that has
+    # no instance.
+    def self.remove_definition(model, definition)
+      if model.definitions.respond_to?(:remove)
+        model.definitions.remove(definition)
+      else
+        definition.entities.clear!
+      end
+    end
+
     # Restores the circles and arcs of +result+ on a copy: on failure the
     # copy is erased and the boolean result is kept as it is.
     # Returns [result, note, warning].
@@ -389,6 +412,8 @@ module SolidProcedural
       end
       Sketchup.status_text = 'Solid Procedural — Restoring circles and arcs...'
       trial = duplicate(result, result.parent.entities, created)
+      # Group#copy does not keep the material of the instance.
+      trial.material = result.material
       begin
         restored = CircleRestore.restore_in_solid(trial, min_arc_segments: SolidProcedural.min_arc_segments)
         puts "#{LOG}   Circles: #{CircleRestore.summary(restored, reasons: true)}"
@@ -408,16 +433,32 @@ module SolidProcedural
     # Commands
     # -------------------------------------------------------------------
 
+    PRO_REQUIRED = "This function requires SketchUp Pro.\n" \
+                   'The native boolean methods are not available in your version.'.freeze
+
+    # True when the plugin is set to SketchUp Pro only (PRO_ONLY) and this
+    # SketchUp is not Pro.
+    def self.pro_required?
+      SolidProcedural.pro_only? && !Sketchup.is_pro?
+    end
+
+    # Shows the message and returns true when the command must not run.
+    def self.pro_refused?
+      return false unless pro_required?
+      UI.messagebox(PRO_REQUIRED, MB_OK)
+      true
+    end
+
     def self.do_create
       model = Sketchup.active_model
+      return if pro_refused?
       volumes = model.selection.select { |e| instance?(e) }
       if volumes.empty?
         UI.messagebox('Select the solid groups or components to combine in a procedural solid.', MB_OK)
         return
       end
       unless volumes.first.respond_to?(:union)
-        UI.messagebox("This function requires SketchUp Pro.\n" \
-                      "The native boolean methods are not available in your version.", MB_OK)
+        UI.messagebox(PRO_REQUIRED, MB_OK)
         return
       end
       nested = volumes.select { |v| procedural?(v) }
@@ -459,6 +500,7 @@ module SolidProcedural
 
     def self.do_rebuild
       model = Sketchup.active_model
+      return if pro_refused?
       groups = model.selection.select { |e| procedural?(e) }
       if groups.empty?
         message = if open_groups(model).empty?
@@ -478,6 +520,7 @@ module SolidProcedural
 
     def self.do_finalize
       model = Sketchup.active_model
+      return if pro_refused?
       groups = model.selection.select { |e| procedural?(e) }
       if groups.empty?
         UI.messagebox('Select one or more procedural solids to finalize.', MB_OK)

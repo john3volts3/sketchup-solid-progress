@@ -52,7 +52,7 @@ Besoin : modéliser de façon **non destructive et interactive**. On modifie les
 ### Exclu
 
 - **Combine All** (Union / Shell) : il reste dans Solid Batch v2. Finalize fournit l'équivalent non destructif.
-- SketchUp Make et les versions sans booléens natifs (Pro obligatoire).
+- ~~SketchUp Make et les versions sans booléens natifs (Pro obligatoire).~~ SketchUp Make 2017 visé à partir de la 1.1.0 (EF-31, EF-33, décision du 2026-10-23) ; `PRO_ONLY` remet le mode Pro seulement (EF-32).
 - ~~SketchUp 2017 : Solid Batch v2.3.0 y reste installé.~~ Compatibilité SketchUp 2017 Pro demandée le 2026-10-23 (EF-31).
 - Composants comme **conteneurs** procéduraux. Ils restent acceptés comme **sources**.
 - Opération **Intersect** (non retenue pour la 1.0.0).
@@ -95,7 +95,9 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 | EF-28 | **Sélection gardée** : après un recalcul (table sur un groupe fermé, Rebuild), le groupe sélectionné reste sélectionné et la table reste dessus | I | livrée en 1.0.0 |
 | EF-29 | **Cadre vert** : un groupe procédural sélectionné se distingue des autres objets (couleur de sélection verte) ; le cadre redevient bleu dès que le solide n'est plus procédural (Finalize) | S | livrée en 1.0.0, corrigée en 1.0.1 (Finalize) |
 | EF-30 | **Raccourcis clavier avec la table ouverte** : après une action dans la table (et quand la souris en sort), le clavier revient à SketchUp, pour que ses raccourcis (W…) marchent sans cliquer dans le modèle ; jamais pendant la saisie d'un nom | Im | livrée en 1.0.0 |
-| EF-31 | **Compatibilité SketchUp 2017 Pro** : le plugin marche aussi sous SketchUp 2017 (gardes pour `DefinitionList#remove` 2018+, `Model#active_path=` 2020+, navigateur ancien ; cercles natifs à essayer sans `Entities#weld`) | Im | validée (à faire, test quand SketchUp 2017 aura sa licence) |
+| EF-31 | **Compatibilité SketchUp 2017** (Make 2017 installé à la place de Pro 2017, 2026-10-23) : le plugin marche aussi sous SketchUp 2017 (gardes pour `DefinitionList#remove` 2018+, `Model#active_path=` 2020+, navigateur ancien ; cercles natifs sans `Entities#weld`) ; *Set Repair Options* sous toutes les versions | Im | **M1 codée et testée** (2026-10-25, tests automatiques 2021 + Make 2017) ; livraison avec M2-M3 (1.1.0) |
+| EF-32 | **Interrupteur « Pro only »** : une constante `PRO_ONLY` (`solid_procedural/main.rb`) remet le plugin en mode SketchUp Pro seulement (comportement 1.0) : sans Pro, Create, Rebuild et Finalize refusent de s'exécuter | I | **testée** (2026-10-25, T10) |
+| EF-33 | **Moteur pour SketchUp Make** (M2) : sans booléens natifs, le moteur Ruby de Solid for Maker combine les volumes ; sous Pro, booléens natifs inchangés. En attendant, un solide à un seul volume marche sous Make, et plusieurs volumes donnent un message clair (« coming in version 1.1.0 ») | I | proposée (M2) |
 
 ## 6. Exigences non fonctionnelles
 
@@ -113,6 +115,7 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 | NF-10 | **Persistance** : les données procédurales sont dans le modèle (attributs `SolidProcedural`), les options dans le registre `SolidProcedural`. Une option non définie est lue dans `SolidBatch` | ENF-03, ENF-09 |
 | NF-11 | **Dégradation propre** : un `.skp` ouvert sans Solid Procedural montre le Result (sources cachées) | — |
 | NF-12 | Robustesse : une source non solide, un volume supprimé ou un groupe vide ne provoquent jamais d'exception non gérée | ENF-05 |
+| NF-13 | **Tests automatiques** avec le moins de manipulations possible : `tools/tests/run_tests.ps1` déploie le plugin, lance SketchUp 2021 puis Make 2017 (`-RubyStartup`), lit le rapport et ferme SketchUp ; seule manipulation : le bouton de l'écran d'accueil de Make 2017 (celui de 2021 est coupé le temps des tests puis remis). Outil de développement, hors `.rbz` | — |
 
 ## 7. Contraintes et dépendances
 

@@ -218,7 +218,10 @@ module SolidProcedural
       source = Procedural.row_lookup(group)[key]
       path = model.active_path || []
       return unless source && path.include?(group)
-      model.active_path = path[0..path.index(group)] unless path.last == group
+      unless path.last == group
+        return status_no_active_path('Close the edited volume first') unless active_path_settable?(model)
+        model.active_path = path[0..path.index(group)]
+      end
       model.selection.clear
       model.selection.add(source)
     end
@@ -230,9 +233,20 @@ module SolidProcedural
       unless path.include?(group)
         context = path.empty? ? model : path.last.definition
         return unless group.parent == context
+        return status_no_active_path('Double-click the procedural solid in the model to open it') unless active_path_settable?(model)
         model.active_path = path + [group]
       end
       select_row(model, group, key)
+    end
+
+    # Model#active_path= exists from SketchUp 2020.
+    def self.active_path_settable?(model)
+      model.respond_to?(:active_path=)
+    end
+
+    def self.status_no_active_path(text)
+      Sketchup.status_text = "Solid Procedural — #{text} (not available from the table in this SketchUp version)"
+      nil
     end
 
     # Keyboard back to SketchUp (the page asks for it after each action):

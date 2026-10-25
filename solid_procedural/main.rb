@@ -15,9 +15,7 @@ module SolidProcedural
     submenu.add_item('Finalize Procedural Solid') { Procedural.do_finalize }
     submenu.add_separator
     submenu.add_item('Set Subtract Color') { self.do_set_subtract_color }
-    if Sketchup.version.to_f >= 20.1
-      submenu.add_item('Set Repair Options') { self.do_set_repair_options }
-    end
+    submenu.add_item('Set Repair Options') { self.do_set_repair_options }
 
     toolbar = UI::Toolbar.new(PLUGIN_NAME)
 
@@ -55,13 +53,11 @@ module SolidProcedural
     cmd_setcolor.large_icon = File.join(icons_dir, 'setcolor_24.png')
     toolbar.add_item(cmd_setcolor)
 
-    if Sketchup.version.to_f >= 20.1
-      cmd_repairopts = UI::Command.new('Set Repair Options') { self.do_set_repair_options }
-      cmd_repairopts.tooltip = 'Set Repair Options — circle restoration threshold'
-      cmd_repairopts.small_icon = File.join(icons_dir, 'repair_circles_16.png')
-      cmd_repairopts.large_icon = File.join(icons_dir, 'repair_circles_24.png')
-      toolbar.add_item(cmd_repairopts)
-    end
+    cmd_repairopts = UI::Command.new('Set Repair Options') { self.do_set_repair_options }
+    cmd_repairopts.tooltip = 'Set Repair Options — circle restoration threshold'
+    cmd_repairopts.small_icon = File.join(icons_dir, 'repair_circles_16.png')
+    cmd_repairopts.large_icon = File.join(icons_dir, 'repair_circles_24.png')
+    toolbar.add_item(cmd_repairopts)
 
     # Right-click on a selected procedural solid, or inside an open one.
     UI.add_context_menu_handler do |menu|
@@ -78,6 +74,19 @@ module SolidProcedural
       toolbar.show
     end
     @loaded = true
+  end
+
+  # -------------------------------------------------------------------
+  # Edition
+  # -------------------------------------------------------------------
+
+  # true: SketchUp Pro only (behavior of version 1.0): without SketchUp
+  # Pro, Create, Rebuild and Finalize refuse to run. false: also usable
+  # with SketchUp Make (2017).
+  PRO_ONLY = false
+
+  def self.pro_only?
+    PRO_ONLY
   end
 
   # -------------------------------------------------------------------
