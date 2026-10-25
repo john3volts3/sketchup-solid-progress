@@ -2,7 +2,7 @@
 
 *[English version](USER_MANUAL_EN.md)*
 
-Version 1.1.0 — SketchUp Pro 2021 et SketchUp Make 2017
+Version 1.1.1 — SketchUp Pro 2021 et SketchUp Make 2017
 
 ## Présentation
 
@@ -117,6 +117,8 @@ Réglages de la restauration des cercles et des arcs faite sur chaque Result :
 - **Auto-repair circles on large objects** (Yes/No) : avec `No`, la restauration est ignorée au-dessus du seuil et un message vous prévient ;
 - **Large object threshold (edges)** : défaut `10000` ;
 - **Min segments for arc detection** : défaut `6`, minimum `3`. Plus bas = détecte les arcs plus courts mais risque de faux positifs.
+
+Depuis la version 1.1.1, la restauration est 4 à 5 fois plus rapide sur une face percée de nombreux trous (environ 2 s pour une plaque de 20 trous). Si vous aviez baissé le seuil ou choisi `No` parce que c'était lent, vous pouvez le remonter.
 
 | Type d'arc | Segments | Détecté avec seuil = 6 ? |
 |------------|----------|--------------------------|

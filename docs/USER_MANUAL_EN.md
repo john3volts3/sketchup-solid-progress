@@ -2,7 +2,7 @@
 
 *[Version française](USER_MANUAL_FR.md)*
 
-Version 1.1.0 — SketchUp Pro 2021 and SketchUp Make 2017
+Version 1.1.1 — SketchUp Pro 2021 and SketchUp Make 2017
 
 ## Overview
 
@@ -117,6 +117,8 @@ Settings of the circle and arc restoration done on every Result:
 - **Auto-repair circles on large objects** (Yes/No): with `No`, the restoration is skipped above the threshold and a message tells you;
 - **Large object threshold (edges)**: default `10000`;
 - **Min segments for arc detection**: default `6`, minimum `3`. Lower catches shorter arcs but risks false positives.
+
+Since version 1.1.1, the restoration is 4 to 5 times faster on a face with many holes (about 2 s for a plate with 20 holes). If you had lowered the threshold or chosen `No` because it was slow, you can raise it again.
 
 | Arc type | Segments | Detected with threshold = 6? |
 |----------|----------|------------------------------|

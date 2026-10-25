@@ -3,7 +3,7 @@
 > Le *quoi* et le *pourquoi*. Le *comment* (algorithme, entrées/sorties, limitations) est dans `docs/FSD_FR.md` / `docs/FSD_EN.md`.
 > Cadrage initial : `SOLID_PROCEDURAL_PROJET.md` (rédigé sous le nom « Solid Batch v3 »). Historique détaillé : `JOURNAL.md`.
 
-Dernière mise à jour : 2026-10-25 (livraison de la 1.1.0 pour SketchUp Pro 2021 et SketchUp Make 2017).
+Dernière mise à jour : 2026-10-25 (livraison de la 1.1.1 : reconstruction des cercles accélérée sur les faces très percées).
 
 ---
 
@@ -117,6 +117,7 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 | NF-11 | **Dégradation propre** : un `.skp` ouvert sans Solid Procedural montre le Result (sources cachées) | — |
 | NF-12 | Robustesse : une source non solide, un volume supprimé ou un groupe vide ne provoquent jamais d'exception non gérée | ENF-05 |
 | NF-13 | **Tests automatiques** avec le moins de manipulations possible : `tools/tests/run_tests.ps1` déploie le plugin, lance SketchUp 2021 puis Make 2017 (`-RubyStartup`), lit le rapport et ferme SketchUp ; seule manipulation : le bouton de l'écran d'accueil de Make 2017 (celui de 2021 est coupé le temps des tests puis remis). Outil de développement, hors `.rbz` | — |
+| NF-14 | **Performance de la restauration des cercles** sur une face percée de nombreux trous : `repair_holes` retrouve les arêtes des trous par des grilles au lieu de parcourir toutes les arêtes pour chaque trou (code de Solid for Maker 1.0.0, `OPTIMISATION_REPAIR_HOLES.md`) ; **résultat identique** à l'ancienne méthode, vérifié par la batterie (T15). **Livrée en 1.1.1** | ENF-06 |
 
 ## 7. Contraintes et dépendances
 
@@ -162,6 +163,7 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 | CA-24 | SketchUp Make 2017 : une boîte et un cylindre rouge → Create → le trou est soustrait (moteur intégré) ; ouvrir le solide, déplacer le trou, sortir → Result recalculé ; double-clic sur une ligne de la table → message dans la table | EF-31, EF-33 |
 | CA-25 | `PRO_ONLY = true` sous Make → Create, Rebuild et Finalize affichent « This function requires SketchUp Pro. » ; sous Pro → aucun changement | EF-32 |
 | CA-26 | Procedural Table d'un solide fermé → Finalize → solide simple sélectionné, Ctrl+Z le remet ; solide ouvert → bouton grisé, rien ne change | EF-34 |
+| CA-27 | Plaque et 20 volumes Subtract → Create → 40 cercles natifs, volume exact (T12) ; sur 13 cas (plaque très percée, trous près d'un bord, faces colorées, faces coplanaires, très petits et très grands trous, chambrages, fraisurages à épaulement, trous sur deux faces, troncs de cône, tétons, trous borgnes), faces, arêtes et cercles identiques à l'ancienne méthode (T15) ; plaque à 20 trous : restauration des cercles au moins 2 fois plus rapide (mesuré : 4 à 5 fois) | NF-14 |
 
 ## 9. Questions ouvertes et décisions
 
@@ -175,6 +177,10 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 | Q-4 | ~~Que se passe-t-il quand on fait Explode sur un groupe procédural ?~~ | **Résolue** (2026-10-23) : le Result restait visible, les sources restaient cachées avec leurs attributs → décision : Explode libère les volumes (EF-26) |
 | Q-5 | ~~Où placer l'entrée « Procedural Table » ?~~ | **Résolue** (2026-10-23) : menu, barre d'outils et clic droit |
 | Q-6 | ~~Incident du 2026-10-24 (SketchUp 2021, 1.0.0) : après plusieurs Ctrl+Z, le cadre de sélection restait bleu et l'entrée dans le groupe n'affichait plus les sources (Result visible) ; la table et les recalculs marchaient. Diagnostic : observateurs attachés, rien en attente, minuteurs actifs. Disparu après un redémarrage de SketchUp. Cause inconnue — hypothèse : `@synced_paths` faux après les annulations (groupe cru déjà ouvert). Pas d'interférence possible avec SketchUp 2017 (processus et registre séparés) ~~ | **Résolue** (2026-10-25, 1.1.0) : SketchUp 2017 **et 2021** gardent le même objet `Model` après File > Open (ou New) mais perdent ses observateurs ; `attach` sautait le modèle déjà connu → plus de bascule à l'entrée, plus de suivi de la sélection (cadre resté vert). Constaté par l'utilisateur sous Make 2017 (fichier intact, vérifié), reproduit par T14 avec l'ancien code sous 2021. Correctif : observateurs retirés puis remis à chaque ouverture ou création, couleur d'origine oubliée |
+| Q-7 | Moteur intégré (Make) : soustraire un **chambrage après son trou** échoue (« Subtract of volume … failed »), même avec un seul trou ; l'ordre inverse (chambrage puis trou) marche. Défaut du moteur de Solid for Maker | Constat du 2026-10-25 (tests T15) : à corriger dans Solid for Maker (kit de non-régression), puis recopier le moteur |
+| Q-8 | Booléens natifs (Pro) : un outil fait de **plusieurs solides** (un groupe de plusieurs cylindres) laisse des définitions inutilisées `TempInstance#n` dans le modèle (une par solide) ; *Purge Unused* les enlève | Constat du 2026-10-25 (tests T15) : vérifier si une source faite de plusieurs solides en laisse à chaque recalcul du plugin |
+| Q-9 | **Fraisurage dont le cône rejoint le trou** (cercle partagé par deux surfaces courbes) : cercle non reconstruit en natif (« cylinder end with a line attached » : soudé sous 2021, segments sous 2017) | Constat du 2026-10-25 : limite du moteur des cercles (Re-Cercle), à décider |
+| Q-10 | Trou **à cheval sur une ligne** entre deux faces coplanaires : cercle natif avec les booléens natifs, pas avec le moteur intégré (même raison) | Constat du 2026-10-25 : à décider |
 
 #### Diagnostic de Q-6 (console Ruby, une ligne à la fois)
 
@@ -237,6 +243,7 @@ UI.start_timer(0, false) { puts 'timer OK' }
 | 2026-10-23 | Clavier | `Sketchup.focus` absent de SketchUp 21.0.391 → API Windows par Fiddle (bibliothèque standard de Ruby, aucun paquet externe), `Sketchup.focus` utilisé quand il existe |
 | 2026-10-23 | SketchUp 2017 | Compatibilité demandée (remplace « SketchUp 2021 Pro seulement »). Cercles natifs sous 2017 : à essayer (choix laissé à Claude). Licence Pro de SketchUp 2017 absente sur le PC (`liclog.txt`) : test plus tard |
 | 2026-10-23 | Imbrication (étape 3) | **Reportée** : l'utilisateur pense pouvoir s'en passer ; travail et risque de régression jugés trop importants pour le besoin. Condition posée : aucun effet de bord sans groupes imbriqués (vérifié : seuls Create, la validation du recalcul et l'état de la table traitent un volume procédural, et seulement pour le refuser). Plan conservé pour plus tard : copie du Result intérieur par copie + Explode d'une enveloppe, recalcul de l'intérieur vers l'extérieur avant l'empreinte, rang gardé par Finalize, identifiants `group_id` / `owner` pour la libération après Explode dans un groupe ouvert |
+| 2026-10-25 | Accélération de `repair_holes` | Faite dans Solid Procedural seulement (Re-Cercle, Cylinder Resize, Solid Batch et Circle Advanced restent en attente) ; validée par comparaison avec l'ancienne méthode sur la même géométrie (T15) ; l'ancienne méthode reste dans les tests comme référence, jamais dans le plugin ; plus de test à la main quand la batterie couvre le changement |
 | 2026-10-23 | Approches écartées | Bascule manuelle Sources / Résultat (gardée en repli), recalcul en direct, opération codée dans le nom, attributs de Dynamic Components |
 
 ## 10. Historique des livraisons
@@ -257,3 +264,4 @@ UI.start_timer(0, false) { puts 'timer OK' }
 | 2026-10-23 | **Solid Procedural 1.0.0** — SketchUp 2021 Pro, dépôt GitHub privé `sketchup-solid-procedural` | EF-03 à EF-24 et EF-26 à EF-30 livrées ; EF-25 (imbrication) reportée ; EF-31 (SketchUp 2017) à faire |
 | 2026-10-25 | **Solid Procedural 1.0.1** — correctifs testés dans SketchUp 2021 Pro, release GitHub `v1.0.1` | EF-11 (Finalize d'un solide copié), EF-29 (cadre bleu après Finalize) ; CA-23 |
 | 2026-10-25 | **Solid Procedural 1.1.0** — SketchUp Pro 2021 et SketchUp Make 2017 (M1 `084a488`, M2 `fcbb4a8`, M3), release GitHub `v1.1.0` | EF-31 à EF-34, NF-13 livrées ; correctifs (solide à un volume composant, matière du Result, définition de l'ancien Result, observateurs perdus après File > Open — Q-6) ; CA-24 à CA-26 |
+| 2026-10-25 | **Solid Procedural 1.1.1** — restauration des cercles accélérée (`repair_holes` par grilles), release GitHub `v1.1.1` | NF-14 livrée ; CA-27 ; tests 2021 Pro 51/51, Make 2017 32 OK + T07 sauté ; constats Q-7 à Q-10 |

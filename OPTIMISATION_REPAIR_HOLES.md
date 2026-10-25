@@ -163,6 +163,14 @@ end
 - Tests à la main : Subtract d'un trou traversant → cercle natif (un clic le sélectionne, *Entity Info* : rayon et segments), un seul Ctrl+Z.
 - **Limite** : les trous du kit restent simples (traversants, borgnes, plaque à 30 trous).
 
+### Faite dans Solid Procedural 1.1.1 (2026-10-25)
+
+- Batterie automatique (`tools/tests/run_tests.rb`, **T15**) : l'ancienne méthode est gardée dans le fichier de tests (`repair_holes_scan`) ; pour chaque cas, booléens appliqués, puis sur la même géométrie reconstruction avec l'ancienne méthode, empreinte, `abort_operation`, reconstruction avec la nouvelle, comparaison (faces : aire, normale, matières recto / verso, calque, boucles, sommets triés ; arêtes, adoucies, lissées ; cercles natifs ; volume ; solide ; compteurs).
+- 13 cas, en booléens natifs et moteur Ruby sous SketchUp 2021, moteur Ruby sous Make 2017 : plaque à 20 trous, trous près d'un bord, faces colorées recto / verso, trous à cheval sur deux faces coplanaires, très petits trous (1 mm), très grands trous, chambrages, fraisurages à épaulement, trous dessus et sur un côté, troncs de cône, tétons par Union (une extrémité cassée), trous borgnes. **Identique dans tous les cas.** Grilles seules : 2 200 requêtes, mêmes voisins que le parcours complet.
+- Plaque à 20 trous, restauration des cercles : 9,2 → 2,1 s (2021, natif), 9,5 → 2,1 s (2021, Ruby), 6,6 → 1,4 s (Make 2017) ; plus un cas par *Create* (40 cercles natifs).
+- Non couvert, et hors du champ de `repair_holes` : un fraisurage dont le cône rejoint le trou (cercle partagé) n'est pas reconstruit en natif, avec l'ancienne comme avec la nouvelle méthode.
+- Pour un autre plugin, la même comparaison peut être reprise de `run_tests.rb` (T15, `repair_holes_scan`, `shape_signature`).
+
 ### À faire avant d'appliquer dans un autre plugin (recommandé)
 
 Comparer l'ancienne et la nouvelle méthode **sur la même géométrie** :
@@ -179,7 +187,7 @@ Comparer l'ancienne et la nouvelle méthode **sur la même géométrie** :
 |---|---|---|---|---|
 | Re-Cercle 2.0.0 | `re_cercle/volume.rb` (≈ l. 367) | `ReCercle::Volume` | `Detector::BASE_TOL` | — |
 | Cylinder Resize 0.3.0 | `cylinder_resize/rebuilder.rb` (≈ l. 279) | `CylinderResize::Rebuilder` | `Detector::BASE_TOL` | `repair_holes` est dans `rebuilder.rb`, pas dans `volume.rb` |
-| Solid Procedural 1.0.0 | `solid_procedural/circle_restore/volume.rb` (≈ l. 372) | `SolidProcedural::CircleRestore::Volume` | `Detector::BASE_TOL` | Voulu par l'utilisateur, avec M1 à M3 |
+| Solid Procedural 1.0.0 | `solid_procedural/circle_restore/volume.rb` (≈ l. 372) | `SolidProcedural::CircleRestore::Volume` | `Detector::BASE_TOL` | **Fait en 1.1.1** (2026-10-25), validé par T15 (voir § 7) |
 | Solid Batch 2.3.0 | `solid_batch/circle_restore/volume.rb` (≈ l. 372) | `SolidBatch::CircleRestore::Volume` | `Detector::BASE_TOL` | — |
 | Circle Advanced 1.4.0 | `circle_advanced/volume.rb` (≈ l. 408) | `CircleAdvanced::Volume` | **`BASE_TOL`** (pas `Detector::`) | Écrire `tol = BASE_TOL * 10` ; le style du fichier utilise `lambda { … }` |
 

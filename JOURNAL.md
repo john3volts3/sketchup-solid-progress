@@ -101,6 +101,33 @@
 - **PRD.md** — EF-31 (M1 codée et testée), EF-32 (`PRO_ONLY`), EF-33 (moteur Make, M2), NF-13 (tests automatiques), périmètre exclu mis à jour.
 - Plugin déployé dans SketchUp 2021 et Make 2017 par le lanceur. Version inchangée (1.0.1) jusqu'à la 1.1.0.
 
+### Accélération de `repair_holes` (`OPTIMISATION_REPAIR_HOLES.md`)
+
+- **Demande utilisateur** : « on attaque l'accélération de repair_holes » ; plan validé (« ok, go ») : test de comparaison d'abord, puis remplacement, tests à la main, livraison 1.1.1.
+- **tools/tests/run_tests.rb** — **T15** : l'ancienne méthode est copiée dans le fichier de tests (`repair_holes_scan`, jamais dans le plugin) ; `force_repair` / `restore_repair` aiguillent `Volume.repair_holes` vers elle ou vers celle du plugin (appels, trous, temps comptés). Pour chaque cas, booléens appliqués directement (natifs et moteur Ruby forcé sous Pro, Ruby sous Make), puis sur le même résultat : reconstruction des cercles avec l'ancienne méthode → empreinte → `abort_operation` → même chose avec celle du plugin → comparaison (faces : aire, normale, matières recto / verso, calque, boucles, sommets triés ; arêtes, adoucies, lissées ; cercles natifs ; volume ; solide ; compteurs de `restore_in_solid`). 13 cas : plaque à 20 trous, trous près d'un bord, faces colorées recto / verso, trous à cheval sur deux faces coplanaires, très petits trous (1 mm), très grands trous, chambrages, fraisurages à épaulement, trous dessus et sur un côté, troncs de cône, tétons par Union (une extrémité cassée), trous borgnes. Test des grilles seules : 2 200 requêtes, voisins par grille = balayage complet. Nouvelles aides : `cylinders`, `add_cylinder`, `cones`, `boolean`, `shape_signature`, `signature_diff`.
+- **Premier passage avec l'ancien code** (les deux méthodes identiques) : empreintes identiques après annulation dans tous les cas (le test est déterministe) ; **prémisse confirmée** : sur la plaque à 20 trous, `repair_holes` = 7,9 s sur 8,5 s de reconstruction (93 %).
+- **solid_procedural/circle_restore/volume.rb** — `repair_holes` par grilles + `hole_edge`, `point_grid`, `cell_of`, `near_items`, `near_grid?` : code de Solid for Maker 1.0.0 (identique, vérifié par `diff`) ; en-tête du fichier.
+- **Résultats** : 2021 Pro **49/49 (294 vérifications)**, Make 2017 **31 OK, 1 sauté (T07), 0 échec (181 vérifications)** ; empreintes identiques à l'ancienne méthode dans tous les cas (26 sous 2021, 13 sous 2017). Plaque à 20 trous, reconstruction des cercles : **9,2 → 2,1 s** (2021, natif), **9,5 → 2,1 s** (2021, Ruby), **6,6 → 1,4 s** (Make 2017) ; autres cas inchangés ou un peu plus rapides.
+- **Question de l'utilisateur** : pourquoi des tests à la main, puisque la batterie les fait ? Réponse : presque tout est couvert ; seul manquait le passage d'une plaque très percée par *Create* → option 2 choisie (« ok, option 2, go ») : cas ajouté à la batterie, plus de test à la main.
+- **tools/tests/run_tests.rb** — **T12 « plate with 20 holes »** : plaque et 20 volumes Subtract passés par *Create* ; volume exact (2 480,4908) et **960 arêtes en cercles natifs** attendues (5ᵉ élément facultatif des cas de T12). Premier passage en échec : la reconstruction des cercles était **sautée** (« 1452 edges > 1000 ») à cause des réglages *Set Repair Options* de ce PC (seuil 1 000, *Auto-repair* No ; défauts du plugin : 10 000, Yes) → `force_auto_repair` / `restore_auto_repair` : *Auto-repair* forcé à Yes pour ce cas, la batterie ne dépend plus des réglages de l'utilisateur.
+- **Résultats finaux** : 2021 Pro **51/51 (310 vérifications)**, plaque par *Create* 4,1 s (natif) et 4,8 s (Ruby), booléens compris ; Make 2017 **32 OK, 1 sauté (T07), 0 échec (189 vérifications)**, plaque par *Create* 4,1 s.
+- **Test utilisateur OK** (« Teste OK, livraison », sur la foi de la batterie automatique).
+
+### Livraison 1.1.1
+
+- Version **1.1.1** (`version.rb`, loader).
+- **PRD.md** — NF-14 (performance de la restauration des cercles, livrée en 1.1.1), CA-27, Q-7 à Q-10 (constats des tests T15), décision du 2026-10-25 (accélération dans Solid Procedural seulement, ancienne méthode gardée dans les tests), historique 1.1.1.
+- **docs/FSD_FR.md**, **docs/FSD_EN.md** — Version 1.1.1 ; EF-18 : `repair_holes` par grilles ; tests T01 à T15 ; arborescence et modules (`hole_edge`, `point_grid`, `cell_of`, `near_items`, `near_grid?`) ; ligne « Prévu » retirée ; historique 1.1.1.
+- **docs/USER_MANUAL_EN.md**, **docs/USER_MANUAL_FR.md** — Version 1.1.1 ; *Set Repair Options* : restauration 4 à 5 fois plus rapide sur une face très percée, seuil remontable. **README.md** — Cercles natifs rapides même sur une face très percée (EN et FR).
+- **OPTIMISATION_REPAIR_HOLES.md** — § 7 : validation faite dans Solid Procedural 1.1.1 (T15, 13 cas, chiffres) ; § 8 : ligne Solid Procedural « fait en 1.1.1 ».
+- Syntaxe Ruby vérifiée (tous les `.rb` ; seuls avertissements : les deux `modifier_ents` connus de `solid_operations.rb`) ; aucun chemin personnel ajouté. `build/solid_procedural.rbz` reconstruit (26 fichiers, sans les tests, SHA-256 `ecd82957…5da593`) ; plugin 1.1.1 installé dans SketchUp 2021 et Make 2017.
+- Commit, push, tag `v1.1.1` et release GitHub avec le `.rbz`. Non commité : `mes tests/` (fichiers de l'utilisateur).
+- **Constats hors `repair_holes`** (non corrigés, à décider) :
+  - moteur Ruby (Solid for Maker) : soustraire un **chambrage après son trou** échoue (« subtract 2 of 2 failed », même avec un seul trou) ; dans l'ordre inverse (chambrage puis trou), ça marche ;
+  - booléens natifs avec un outil fait de **plusieurs solides** (un groupe de plusieurs cylindres) : SketchUp laisse des définitions inutilisées `TempInstance#n` dans le modèle (une par solide) ; à vérifier dans le chemin du plugin (source faite de plusieurs solides) ;
+  - **fraisurage dont le cône rejoint le trou** (cercle partagé) : pas reconstruit en cercle natif (« cylinder end with a line attached » : soudé sous 2021, segments sous 2017), limite du moteur des cercles ;
+  - **trou à cheval sur une ligne** entre deux faces coplanaires : cercle natif avec les booléens natifs, pas avec le moteur Ruby (même raison).
+
 ---
 
 ## Session du 2026-10-24

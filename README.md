@@ -25,7 +25,7 @@ It derives from [Solid Batch](https://github.com/john3volts3/sketchup-solid-batc
 - **Rebuild / Finalize** — force a rebuild, or replace a procedural solid by a plain solid (sources removed) before exporting.
 - **Consistent undo** — the automatic rebuild is merged with your last edit: one Ctrl+Z undoes the edit and its Result.
 - **Green selection frame** — a selected procedural solid shows a green frame, so you know it is still procedural.
-- **Native circles** — circles and arcs broken by the booleans are rebuilt as native SketchUp circles and arcs on every Result (center inference), as in Solid Batch.
+- **Native circles** — circles and arcs broken by the booleans are rebuilt as native SketchUp circles and arcs on every Result (center inference), as in Solid Batch; fast even on a face with many holes (1.1.1).
 - **Explode releases the volumes** — exploding a procedural solid gives back the Result and all the source volumes as plain, visible objects.
 - **Set Subtract Color / Set Repair Options** — as in Solid Batch; the settings of Solid Batch are taken over until you change them.
 
@@ -93,7 +93,7 @@ Il est issu de [Solid Batch](https://github.com/john3volts3/sketchup-solid-batch
 - **Rebuild / Finalize** — forcer un recalcul, ou remplacer un solide procédural par un solide simple (sources supprimées) avant l'export.
 - **Annulation cohérente** — le recalcul automatique est fusionné avec votre dernière modification : un seul Ctrl+Z annule la modification et son Result.
 - **Cadre de sélection vert** — un solide procédural sélectionné a un cadre vert : vous savez qu'il est encore procédural.
-- **Cercles natifs** — les cercles et arcs cassés par les booléens sont reconstruits en vrais cercles et arcs SketchUp sur chaque Result (inférence du centre), comme dans Solid Batch.
+- **Cercles natifs** — les cercles et arcs cassés par les booléens sont reconstruits en vrais cercles et arcs SketchUp sur chaque Result (inférence du centre), comme dans Solid Batch ; rapide même sur une face percée de nombreux trous (1.1.1).
 - **Explode libère les volumes** — éclater un solide procédural rend le Result et tous les volumes sources en objets ordinaires visibles.
 - **Set Subtract Color / Set Repair Options** — comme dans Solid Batch ; les réglages de Solid Batch sont repris tant que vous ne les changez pas.
 
