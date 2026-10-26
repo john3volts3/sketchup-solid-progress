@@ -44,6 +44,14 @@
 - **README.md** — Section « Demo » / « Démo » en tête (miniature YouTube, accroche « edit dynamically after the cut ») ; « Demo model » décrit le modèle de l'utilisateur. **docs/USER_MANUAL_EN.md, docs/USER_MANUAL_FR.md** — Renvoi au modèle de démo ; capture de la table (section Progress Table). **docs/SKETCHUCATION.md** — Lien « Tutorial », description courte (241 caractères), captures, modèle de démo. **docs/PUBLICATION.md** — Vidéo et captures faites ; § 5 « Le modèle de démonstration publié ». **docs/FSD_EN.md, docs/FSD_FR.md, PRD.md** — EF-36 (matériel de publication) livrée en 2.0.1, CA-30, décision « Publication » complétée.
 - **build/solid_progress.rbz** — 2.0.1 : 26 fichiers, 56 244 octets, SHA-256 `5644b5f62c7a…`.
 - **Tests finaux** : 2021 Pro **57/57**, Make 2017 **37 OK + T07 sauté** ; T18 sur le modèle de l'utilisateur : à jour sous les deux versions, fichier inchangé. `docs/demo.skp` : seul chemin enregistré `C:\Users\Public\Documents\demo.skp`.
+- **Livraison 2.0.1** : « Teste OK, livraison » (utilisateur). Commit `ac7ba42`, tag `v2.0.1`, push, **release GitHub** `v2.0.1` avec `solid_progress.rbz` ; environnement Claude sauvegardé ; mémoire : `.skp` et chemin enregistré, préférences pour les démos.
+
+### Dépôt public, page SketchUcation
+
+- **Demande utilisateur** : Claude remplit la page SketchUcation (« tu remplis tout toi-même »), en créant d'abord une nouvelle fiche avec *Add new plugin* ; l'utilisateur vérifie avant de publier. Puis : passer le dépôt GitHub en public pour finaliser la page.
+- **SketchUcation** (Dev Tools, Chrome de l'utilisateur) — Fiche `Solid_Progress` créée ; *Files* : `Solid_Progress.rbz` 2.0.1, icône provisoire `Solid_Progress.png` (54 px, recadrée dans `hero.png` avec ffmpeg), images `solid_progress_hero.png` et `solid_progress_table.png` (réduites à 690 px, limite du site) ; *Basic Info* (nom, version, description courte, utilisation, compatibilité SU 2017 et SU 2021/22 seulement, dépendances, lien YouTube, catégories Construction, Modification, 3D Printing) ; *Overview*, *Start*, *Documentation* (manuel condensé), *Release Notes* en Markdown. Enregistrée en brouillon, **non publiée** (bouton de publication jamais touché) ; *Author Info* vide (données personnelles).
+- **GitHub** — Dernier contrôle de tout l'historique (24 commits, aucune donnée personnelle), dépôt passé en **public** (`gh repo edit --visibility public`) ; page, manuel, `demo.skp` et `.rbz` de la release accessibles sans connexion. Page SketchUcation complétée : *Support Link*, liens vers le modèle de démo et les manuels.
+- **docs/SKETCHUCATION.md** — État de la page, identifiant, Support Link, utilisation, icône, section « Source, demo model and user manual ». **docs/PUBLICATION.md, TACHES.md** — Liste de contrôle à jour ; reste : publication de la page par l'utilisateur.
 
 ## Session du 2026-10-26
 

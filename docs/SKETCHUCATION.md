@@ -2,6 +2,8 @@
 
 Text for the SketchUcation PluginStore listing: copy each section into the matching field of the Dev Tool. Checklist and screenshots: [PUBLICATION.md](PUBLICATION.md).
 
+> **2026-10-26**: PluginStore entry `Solid_Progress` created (Dev Tools > Edit > *Add new plugin*) and filled — Files: `Solid_Progress.rbz` (2.0.1), provisional icon `Solid_Progress.png` (54 px, cropped from `images/hero.png`), article images `solid_progress_hero.png` and `solid_progress_table.png` (690 px wide); Basic Info; Overview (with the video and both images); Start; Documentation; Release Notes. Saved as a draft, **not published**: the author checks it, then publishes it with the power button; approval by the SketchUcation administrators probably follows. Author Info left empty (personal data). The GitHub repository was made public the same day: Support Link and GitHub links added.
+
 ---
 
 ## Metadata
@@ -14,7 +16,10 @@ Text for the SketchUcation PluginStore listing: copy each section into the match
 - **Dependencies:** None
 - **License:** Free (MIT)
 - **Platforms:** Windows
-- **Icon:** to be made (see PUBLICATION.md)
+- **PluginStore identifier:** `Solid_Progress` (page `https://sketchucation.com/pluginstore?pln=Solid_Progress` once published)
+- **Support Link (More info button):** https://github.com/john3volts3/sketchup-solid-progress
+- **Usage:** Extensions > Solid Progress (menu and toolbar)
+- **Icon:** `Solid_Progress.png`, 54 × 54 px, provisional (cropped from `images/hero.png`)
 - **Screenshots:** `docs/images/hero.png` (main screenshot: the finished part and the toolbar), `docs/images/table-open.png` (Progress Table of an open group)
 - **Short description (255 chars max):** Non-destructive booleans: edit dynamically after the cut. Your holes, pins and blocks stay editable inside a group; the result is rebuilt when you close it. Change the order of the operations in a table. SketchUp Pro, and SketchUp Make 2017.
 - **Tutorial (video link):** https://youtu.be/g1BOtZyySh8
@@ -61,6 +66,10 @@ Other versions from 2017 on should work but are not tested. SketchUp Make is lic
 5. Before exporting to STL: **Finalize Solid Progress**
 
 A demo model, the part of the video, is on GitHub: `docs/demo.skp` (SketchUp 2017 format: opens in SketchUp Make 2017 and later versions).
+
+### Source, demo model and user manual
+
+On GitHub: https://github.com/john3volts3/sketchup-solid-progress — demo model `docs/demo.skp`, user manual in English (`docs/USER_MANUAL_EN.md`) and French (`docs/USER_MANUAL_FR.md`).
 
 ### Credits
 

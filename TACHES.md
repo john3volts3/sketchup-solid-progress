@@ -26,7 +26,8 @@ Créé le 2026-10-26 depuis la session Solid Batch, à la demande de l'utilisate
   - *Fait le 2026-10-26* : historique Git nettoyé de toute donnée personnelle (réécrit, dépôt GitHub recréé, releases recréées ; voir `JOURNAL.md`). Le dépôt peut être rendu public quand l'utilisateur le décide.
   - *Fait le 2026-10-26* : modèle de démonstration par script (`tools/demo/build_demo.rb`, `docs/demo.skp`, `docs/demo-2017.skp`, tests T17 et T18), scénario vidéo de **20 s** enregistré à la main et liste des captures (`docs/PUBLICATION.md`), texte de la page SketchUcation (`docs/SKETCHUCATION.md`).
   - *Fait le 2026-10-26* : vidéo de l'utilisateur sur YouTube (https://youtu.be/g1BOtZyySh8), captures dans `docs/images/`, modèle de démo de l'utilisateur `docs/demo.skp` (format 2017, chemin public) ; liens et images dans le README, les manuels et `docs/SKETCHUCATION.md`.
-  - **Reste à faire** : page SketchUcation (Claude la remplit dans Chrome, l'utilisateur vérifie avant de publier) ; icône de la page ; dépôt public quand l'utilisateur le décide (les liens vers GitHub de la page SketchUcation en dépendent).
+  - *Fait le 2026-10-26* : livraison 2.0.1 (release `v2.0.1`) ; dépôt GitHub **public** ; page SketchUcation `Solid_Progress` créée, remplie et enregistrée en brouillon (voir `docs/SKETCHUCATION.md`).
+  - **Reste à faire (utilisateur)** : vérifier puis publier la page SketchUcation (bouton marche/arrêt) ; *Author Info* si souhaité ; icône plus soignée si souhaité (l'actuelle est provisoire).
   - **À vérifier dans Solid Batch** : son `docs/demo.skp` (suivi par git) garde probablement le chemin où il a été enregistré (un `.skp` garde le chemin de son dernier enregistrement, avec le nom d'utilisateur s'il est dans un dossier personnel).
 
 ## Renommage en Solid Progress (2026-10-26)
