@@ -36,7 +36,7 @@ Solid Procedural est issu de **Solid Batch v2.3.0** et s'installe **à côté** 
 - Set Subtract Color et Set Repair Options, repris de Solid Batch ; réglages de Solid Batch lus par défaut
 - Restauration des cercles et arcs natifs sur chaque Result (méthode Re-Cercle v2.0.0), accélérée sur les faces très percées (`repair_holes` par grilles, 1.1.1)
 - **SketchUp Make 2017** : moteur booléen Ruby intégré (Solid for Maker 1.0.1) quand `Sketchup.is_pro?` est faux ; gardes des API postérieures à 2017 (EF-31, EF-33)
-- Interrupteur **`PRO_ONLY`** dans `main.rb` : `true` remet le mode SketchUp Pro seulement (EF-32)
+- Une seule ligne à décommenter (`ruby_engine?`, `procedural.rb`) réserve le plugin à SketchUp Pro ; un seul contrôle `Sketchup.is_pro?` dans tout le plugin (EF-32)
 
 ### Prévu
 
@@ -98,7 +98,7 @@ La géométrie libre (arêtes et faces hors des sous-groupes) n'est **pas** un v
 | Champ | Description |
 |-------|-------------|
 | **Entrée** | Sélection d'un ou plusieurs groupes/composants solides |
-| **Préconditions** | SketchUp Pro (`respond_to?(:union)`), ou le moteur intégré (SketchUp Make) ; avec `PRO_ONLY` et sans Pro : refus « This function requires SketchUp Pro. » (aussi Rebuild et Finalize) ; aucun groupe procédural dans la sélection (imbrication reportée) ; tous `manifold?` (sinon message listant les objets non solides) ; au moins un volume sans la couleur de soustraction |
+| **Préconditions** | SketchUp Pro, ou le moteur intégré (SketchUp Make) ; ligne Pro seulement décommentée et sans Pro : message « PRO Only vs. procedural.rb:<ligne> » (aussi Rebuild et Finalize) ; aucun groupe procédural dans la sélection (imbrication reportée) ; tous `manifold?` (sinon message listant les objets non solides) ; au moins un volume sans la couleur de soustraction |
 | **Traitement** | `add_group(volumes)`, nom `Procedural Solid`, `role=procedural` ; attributs `SolidProcedural` des volumes effacés ; `rank` : tous les volumes « + » puis tous les « − » ; calcul (EF-14) |
 | **Sortie** | Groupe procédural sélectionné, Result visible, sources cachées |
 | **Annulation** | Une seule opération « Solid Procedural — Create Procedural Solid » |
@@ -245,15 +245,15 @@ Couleur du matériau du premier groupe/composant sélectionné qui en a un, enre
 
 `UI.inputbox` à trois champs : `Auto-repair circles on large objects` (Yes/No, défaut Yes), `Large object threshold (edges)` (défaut 10000), `Min segments for arc detection` (≥ 3, défaut 6). Disponible dans toutes les versions (masqué avant 2020.1 jusqu'en 1.0.1).
 
-#### EF-31 à EF-33 : SketchUp Make 2017, moteur intégré, interrupteur `PRO_ONLY`
+#### EF-31 à EF-33 : SketchUp Make 2017, moteur intégré, ligne Pro seulement
 
 | Élément | Description |
 |---------|-------------|
-| **Choix du moteur** | `Procedural.ruby_engine?` = `!Sketchup.is_pro?` (sous Make, `Group#union` existe mais ne fait rien : `respond_to?` ne sert pas à détecter Make). Sous Pro : booléens natifs seulement |
+| **Choix du moteur** | `Procedural.ruby_engine?` : `ruby = !Sketchup.is_pro?`, seul contrôle de l'édition dans tout le plugin (sous Make, `Group#union` existe mais ne fait rien : `respond_to?` ne sert pas à détecter Make). Sous Pro : booléens natifs seulement |
 | **Moteur intégré** | `solid_procedural/solid_operations.rb`, copie de Solid for Maker 1.0.1 (commit `2b2a596`, porté d'Eneroth Solid Tools 3.0.0 ; `wrapping_face` sur le contour extérieur : chambrage après son trou, 1.1.2), module renommé `SolidProcedural::SolidOperations`, corps inchangé ; licence MIT dans `LICENSE-solid-operations.txt`. Union, Shell (union puis `remove_cavities`) et Subtract (trim puis effacement de l'outil), avec mise à l'échelle × 1000 des petites pièces |
 | **Différence connue** | Un volume entièrement enfermé dans un autre : gardé par l'Outer Shell natif (Result de volume 1000 + 64 dans T12), effacé par le Shell du moteur intégré (1000) |
-| **`PRO_ONLY`** | Constante de `main.rb` (`false` par défaut), lue par `SolidProcedural.pro_only?`. `true` et SketchUp non Pro : Create, Rebuild et Finalize affichent « This function requires SketchUp Pro. » ; `rebuild_in_operation` lève la même erreur (recalcul à la sortie, table). Le moteur intégré n'est alors jamais utilisé |
-| **Tests** | `tools/tests/` (hors `.rbz`, NF-13) : T01 à T15 ; T12 compare des volumes calculés d'avance, en natif puis moteur intégré forcé sous 2021, en moteur intégré sous Make 2017 (dont une plaque à 20 trous passée par Create, 960 arêtes en cercles natifs attendues) ; T15 compare `repair_holes` à l'ancienne méthode (`repair_holes_scan`, gardée dans le fichier de tests) sur la même géométrie (opération annulée entre les deux), sur 14 cas (dont « counterbores after the holes », 1.1.2), et les grilles au parcours complet |
+| **Pro seulement** | La ligne `# raise ProOnly, __LINE__ if ruby`, juste après le contrôle de l'édition dans `ruby_engine?` (`solid_procedural/procedural.rb`), est commentée par défaut. Décommentée et SketchUp non Pro : `ruby_engine?` lève `ProOnly` (une `RebuildError`), message « PRO Only vs. procedural.rb:<ligne> » (la ligne à recommenter). Create, Rebuild et Finalize l'affichent tel quel (`pro_refused?`, en tête de commande) ; `rebuild_in_operation` le lève avant toute modification (recalcul à la sortie : « Rebuild failed — the former result is kept » ; table : opération annulée). Rien n'est modifié ; le moteur intégré n'est jamais utilisé. Remplace la constante `PRO_ONLY` de la 1.1.0 |
+| **Tests** | `tools/tests/` (hors `.rbz`, NF-13) : T01 à T15 ; T10 : un seul `is_pro?` dans le plugin, ligne Pro seulement commentée par défaut, puis copie de `procedural.rb` chargée avec la ligne décommentée et Make simulé → message exact pour Create, Rebuild, Finalize, le recalcul et la table, rien de modifié ; T12 compare des volumes calculés d'avance, en natif puis moteur intégré forcé sous 2021, en moteur intégré sous Make 2017 (dont une plaque à 20 trous passée par Create, 960 arêtes en cercles natifs attendues) ; T15 compare `repair_holes` à l'ancienne méthode (`repair_holes_scan`, gardée dans le fichier de tests) sur la même géométrie (opération annulée entre les deux), sur 14 cas (dont « counterbores after the holes », 1.1.2), et les grilles au parcours complet |
 
 ## 6. Exigences non fonctionnelles
 
@@ -309,7 +309,7 @@ tools/tests/                    # Hors .rbz : run_tests.ps1, run_tests.rb, manua
 
 ```
 SolidProcedural
-  PLUGIN_NAME, PLUGIN_DIR, VERSION, PRO_ONLY, pro_only?
+  PLUGIN_NAME, PLUGIN_DIR, VERSION
   REGISTRY_SECTION ('SolidProcedural'), LEGACY_REGISTRY_SECTION ('SolidBatch')
   read_option(key, default)            # SolidProcedural, puis SolidBatch, puis défaut
   subtract_color / save_subtract_color, auto_repair_large, large_threshold, min_arc_segments (+ save_*)
@@ -317,13 +317,13 @@ SolidProcedural
   do_set_subtract_color, do_set_repair_options
 
 SolidProcedural::Procedural
-  DICT, ROLE_*, OP_LABELS, MERGE_REBUILD_WITH_LAST_EDIT, RebuildError
+  DICT, ROLE_*, OP_LABELS, MERGE_REBUILD_WITH_LAST_EDIT, RebuildError, ProOnly
   role, procedural?, result_of, sources_of, op_of, enabled?, label, open_groups, all_groups
   signature, geometry_digest, stale?
   display_entities, hidden_wanted?, display_changes, apply_display, loose_geometry?
   normalize_sources, sync_op_with_color, validate
   rebuild_in_operation, combine, ruby_engine?, ruby_boolean, copy_of, duplicate, remove_definition, restore_circles
-  PRO_REQUIRED, pro_required?, pro_refused?, do_create, do_rebuild, do_finalize, finalize, run_command
+  pro_refused?, do_create, do_rebuild, do_finalize, finalize, run_command
   row_keys, row_lookup, state_of, change_table, table_toggle, table_operation, table_rename,
   table_order, table_unions_first, set_operation, subtract_material
   sync_path, sync_all, release_orphans

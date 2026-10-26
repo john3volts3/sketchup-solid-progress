@@ -51,6 +51,14 @@ module SolidProcedural
     # and kept the former Result.
     class RebuildError < StandardError; end
 
+    # Raised by the Pro only line (see ruby_engine?): the message names that
+    # line, the one to comment out again.
+    class ProOnly < RebuildError
+      def initialize(line)
+        super("PRO Only vs. #{File.basename(__FILE__)}:#{line}")
+      end
+    end
+
     # Procedural groups of the active path already synchronized, per model
     # (kept when the file is reloaded).
     @synced_paths ||= {}
@@ -270,7 +278,8 @@ module SolidProcedural
     # for the user (circle restoration skipped or failed) or nil.
     # Raises RebuildError.
     def self.rebuild_in_operation(model, group)
-      raise RebuildError, PRO_REQUIRED if pro_required?
+      # First, before any change: the Pro only line raises here.
+      ruby = ruby_engine?
       selected = model.selection.to_a
       group.make_unique
       sources = normalize_sources(group)
@@ -278,7 +287,7 @@ module SolidProcedural
       validate(active)
       sig = signature(group)
       puts "#{LOG} Rebuild '#{group_label(group)}': #{active.length} volume(s)" +
-           (ruby_engine? ? ', SketchUp Make engine' : '')
+           (ruby ? ', SketchUp Make engine' : '')
 
       if loose_geometry?(group)
         puts "#{LOG}   Loose geometry ignored: make it a group to use it as a volume"
@@ -371,8 +380,14 @@ module SolidProcedural
 
     # Boolean engine: the native booleans of SketchUp Pro, else the Ruby
     # engine (SolidOperations, from Solid for Maker) for SketchUp Make.
+    # The only SketchUp edition check of the plugin. To keep the plugin for
+    # SketchUp Pro only, uncomment the next line: without Pro, Create,
+    # Rebuild, Finalize, the automatic rebuild and the Procedural Table then
+    # show "PRO Only vs. procedural.rb:<line>" and change nothing.
     def self.ruby_engine?
-      !Sketchup.is_pro?
+      ruby = !Sketchup.is_pro?
+      # raise ProOnly, __LINE__ if ruby
+      ruby
     end
 
     # Ruby engine: the base +acc+ is modified in place and the tool +copy+
@@ -458,19 +473,13 @@ module SolidProcedural
     # Commands
     # -------------------------------------------------------------------
 
-    PRO_REQUIRED = "This function requires SketchUp Pro.\n" \
-                   'The native boolean methods are not available in your version.'.freeze
-
-    # True when the plugin is set to SketchUp Pro only (PRO_ONLY) and this
-    # SketchUp is not Pro.
-    def self.pro_required?
-      SolidProcedural.pro_only? && !Sketchup.is_pro?
-    end
-
-    # Shows the message and returns true when the command must not run.
+    # Shows the message and returns true when the plugin is set to SketchUp
+    # Pro only (see ruby_engine?) and this SketchUp is not Pro.
     def self.pro_refused?
-      return false unless pro_required?
-      UI.messagebox(PRO_REQUIRED, MB_OK)
+      ruby_engine?
+      false
+    rescue ProOnly => e
+      UI.messagebox(e.message, MB_OK)
       true
     end
 
@@ -482,11 +491,7 @@ module SolidProcedural
         UI.messagebox('Select the solid groups or components to combine in a procedural solid.', MB_OK)
         return
       end
-      unless ruby_engine? || volumes.first.respond_to?(:union)
-        UI.messagebox(PRO_REQUIRED, MB_OK)
-        return
-      end
-      nested = volumes.select { |v| procedural?(v) }
+      nested =volumes.select { |v| procedural?(v) }
       unless nested.empty?
         UI.messagebox('Nested procedural solids are not supported yet: ' \
                       'deselect the procedural solids.', MB_OK)

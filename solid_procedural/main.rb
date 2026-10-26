@@ -78,19 +78,6 @@ module SolidProcedural
   end
 
   # -------------------------------------------------------------------
-  # Edition
-  # -------------------------------------------------------------------
-
-  # true: SketchUp Pro only (behavior of version 1.0): without SketchUp
-  # Pro, Create, Rebuild and Finalize refuse to run. false: also usable
-  # with SketchUp Make (2017).
-  PRO_ONLY = false
-
-  def self.pro_only?
-    PRO_ONLY
-  end
-
-  # -------------------------------------------------------------------
   # Options management (persisted across sessions)
   # -------------------------------------------------------------------
   DEFAULT_SUBTRACT_COLOR = [255, 0, 0].freeze

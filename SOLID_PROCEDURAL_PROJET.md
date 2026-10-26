@@ -14,7 +14,7 @@
 ## 1. Contexte
 
 - **Point de départ** : le plugin **Solid Batch v2.3.0**.
-  - Dépôt : `../sketchup-solid-batch`, publié sur `github.com/john3volts3/sketchup-solid-batch`.
+  - Dépôt : `../sketchup-solid-batch` (dossier voisin), publié sur `github.com/john3volts3/sketchup-solid-batch`.
   - Fonctions actuelles :
     - **Combine All (Union / Shell)** : union de tous les solides sélectionnés, puis soustraction de ceux qui portent la *couleur de soustraction* ;
     - **Set Subtract Color** ;

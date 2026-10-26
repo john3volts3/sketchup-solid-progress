@@ -198,9 +198,9 @@ module SolidProcedural
         tests.status << text.to_s
         Sketchup.send(:sp_tests_status_text=, text)
       end
+      su.send(:alias_method, :sp_tests_is_pro?, :is_pro?) unless su.method_defined?(:sp_tests_is_pro?)
       sp = SolidProcedural.singleton_class
       # Plugin methods: aliased again after each reload of the plugin.
-      sp.send(:alias_method, :sp_tests_pro_only?, :pro_only?)
       Procedural.singleton_class.send(:alias_method, :sp_tests_ruby_engine?, :ruby_engine?)
       CircleRestore::Volume.singleton_class.send(:alias_method, :sp_tests_repair_holes, :repair_holes)
       sp.send(:alias_method, :sp_tests_auto_repair_large, :auto_repair_large)
@@ -211,15 +211,21 @@ module SolidProcedural
       return unless @hooked
       UI.singleton_class.send(:alias_method, :messagebox, :sp_tests_messagebox)
       Sketchup.singleton_class.send(:alias_method, :status_text=, :sp_tests_status_text=)
-      SolidProcedural.singleton_class.send(:alias_method, :pro_only?, :sp_tests_pro_only?)
+      restore_pro
       restore_engine
       restore_repair
       restore_auto_repair
       @hooked = false
     end
 
-    def self.force_pro_only(value)
-      SolidProcedural.define_singleton_method(:pro_only?) { value }
+    # Sketchup.is_pro? answers +value+ (SketchUp Make simulated in SketchUp
+    # Pro).
+    def self.force_pro(value)
+      Sketchup.define_singleton_method(:is_pro?) { value }
+    end
+
+    def self.restore_pro
+      Sketchup.singleton_class.send(:alias_method, :is_pro?, :sp_tests_is_pro?)
     end
 
     def self.force_engine(ruby)
@@ -228,10 +234,6 @@ module SolidProcedural
 
     def self.restore_engine
       Procedural.singleton_class.send(:alias_method, :ruby_engine?, :sp_tests_ruby_engine?)
-    end
-
-    def self.restore_pro_only
-      SolidProcedural.singleton_class.send(:alias_method, :pro_only?, :sp_tests_pro_only?)
     end
 
     # Circles restored on large results too, whatever the Set Repair
@@ -391,6 +393,46 @@ module SolidProcedural
       Sketchup.is_pro?
     end
 
+    # The edition check of Procedural.ruby_engine? and the line that sets
+    # the plugin to SketchUp Pro only (commented out by default).
+    PRO_TEST = 'ruby = !Sketchup.is_pro?'.freeze
+    GUARD = 'raise ProOnly, __LINE__ if ruby'.freeze
+
+    def self.procedural_path
+      File.join(plugin_dir, 'procedural.rb')
+    end
+
+    def self.procedural_lines
+      File.open(procedural_path, 'r:UTF-8', &:readlines)
+    end
+
+    # Index of the Pro only line in procedural.rb (commented or not), or nil.
+    def self.guard_index(lines)
+      lines.index { |l| l.strip.sub(/\A#\s*/, '') == GUARD }
+    end
+
+    # procedural.rb with the Pro only line uncommented, as a user would do.
+    # Returns the number of that line. restore_procedural afterwards.
+    def self.load_procedural_pro_only
+      lines = procedural_lines
+      k = guard_index(lines)
+      lines[k] = lines[k].sub(/\A(\s*)#\s*/, '\1')
+      verbose = $VERBOSE
+      $VERBOSE = nil
+      eval(lines.join, TOPLEVEL_BINDING, procedural_path, 1)
+      k + 1
+    ensure
+      $VERBOSE = verbose
+    end
+
+    def self.restore_procedural
+      verbose = $VERBOSE
+      $VERBOSE = nil
+      load procedural_path
+    ensure
+      $VERBOSE = verbose
+    end
+
     def self.path_settable?(model)
       ProceduralTable.active_path_settable?(model)
     end
@@ -492,9 +534,6 @@ module SolidProcedural
         c.check(defined?(SolidProcedural::VERSION), 'VERSION defined')
         c.note("plugin #{SolidProcedural::VERSION}, SketchUp #{Sketchup.version}, " \
                "Pro=#{Sketchup.is_pro?}, Ruby #{RUBY_VERSION}, union defined=#{Sketchup::Group.method_defined?(:union)}")
-        c.check(defined?(SolidProcedural::PRO_ONLY) && [true, false].include?(SolidProcedural::PRO_ONLY),
-                'PRO_ONLY switch defined (true / false)')
-        c.note("PRO_ONLY = #{SolidProcedural::PRO_ONLY}")
         c.check(Procedural.respond_to?(:remove_definition), 'Procedural.remove_definition defined')
         c.check(ProceduralTable.respond_to?(:active_path_settable?), 'ProceduralTable.active_path_settable? defined')
         project = File.join(tests::PROJECT_DIR, 'solid_procedural')
@@ -734,33 +773,88 @@ module SolidProcedural
         end
       end
 
-      test 'T10 PRO_ONLY switch' do |c, model|
-        tests.force_pro_only(true)
+      # T10: one SketchUp edition check in the whole plugin, and one line,
+      # commented out by default, that sets the plugin to SketchUp Pro only.
+      # Uncommented (in a loaded copy of procedural.rb), without Pro: Create,
+      # Rebuild, Finalize, the rebuild (automatic or from the Procedural
+      # Table) show the message that names that line, and nothing is
+      # changed. In SketchUp Pro, SketchUp Make is simulated.
+      test 'T10 One edition check; the Pro only line (commented out by default)' do |c, model|
+        files = Dir.glob(File.join(tests.plugin_dir, '**', '*.rb')) +
+                [File.join(SolidProcedural::PLUGIN_DIR, 'solid_procedural.rb')]
+        hits = []
+        texts = []
+        files.each do |f|
+          File.open(f, 'r:UTF-8', &:readlines).each_with_index do |l, k|
+            hits << "#{File.basename(f)}:#{k + 1}" if l.include?('is_pro?')
+            texts << "#{File.basename(f)}:#{k + 1}" if l =~ /requires SketchUp Pro|PRO_ONLY|pro_only\?/
+          end
+        end
+        c.check(hits.length == 1, "Sketchup.is_pro? tested once in the #{files.length} plugin files", hits.join(', '))
+        c.check(texts.empty?, 'no former Pro message or switch', texts.join(', '))
+        lines = tests.procedural_lines
+        k = tests.guard_index(lines)
+        c.check(k && lines.count { |l| l.strip.sub(/\A#\s*/, '') == tests::GUARD } == 1, 'one Pro only line')
+        next unless k
+        c.check(lines[k].strip.start_with?('#'), 'commented out by default: the plugin works without Pro',
+                lines[k].strip)
+        c.check(lines[k - 1].strip == tests::PRO_TEST, 'just after the edition check', lines[k - 1].strip)
+        base = tests.box(model.entities, 0, 90, 0, 10, 10, 10)
+        tests.select(model, base)
+        before = tests.procedural_groups(model).length
+        g = @state[:pair]
         begin
-          base = tests.box(model.entities, 0, 90, 0, 10, 10, 10)
-          tests.select(model, base)
-          before = tests.procedural_groups(model).length
+          line = tests.load_procedural_pro_only
+          tests.force_pro(false)
+          want = "PRO Only vs. procedural.rb:#{line}"
           tests.messages.clear
           Procedural.do_create
-          after = tests.procedural_groups(model).length
-          if tests.pro?
-            c.check(after == before + 1 && tests.messages.empty?, 'Pro: Create works as usual')
-          else
-            c.check(tests.messages.any? { |m| m.include?('requires SketchUp Pro') }, 'Make: "requires SketchUp Pro"',
-                    tests.messages.join(' / '))
-            c.check(after == before && base.parent == model, 'Make: nothing created')
-            g = @state[:single]
-            if g && g.valid?
+          c.check(tests.messages == [want], "Create: #{want} (the Pro only line)", tests.messages.inspect)
+          c.check(tests.procedural_groups(model).length == before && base.parent == model, 'Create: nothing created')
+          if g && g.valid? && Procedural.result_of(g)
+            sig = g.get_attribute(Procedural::DICT, 'signature')
+            volume = Procedural.result_of(g).volume
+            %w[do_rebuild do_finalize].each do |command|
               tests.select(model, g)
               tests.messages.clear
-              Procedural.do_rebuild
-              c.check(tests.messages.any? { |m| m.include?('requires SketchUp Pro') }, 'Make: Rebuild refused')
+              Procedural.send(command)
+              c.check(tests.messages == [want], "#{command}: #{want}", tests.messages.inspect)
             end
+            error = begin
+              Procedural.rebuild_in_operation(model, g)
+              nil
+            rescue Procedural::RebuildError => e
+              e
+            end
+            c.check(error.is_a?(Procedural::ProOnly) && error.message == want,
+                    "rebuild (automatic, on exit): #{want}", error ? "#{error.class}: #{error.message}" : 'no error')
+            key = Procedural.row_keys(Procedural.sources_of(g)).last
+            tests.messages.clear
+            Procedural.table_toggle(model, g, key, false)
+            c.check(tests.messages.length == 1 && tests.messages[0].include?(want),
+                    "Procedural Table, disable a volume: #{want}", tests.messages.inspect)
+            c.check(Procedural.enabled?(Procedural.sources_of(g).last), 'Procedural Table: the volume is still enabled')
+            result = Procedural.result_of(g)
+            c.check(Procedural.procedural?(g) && result && (result.volume - volume).abs < 0.001 &&
+                    g.get_attribute(Procedural::DICT, 'signature') == sig && !Procedural.stale?(g),
+                    'procedural solid unchanged (Result, signature)')
+          else
+            c.note('no procedural solid (T06): Rebuild, Finalize and the Procedural Table not tested')
           end
         ensure
-          tests.restore_pro_only
+          tests.restore_procedural
+          tests.restore_pro
         end
-        c.check(SolidProcedural.pro_only? == SolidProcedural::PRO_ONLY, 'switch restored')
+        # procedural.rb loaded again: without Pro, the Ruby engine, no message.
+        tests.force_pro(false)
+        restored = begin
+          Procedural.ruby_engine? == true
+        rescue Procedural::ProOnly
+          false
+        ensure
+          tests.restore_pro
+        end
+        c.check(restored && Sketchup.is_pro? == Sketchup.sp_tests_is_pro?, 'procedural.rb and Sketchup.is_pro? restored')
       end
 
       test 'T13 Finalize button of the Procedural Table' do |c, model|

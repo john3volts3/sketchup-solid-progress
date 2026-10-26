@@ -1,0 +1,32 @@
+# Solid Procedural — Tâches (reprise de session)
+
+Créé le 2026-10-26 depuis la session Solid Batch, à la demande de l'utilisateur. Version actuelle : **1.1.2**. À lire au démarrage d'une session Solid Procedural, avec `JOURNAL.md` et `PRD.md`.
+
+## Décision du 2026-10-26 (les trois plugins Solid)
+
+- **Pas de diffusion par l'Extension Warehouse.** Sa règle, citée par Eneroth dans `menu.rb` d'Eneroth Solid Tools, n'accepte une extension qui reproduit une fonction de Pro que si elle est réservée à Pro. Hors de ce magasin (GitHub, SketchUcation), la licence MIT permet de proposer le moteur aux utilisateurs de Make.
+- **Solid for Maker, Solid Procedural et Solid Batch fonctionnent sous Make par défaut**, avec **une seule ligne** à décommenter pour les réserver à Pro, et **un seul** test `Sketchup.is_pro?` dans tout le code de tous les modules.
+- Modèle : Solid Batch 2.5.0 (`../sketchup-solid-batch/solid_batch/main.rb`, `do_combine_all_pro`) :
+
+```ruby
+    ruby = !Sketchup.is_pro?
+    # return pro_only(__LINE__) if ruby
+```
+
+  ligne décommentée → sans Pro, message `PRO Only vs. main.rb:<ligne>` (`__LINE__`, la ligne à recommenter) ; mécanisme décrit dans le README et le FSD ; test T10 de `tools/tests/run_tests.rb` de Solid Batch (un seul `is_pro?` dans les fichiers du plugin, ligne commentée par défaut, copie de `main.rb` avec la ligne décommentée → message exact, rien de modifié).
+
+## À faire
+
+- [x] *(fait le 2026-10-26, voir `JOURNAL.md` : lecture et écriture en UTF-8 sans BOM, sauvegarde avant écriture, fichier en ASCII ; testé sous PowerShell 5.1, fichier intact)* **URGENT — `tools/tests/run_tests.ps1` abîme `PrivatePreferences.json` de SketchUp 2021 sous Windows PowerShell 5.1.** `(Get-Content $prefs -Raw)` lit le fichier (UTF-8 sans BOM) en ANSI, `[IO.File]::WriteAllText` le réécrit en UTF-8 : chaque passage réencode tous les caractères accentués (deux écritures par passage). Constaté le 2026-10-26 avec le lanceur de Solid Batch, même code : fichier de 1,96 Go. Correction faite dans Solid Batch (`../sketchup-solid-batch/tools/tests/run_tests.ps1`) : `[IO.File]::ReadAllText` / `WriteAllText` avec `UTF8Encoding($false)`, fichier de plus de 20 Mo non touché, rétablissement dans un `try`. En attendant la correction : lancer seulement avec `pwsh` (UTF-8 par défaut).
+- [x] *(fait le 2026-10-26 : `ruby_engine?` et `# raise ProOnly, __LINE__ if ruby` dans `procedural.rb`, T10 réécrit)* **Un seul test de l'édition, une seule ligne.** Aujourd'hui : interrupteur `PRO_ONLY = false` (`main.rb:87`, `pro_only?`) et **deux** appels `Sketchup.is_pro?` (`procedural.rb:375`, `ruby_engine?` ; `procedural.rb:467`, `pro_required?`), message `PRO_REQUIRED` « This function requires SketchUp Pro » (`procedural.rb:461`, utilisé aussi l. 485 avec `respond_to?(:union)`). À remplacer par un seul test, dont le résultat sert aussi à choisir le moteur, et une ligne commentée par défaut qui réserve les commandes (Create, Rebuild, Finalize) à Pro, avec le message `PRO Only vs. <fichier>:<ligne>`. Sous Pro : rien ne change ; sous Make : moteur par défaut (déjà le cas). Adapter les tests (T01 vérifie `PRO_ONLY`, `force_pro_only`, `force_engine`), README, manuels, FSD, PRD.
+- [x] *(fait le 2026-10-26)* **Licence d'Eneroth.** Reprendre exactement la ligne du `LICENSE.md` d'Eneroth, « Copyright (c) 2017 Julia Christina Eneroth », dans `solid_procedural/LICENSE-solid-operations.txt` et l'en-tête de `solid_operations.rb` (aujourd'hui « 2017-2018 ») ; ajouter « Solid Procedural is not an official Eneroth extension » au README (anglais et français).
+- [x] *(fait le 2026-10-26 : liens retirés, nom gardé sans lien)* **Lien vers Solid for Maker** dans le README (`https://github.com/john3volts3/sketchup-solid-for-maker`) : ce dépôt est **privé**, le lien serait mort une fois Solid Procedural public. Le retirer, ou attendre que Solid for Maker soit public.
+- [ ] **Publication** (idée de l'utilisateur, 2026-10-26) : vidéos de démonstration et captures d'écran (Claude peut préparer des modèles de démonstration par script, la liste des captures par section du manuel et un scénario de 60 à 90 s) ; dépôt GitHub `sketchup-solid-procedural` encore **privé** : avant de le rendre public, vérifier l'historique (chemins locaux) ; diffusion sur GitHub et SketchUcation. Rappel possible dans le README : « SketchUp Make is licensed by Trimble for non-commercial use only ».
+  - *Fait le 2026-10-26* : rappel Trimble dans le README ; chemins locaux retirés des fichiers suivis (`run_tests.rb`, `run_tests.ps1`, `SOLID_PROCEDURAL_PROJET.md`, `JOURNAL.md`) ; audit : adresses des commits `noreply`.
+  - **Reste à décider avant de rendre le dépôt public** : l'historique garde une ligne un chemin personnel (journal importé de Solid Batch, commits `62d1ce6`, `49b376b`) et 4 lignes de chemins absolus du lecteur réseau. Options : (a) accepter ; (b) dépôt public neuf, un seul commit, le dépôt privé garde son historique (recommandé : rien à installer, pas de push forcé) ; (c) réécrire l'historique (`git filter-repo` à installer, push forcé, tags déplacés).
+  - **Reste à faire, second temps** : modèles de démonstration par script (`tools/demo/`), liste des captures par section du manuel et scénario vidéo de 60 à 90 s (`docs/PUBLICATION.md`).
+
+## Repères
+
+- Lanceur de tests : `tools/tests/run_tests.ps1`, en ASCII depuis le 2026-10-26 : `powershell` (5.1) et `pwsh` (7) marchent. Make 2017 : cliquer sur le bouton de son écran d'accueil ; si personne n'est devant l'écran, `-Timeout 600`.
+- Solid Batch 2.5.0 et Solid for Maker 1.0.1 : voir leurs `TACHES.md`.

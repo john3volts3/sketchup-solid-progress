@@ -175,7 +175,7 @@ SketchUp Make n'a pas de booléens natifs. Solid Procedural utilise alors son **
 | *Volume #2 … is not a solid.* | Une source a été abîmée pendant la modification : réparez-la ; l'ancien Result est gardé |
 | *Subtract of volume #3 … failed.* | Le booléen a échoué (natif avec SketchUp Pro, moteur intégré avec SketchUp Make ; volumes qui ne se touchent pas, faces coplanaires…) : déplacez ou simplifiez le volume |
 | *Double-click the procedural solid in the model to open it …* (table) | SketchUp 2017 : la table ne peut pas ouvrir un solide procédural ; double-cliquez-le dans le modèle |
-| *This function requires SketchUp Pro.* | Cette version du plugin est réglée pour SketchUp Pro seulement |
+| *PRO Only vs. procedural.rb:…* | Cette copie du plugin a été réservée à SketchUp Pro (ligne décommentée dans `solid_procedural/procedural.rb`) : rien n'est modifié. Pour l'utiliser avec SketchUp Make, remettez cette ligne en commentaire (`#` en tête) et redémarrez SketchUp |
 | *The first volume … has the subtract color* | La Base est peinte de la couleur de soustraction : repeignez-la, ou choisissez *Base* sur une autre ligne |
 | *The base volume is always enabled* | Choisissez *Base* sur une autre ligne avant de désactiver ce volume |
 | *Close the procedural solid to rebuild it* | *Rebuild* agit sur des solides procéduraux fermés ; un solide ouvert est recalculé quand vous le fermez |
