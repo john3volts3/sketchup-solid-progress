@@ -49,7 +49,8 @@ PNG recadrés sur l'utile, **moins de 150 Ko** chacun, dans `docs/images/` (suiv
 - [x] `.rbz` 2.0.1 dans la release GitHub `v2.0.1`.
 - [x] Dépôt rendu public le 2026-10-26, à la demande de l'utilisateur, après un dernier contrôle de tout l'historique (24 commits, aucune donnée personnelle ; `docs/demo.skp` : seul le chemin du dossier public de Windows).
 - [x] Page SketchUcation `Solid_Progress` créée et remplie (textes de `docs/SKETCHUCATION.md`, `.rbz`, icône, captures réduites à 690 px, vidéo, liens GitHub), enregistrée en brouillon.
-- [ ] **Publication de la page SketchUcation** par l'utilisateur après vérification (bouton marche/arrêt) ; *Author Info* à remplir par l'utilisateur s'il le souhaite.
+- [x] **Publication de la page SketchUcation** par l'utilisateur après vérification (bouton marche/arrêt), le 2026-10-26 : **en attente d'approbation** des administrateurs (environ un jour). *Author Info* : à remplir par l'utilisateur s'il le souhaite.
+- [ ] Après approbation : lien de la page SketchUcation dans le README (EN + FR) et dans la description YouTube.
 
 ## 5. Le modèle de démonstration publié
 
