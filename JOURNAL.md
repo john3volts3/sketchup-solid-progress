@@ -28,6 +28,7 @@
 - **docs/USER_MANUAL_FR.md, docs/USER_MANUAL_EN.md** — Version 1.1.2 ; section SketchUp Make 2017 : chambrages et fraisurages après leur trou, exemple du cercle laissé en segments.
 - **README.md** — Le moteur intégré traite le chambrage ou le fraisurage taillé après son trou (FR + EN). **OPTIMISATION_REPAIR_HOLES.md** — § 7 : 14e cas de T15.
 - **build/solid_procedural.rbz** — Reconstruit : 26 fichiers, mêmes noms qu'en 1.1.1 (56 204 octets, SHA-256 `42c96ae8…cb7158c79228`). Plugin installé dans SketchUp 2021 et Make 2017 (copie miroir, identique au projet).
+- **Commit** `c414414`, tag `v1.1.2` poussé ; **release GitHub** `v1.1.2` avec `solid_procedural.rbz`.
 
 ## Session du 2026-10-25
 
