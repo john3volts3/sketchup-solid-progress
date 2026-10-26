@@ -37,10 +37,10 @@ module SolidProcedural
     ROLE_SOURCE = 'source'.freeze
     ROLE_RESULT = 'result'.freeze
     OP_LABELS = { 'union' => 'Union', 'outer_shell' => 'Shell', 'subtract' => 'Subtract' }.freeze
-    DEFAULT_NAME = 'Procedural Solid'.freeze
+    DEFAULT_NAME = 'Solid Progress'.freeze
     RESULT_NAME = 'Result'.freeze
-    SUBTRACT_MATERIAL_NAME = 'Solid Procedural Subtract'.freeze
-    LOG = '[Solid Procedural]'.freeze
+    SUBTRACT_MATERIAL_NAME = 'Solid Progress Subtract'.freeze
+    LOG = '[Solid Progress]'.freeze
 
     # true (option B): the automatic rebuild on exit is appended to the last
     # edit (transparent operation), so one Ctrl+Z undoes the edit and its
@@ -263,8 +263,8 @@ module SolidProcedural
       raise RebuildError, 'There is no enabled volume to combine.' if active.empty?
       active.each do |s|
         if procedural?(s)
-          raise RebuildError, "Volume #{label(s)} is a procedural solid: " \
-                              'nested procedural solids are not supported yet.'
+          raise RebuildError, "Volume #{label(s)} is a Solid Progress group: " \
+                              'nested Solid Progress groups are not supported yet.'
         end
         raise RebuildError, "Volume #{label(s)} is not a solid." unless s.manifold?
       end
@@ -353,7 +353,7 @@ module SolidProcedural
       active.drop(1).each_with_index do |source, i|
         op = op_of(source)
         pct = ((i + 1) * 100.0 / total).round
-        Sketchup.status_text = "Solid Procedural — #{OP_LABELS[op]} #{i + 1}/#{total} (#{pct}%)" +
+        Sketchup.status_text = "Solid Progress — #{OP_LABELS[op]} #{i + 1}/#{total} (#{pct}%)" +
                                (ruby ? ' — SketchUp Make engine' : '')
         copy = copy_of(source, entities, created)
         copies << copy
@@ -450,7 +450,7 @@ module SolidProcedural
                   "'Auto-repair circles on large objects' to Yes."
         return [result, note, warning]
       end
-      Sketchup.status_text = 'Solid Procedural — Restoring circles and arcs...'
+      Sketchup.status_text = 'Solid Progress — Restoring circles and arcs...'
       trial = duplicate(result, result.parent.entities, created)
       # Group#copy does not keep the material of the instance.
       trial.material = result.material
@@ -488,13 +488,13 @@ module SolidProcedural
       return if pro_refused?
       volumes = model.selection.select { |e| instance?(e) }
       if volumes.empty?
-        UI.messagebox('Select the solid groups or components to combine in a procedural solid.', MB_OK)
+        UI.messagebox('Select the solid groups or components to combine in a Solid Progress group.', MB_OK)
         return
       end
       nested =volumes.select { |v| procedural?(v) }
       unless nested.empty?
-        UI.messagebox('Nested procedural solids are not supported yet: ' \
-                      'deselect the procedural solids.', MB_OK)
+        UI.messagebox('Nested Solid Progress groups are not supported yet: ' \
+                      'deselect the Solid Progress groups.', MB_OK)
         return
       end
       not_solid = volumes.reject(&:manifold?)
@@ -512,7 +512,7 @@ module SolidProcedural
         return
       end
 
-      run_command(model, 'Create Procedural Solid') do
+      run_command(model, 'Create Solid Progress') do
         group = model.active_entities.add_group(volumes)
         group.name = DEFAULT_NAME
         group.set_attribute(DICT, 'role', ROLE_PROCEDURAL)
@@ -534,16 +534,16 @@ module SolidProcedural
       groups = model.selection.select { |e| procedural?(e) }
       if groups.empty?
         message = if open_groups(model).empty?
-                    'Select one or more procedural solids to rebuild.'
+                    'Select one or more Solid Progress groups to rebuild.'
                   else
-                    "Close the procedural solid to rebuild it: it is rebuilt automatically " \
+                    "Close the Solid Progress group to rebuild it: it is rebuilt automatically " \
                     "when you exit it, if its volumes changed.\n" \
                     'To force a rebuild, close it, select it and run Rebuild again.'
                   end
         UI.messagebox(message, MB_OK)
         return
       end
-      run_command(model, 'Rebuild Procedural Solid') do
+      run_command(model, 'Rebuild Solid Progress') do
         groups.map { |g| rebuild_in_operation(model, g) }
       end
     end
@@ -553,10 +553,10 @@ module SolidProcedural
       return if pro_refused?
       groups = model.selection.select { |e| procedural?(e) }
       if groups.empty?
-        UI.messagebox('Select one or more procedural solids to finalize.', MB_OK)
+        UI.messagebox('Select one or more Solid Progress groups to finalize.', MB_OK)
         return
       end
-      run_command(model, 'Finalize Procedural Solid') do
+      run_command(model, 'Finalize Solid Progress') do
         outcomes = []
         solids = groups.map do |g|
           outcomes << rebuild_in_operation(model, g) if stale?(g) || result_of(g).nil?
@@ -593,12 +593,12 @@ module SolidProcedural
     # Runs the block in one undoable operation. The block returns a list of
     # [note, warning]; warnings are shown once the operation is committed.
     def self.run_command(model, title)
-      model.start_operation("Solid Procedural — #{title}", true)
+      model.start_operation("Solid Progress — #{title}", true)
       outcomes = yield
       model.commit_operation
       warnings = outcomes.map { |o| o[1] }.compact.uniq
       notes = outcomes.map { |o| o[0] }.compact
-      Sketchup.status_text = "Solid Procedural — #{title} done" +
+      Sketchup.status_text = "Solid Progress — #{title} done" +
                              (notes.empty? ? '' : " — #{notes.join('; ')}")
       UI.messagebox(warnings.join("\n\n"), MB_OK) unless warnings.empty?
     rescue RebuildError => e
@@ -781,7 +781,7 @@ module SolidProcedural
       return if stale.empty? && !display
 
       transparent = stale.empty? || MERGE_REBUILD_WITH_LAST_EDIT
-      model.start_operation('Solid Procedural — Rebuild', true, false, transparent)
+      model.start_operation('Solid Progress — Rebuild', true, false, transparent)
       errors = []
       notes = []
       begin
@@ -805,7 +805,7 @@ module SolidProcedural
       end
       model.commit_operation
 
-      Sketchup.status_text = "Solid Procedural — #{notes.join('; ')}" unless notes.empty?
+      Sketchup.status_text = "Solid Progress — #{notes.join('; ')}" unless notes.empty?
       return if errors.empty?
       errors.each { |m| puts "#{LOG} #{m}" }
       UI.messagebox("Rebuild failed — the former result is kept.\n\n#{errors.join("\n")}", MB_OK)
@@ -820,13 +820,13 @@ module SolidProcedural
       groups = all_groups(model)
       changed = groups.reject { |g| display_changes(g, current.include?(g)).empty? }
       unless changed.empty?
-        model.start_operation('Solid Procedural — Display', true, false, true)
+        model.start_operation('Solid Progress — Display', true, false, true)
         changed.each { |g| apply_display(g, current.include?(g)) }
         model.commit_operation
       end
       outdated = (groups - current).select { |g| stale?(g) }
       return if outdated.empty?
-      Sketchup.status_text = "Solid Procedural — #{outdated.length} procedural solid(s) out of date: " \
+      Sketchup.status_text = "Solid Progress — #{outdated.length} Solid Progress group(s) out of date: " \
                              'open and close them, or use Rebuild'
     end
 
@@ -840,14 +840,14 @@ module SolidProcedural
         instance?(e) && [ROLE_SOURCE, ROLE_RESULT].include?(role(e))
       end
       return if orphans.empty?
-      model.start_operation('Solid Procedural — Release', true, false, true)
+      model.start_operation('Solid Progress — Release', true, false, true)
       orphans.each do |e|
         e.delete_attribute(DICT)
         e.hidden = false
       end
       model.commit_operation
-      puts "#{LOG} #{orphans.length} volume(s) released from a procedural solid"
-      Sketchup.status_text = "Solid Procedural — #{orphans.length} volume(s) released: they are plain objects now"
+      puts "#{LOG} #{orphans.length} volume(s) released from a Solid Progress group"
+      Sketchup.status_text = "Solid Progress — #{orphans.length} volume(s) released: they are plain objects now"
     end
   end
 end

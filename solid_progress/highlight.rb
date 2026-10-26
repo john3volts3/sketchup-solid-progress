@@ -17,7 +17,7 @@ module SolidProcedural
     DEFAULT_COLOR = [0, 0, 255].freeze
     OPTION = 'HighlightColor'.freeze
     REGISTRY_KEY = 'highlight_original'.freeze
-    LOG = '[Solid Procedural]'.freeze
+    LOG = '[Solid Progress]'.freeze
 
     # Original selection color [r, g, b] of the models shown in green.
     @original ||= {}

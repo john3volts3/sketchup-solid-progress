@@ -1,15 +1,15 @@
-# Solid Procedural — Document des exigences produit (PRD)
+# Solid Progress — Document des exigences produit (PRD)
 
 > Le *quoi* et le *pourquoi*. Le *comment* (algorithme, entrées/sorties, limitations) est dans `docs/FSD_FR.md` / `docs/FSD_EN.md`.
 > Cadrage initial : `SOLID_PROCEDURAL_PROJET.md` (rédigé sous le nom « Solid Batch v3 »). Historique détaillé : `JOURNAL.md`.
 
-Dernière mise à jour : 2026-10-26 (livraison de la 1.1.2 : moteur intégré de Solid for Maker 1.0.1, chambrage après son trou — Q-7).
+Dernière mise à jour : 2026-10-26 (2.0.0 : renommage en **Solid Progress**, EF-35 ; un seul contrôle de l'édition, EF-32).
 
 ---
 
 ## 1. Contexte et problème
 
-**Solid Procedural** est un nouveau plugin issu de **Solid Batch v2.3.0**. Il s'installe **à côté** de Solid Batch, qui reste inchangé.
+**Solid Progress** est un nouveau plugin issu de **Solid Batch v2.3.0**. Il s'installe **à côté** de Solid Batch, qui reste inchangé.
 
 Solid Batch (v2.3.0) combine en un clic tous les solides sélectionnés avec les booléens natifs de SketchUp Pro : union (ou outer shell) de tous les volumes, puis soustraction de ceux qui portent la *couleur de soustraction*, puis restauration des cercles et arcs natifs sur le résultat.
 
@@ -33,10 +33,10 @@ Besoin : modéliser de façon **non destructive et interactive**. On modifie les
 | # | Objectif | Critère de succès |
 |---|---|---|
 | O-1 | Non destructif | Les sources restent modifiables tant que la pièce n'est pas finalisée |
-| O-2 | Recalcul automatique | Sortir d'un groupe procédural modifié met le résultat à jour sans autre action |
+| O-2 | Recalcul automatique | Sortir d'un groupe Solid Progress modifié met le résultat à jour sans autre action |
 | O-3 | Contrôle de l'ordre | L'utilisateur choisit l'ordre et l'opération de chaque volume (Union, Shell, Subtract) dans une table |
 | O-4 | Fiabilité | Un calcul qui échoue ne casse jamais le modèle : l'ancien résultat reste et un message nomme le volume en cause |
-| O-5 | Coexistence | Solid Batch v2 reste installé, inchangé et fonctionnel à côté de Solid Procedural. Set Subtract Color et Set Repair Options fonctionnent comme dans Solid Batch |
+| O-5 | Coexistence | Solid Batch v2 reste installé, inchangé et fonctionnel à côté de Solid Progress. Set Subtract Color et Set Repair Options fonctionnent comme dans Solid Batch |
 | O-6 | Prêt pour l'impression | Une pièce finalisée est un seul solide étanche, avec des cercles natifs, prêt pour l'export STL |
 
 ## 4. Périmètre
@@ -44,9 +44,9 @@ Besoin : modéliser de façon **non destructive et interactive**. On modifie les
 ### Inclus
 
 - Set Subtract Color et Set Repair Options, repris de Solid Batch v2.3.0. Les réglages non définis sont lus dans ceux de Solid Batch.
-- Groupes procéduraux : création, bascule automatique sources / résultat, recalcul automatique et manuel, Finalize.
-- Table des opérations par groupe procédural.
-- ~~Imbrication de groupes procéduraux (arbre d'opérations).~~ Reportée (EF-25) : pour réutiliser une sous-pièce, la finaliser puis l'utiliser comme volume.
+- Groupes Solid Progress : création, bascule automatique sources / résultat, recalcul automatique et manuel, Finalize.
+- Table des opérations par groupe Solid Progress.
+- ~~Imbrication de groupes Solid Progress (arbre d'opérations).~~ Reportée (EF-25) : pour réutiliser une sous-pièce, la finaliser puis l'utiliser comme volume.
 - Restauration des cercles et arcs natifs sur chaque résultat (moteur `circle_restore` v2.3.0).
 
 ### Exclu
@@ -65,40 +65,41 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 
 | ID | Exigence | Priorité | Statut |
 |---|---|---|---|
-| EF-01 | **Combine All (Union)** : union de tous les solides sélectionnés, puis soustraction de ceux qui ont la couleur de soustraction | I | livrée dans Solid Batch v2.0.0 — **abandonnée** dans Solid Procedural (reste dans Solid Batch) |
-| EF-02 | **Combine All (Shell)** : comme EF-01, avec `outer_shell` pour la phase d'addition | I | livrée dans Solid Batch v2.0.0 — **abandonnée** dans Solid Procedural (reste dans Solid Batch) |
+| EF-01 | **Combine All (Union)** : union de tous les solides sélectionnés, puis soustraction de ceux qui ont la couleur de soustraction | I | livrée dans Solid Batch v2.0.0 — **abandonnée** dans Solid Progress (reste dans Solid Batch) |
+| EF-02 | **Combine All (Shell)** : comme EF-01, avec `outer_shell` pour la phase d'addition | I | livrée dans Solid Batch v2.0.0 — **abandonnée** dans Solid Progress (reste dans Solid Batch) |
 | EF-03 | **Set Subtract Color** : couleur de soustraction prise sur la sélection, persistante | I | livrée dans Solid Batch v2.0.0, reprise et livrée en 1.0.0 |
 | EF-04 | **Set Repair Options** : seuil « gros objet », réparation automatique des gros objets, nombre minimal de segments d'un arc | Im | livrée dans Solid Batch v2.1.0 (étendue en v2.2.0), reprise et livrée en 1.0.0 |
 | EF-05 | **Restauration des cercles et arcs** en `ArcCurve` natives sur le résultat, soudure en secours | Im | livrée dans Solid Batch v2.3.0, reprise et livrée en 1.0.0 |
 | EF-06 | **Validation des solides** de la sélection (`manifold?`) | I | livrée dans Solid Batch v2.0.0, reprise et livrée en 1.0.0 |
-| EF-07 | **Create Procedural Solid** : regroupe les solides sélectionnés dans un nouveau groupe procédural (attribut `role=procedural`) et calcule le résultat. Ordre initial : tous les « + » puis tous les « − » | I | livrée en 1.0.0 |
+| EF-07 | **Create Solid Progress** : regroupe les solides sélectionnés dans un nouveau groupe Solid Progress (attribut `role=procedural`) et calcule le résultat. Ordre initial : tous les « + » puis tous les « − » | I | livrée en 1.0.0 |
 | EF-08 | **Bascule automatique** : dans le groupe, les sources sont visibles et le Result est caché ; dehors, c'est l'inverse | I | livrée en 1.0.0 |
 | EF-09 | **Recalcul automatique à la sortie** d'un groupe dont les sources ont changé, détecté par une **empreinte** des sources (ordre, opération, matériau, position, sommets) enregistrée au dernier calcul. Aucun recalcul si rien n'a changé | I | livrée en 1.0.0 |
-| EF-10 | **Rebuild Procedural Solid** : recalcul forcé des groupes sélectionnés (fermés ; un groupe ouvert est recalculé à sa sortie) | I | livrée en 1.0.0 |
-| EF-11 | **Finalize Procedural Solid** : remplace le groupe procédural par un solide simple, sans les sources, y compris sur une copie | I | livrée en 1.0.0, corrigée en 1.0.1 (copie) |
+| EF-10 | **Rebuild Solid Progress** : recalcul forcé des groupes sélectionnés (fermés ; un groupe ouvert est recalculé à sa sortie) | I | livrée en 1.0.0 |
+| EF-11 | **Finalize Solid Progress** : remplace le groupe Solid Progress par un solide simple, sans les sources, y compris sur une copie | I | livrée en 1.0.0, corrigée en 1.0.1 (copie) |
 | EF-12 | **Modèle de données des opérations** stocké sur chaque source (dictionnaire `SolidProcedural`) : `rank` (ordre), `op` (`union`, `outer_shell` ou `subtract` ; la ligne 1 est la Base), `last_add_op`, `enabled`, `seen_color`, `prev_material` (étape 2). Une nouvelle source sans `rank` va en fin de liste | I | livrée en 1.0.0 |
 | EF-13 | **Synchronisation couleur ↔ opération, dans les deux sens** : peindre un volume de la couleur de soustraction le passe en Subtract, le repeindre autrement le repasse en Union ou Shell (`last_add_op`). La règle ne s'applique **que si le matériau a changé** : changer la couleur de soustraction, ou ouvrir le modèle sur un autre PC, n'inverse aucun volume existant. Choisir Subtract dans la table peint le volume, et le quitter restaure `prev_material` | I | livrée en 1.0.0 |
 | EF-14 | **Calcul ordonné** : le résultat se calcule ligne par ligne dans l'ordre `rank` sur des copies des sources (`résultat = op(résultat, volume)`). Les volumes désactivés sont ignorés. La première ligne active doit être un volume « + » | I | livrée en 1.0.0 |
 | EF-15 | **Couleur du Result** : matériau de la base. Les faces qui ont hérité de la couleur de soustraction sont repeintes | Im | livrée en 1.0.0 |
 | EF-16 | **Échec de calcul** : rien n'est modifié, l'ancien Result est conservé, et un message nomme le volume en cause (non solide, opération native en échec) | I | livrée en 1.0.0 |
-| EF-17 | **Copies indépendantes** : un groupe procédural copié (Ctrl+C, copie par déplacement) est rendu unique avant son recalcul. Modifier la copie ne change pas l'original | I | livrée en 1.0.0 |
+| EF-17 | **Copies indépendantes** : un groupe Solid Progress copié (Ctrl+C, copie par déplacement) est rendu unique avant son recalcul. Modifier la copie ne change pas l'original | I | livrée en 1.0.0 |
 | EF-18 | **Restauration des cercles** sur chaque Result, selon les Repair Options (seuil « gros objet ») | Im | livrée en 1.0.0 |
 | EF-19 | **Annuler / Rétablir cohérents** : le recalcul automatique est **fusionné avec la dernière modification** faite dans le groupe (option B), donc un seul Ctrl+Z annule la modification et son résultat. Après Ctrl+Z ou Ctrl+Y, l'affichage est resynchronisé sur le chemin actif, sans recalcul. Un groupe qui n'est plus à jour est signalé et recalculé à la prochaine sortie | I | livrée en 1.0.0 |
-| EF-20 | **Procedural Table** (HtmlDialog) du groupe ouvert ou sélectionné, avec les colonnes **#**, **On**, **Color**, **Name** (modifiable, renomme le groupe source), **Operation** (Base / Union / Shell / Subtract), **State** (solide, non solide, procédural imbriqué) | I | livrée en 1.0.0 |
+| EF-20 | **Progress Table** (HtmlDialog) du groupe ouvert ou sélectionné, avec les colonnes **#**, **On**, **Color**, **Name** (modifiable, renomme le groupe source), **Operation** (Base / Union / Shell / Subtract), **State** (solide, non solide, procédural imbriqué) | I | livrée en 1.0.0 |
 | EF-21 | **Réordonner** dans la table avec ▲▼ et par glisser-déposer. Bouton **Unions first** (toutes les unions et shells, puis les soustractions) | I | livrée en 1.0.0 |
 | EF-22 | **Ligne de formule** : l'expression réellement calculée, par ex. `(((1 ∪ 2) shell 3) − 4) ∪ 6` | Im | livrée en 1.0.0 |
 | EF-23 | **Sélection dans les deux sens** : un clic sur une ligne sélectionne le volume, et sélectionner un volume met sa ligne en surbrillance | Im | livrée en 1.0.0 |
 | EF-24 | **Application des changements de la table** : immédiate quand on est hors du groupe, à la sortie quand on est dedans. Tout changement marque le groupe comme modifié | I | livrée en 1.0.0 |
-| EF-25 | **Imbrication** : un groupe procédural peut être la source d'un autre, et c'est alors son Result qui est utilisé. Le recalcul se fait de l'intérieur vers l'extérieur | Im | **reportée** (2026-10-23) : non indispensable, risque de régression sur des fonctions testées ; aucun effet de bord sans imbrication (refus propre) |
-| EF-26 | **Explode libère les volumes** : après un Explode d'un groupe procédural (ou un copier-coller d'une source hors du groupe), les volumes libérés sont rendus visibles et redeviennent des objets ordinaires (attributs retirés). Un seul Ctrl+Z annule l'Explode et la libération | Im | livrée en 1.0.0 |
+| EF-25 | **Imbrication** : un groupe Solid Progress peut être la source d'un autre, et c'est alors son Result qui est utilisé. Le recalcul se fait de l'intérieur vers l'extérieur | Im | **reportée** (2026-10-23) : non indispensable, risque de régression sur des fonctions testées ; aucun effet de bord sans imbrication (refus propre) |
+| EF-26 | **Explode libère les volumes** : après un Explode d'un groupe Solid Progress (ou un copier-coller d'une source hors du groupe), les volumes libérés sont rendus visibles et redeviennent des objets ordinaires (attributs retirés). Un seul Ctrl+Z annule l'Explode et la libération | Im | livrée en 1.0.0 |
 | EF-27 | **Base figée** : la ligne 1 est la Base, toujours en tête et toujours active (ni déplacement, ni glisser-déposer au-dessus, ni désactivation ; *Unions first* la garde en tête). Choisir « Base » sur une autre ligne en fait la nouvelle Base, l'ancienne passe en ligne 2 | I | livrée en 1.0.0 |
 | EF-28 | **Sélection gardée** : après un recalcul (table sur un groupe fermé, Rebuild), le groupe sélectionné reste sélectionné et la table reste dessus | I | livrée en 1.0.0 |
-| EF-29 | **Cadre vert** : un groupe procédural sélectionné se distingue des autres objets (couleur de sélection verte) ; le cadre redevient bleu dès que le solide n'est plus procédural (Finalize) | S | livrée en 1.0.0, corrigée en 1.0.1 (Finalize) |
+| EF-29 | **Cadre vert** : un groupe Solid Progress sélectionné se distingue des autres objets (couleur de sélection verte) ; le cadre redevient bleu dès que le solide n'est plus procédural (Finalize) | S | livrée en 1.0.0, corrigée en 1.0.1 (Finalize) |
 | EF-30 | **Raccourcis clavier avec la table ouverte** : après une action dans la table (et quand la souris en sort), le clavier revient à SketchUp, pour que ses raccourcis (W…) marchent sans cliquer dans le modèle ; jamais pendant la saisie d'un nom | Im | livrée en 1.0.0 |
 | EF-31 | **Compatibilité SketchUp 2017** (Make 2017 installé à la place de Pro 2017, 2026-10-23) : le plugin marche aussi sous SketchUp 2017 (gardes pour `DefinitionList#remove` 2018+, `Model#active_path=` 2020+, navigateur ancien ; cercles natifs sans `Entities#weld`) ; *Set Repair Options* sous toutes les versions | Im | **livrée en 1.1.0** (M1, tests automatiques 2021 + Make 2017) ; double-clic de la table sous 2017 : message dans la table |
-| EF-32 | **Pro seulement, une seule ligne** : le plugin marche sous Make par défaut ; une seule ligne à décommenter (`ruby_engine?`, `solid_procedural/procedural.rb`), juste après le seul contrôle `Sketchup.is_pro?` du plugin, le réserve à SketchUp Pro : sans Pro, Create, Rebuild, Finalize, le recalcul à la sortie et la table affichent « PRO Only vs. procedural.rb:<ligne> » et ne modifient rien (décision du 2026-10-26 ; remplace la constante `PRO_ONLY` de la 1.1.0) | I | constante `PRO_ONLY` **livrée en 1.1.0** ; une seule ligne : validée le 2026-10-26, à livrer (T10) |
+| EF-32 | **Pro seulement, une seule ligne** : le plugin marche sous Make par défaut ; une seule ligne à décommenter (`ruby_engine?`, `solid_progress/procedural.rb`), juste après le seul contrôle `Sketchup.is_pro?` du plugin, le réserve à SketchUp Pro : sans Pro, Create, Rebuild, Finalize, le recalcul à la sortie et la table affichent « PRO Only vs. procedural.rb:<ligne> » et ne modifient rien (décision du 2026-10-26 ; remplace la constante `PRO_ONLY` de la 1.1.0) | I | constante `PRO_ONLY` **livrée en 1.1.0** ; une seule ligne : **livrée en 2.0.0** (T10) |
 | EF-33 | **Moteur pour SketchUp Make** (M2) : sans booléens natifs (`Sketchup.is_pro?` faux), le moteur Ruby de Solid for Maker 1.0.0 (copié dans le plugin, `SolidProcedural::SolidOperations`, MIT) combine les volumes (Union, Shell, Subtract) ; sous Pro, booléens natifs inchangés. Différence connue : un solide enfermé dans un autre est gardé par le Shell natif, effacé par le moteur Ruby | I | **livrée en 1.1.0** (2026-10-25 : T12 natif / Ruby sous 2021, Ruby sous Make 2017, recalcul à la sortie testé à la main sous Make) ; moteur de Solid for Maker 1.0.1 en 1.1.2 (Q-7) |
-| EF-34 | **Bouton Finalize dans la Procedural Table** : finalise le solide procédural affiché quand il est fermé ; grisé (infobulle « Close the procedural solid to finalize it ») quand il est ouvert ; un seul Ctrl+Z | Im | **livrée en 1.1.0** (T13) |
+| EF-34 | **Bouton Finalize dans la Progress Table** : finalise le groupe Solid Progress affiché quand il est fermé ; grisé (infobulle « Close the Solid Progress group to finalize it ») quand il est ouvert ; un seul Ctrl+Z | Im | **livrée en 1.1.0** (T13) |
+| EF-35 | **Renommage en Solid Progress** : SketchUp 2027 apporte ses propres *Procedural Components* (Solid Tools non destructifs) ; le plugin s'appelle désormais **Solid Progress** partout où l'utilisateur le voit (extension, menu « Create / Rebuild / Finalize Solid Progress », « Progress Table », messages, nom par défaut des groupes, matière « Solid Progress Subtract », logs, `solid_progress.rb`, `solid_progress/`, `solid_progress.rbz`, dépôt `sketchup-solid-progress`, documentation). Les identifiants du code et les données des modèles ne changent pas : les modèles existants restent reconnus. Désinstaller Solid Procedural avant d'installer la 2.0.0 | I | **livrée en 2.0.0** (T16) |
 
 ## 6. Exigences non fonctionnelles
 
@@ -108,13 +109,13 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 | NF-02 | Chaque commande est **une seule opération annulable**. Le Rebuild est **une seule opération non transparente**, entièrement annulée en cas d'échec. Les bascules d'affichage sont transparentes et n'encombrent pas l'historique | ENF-02, ENF-05 |
 | NF-03 | **Aucune modification du modèle dans un callback d'observateur** : les changements sont différés (`UI.start_timer(0, false)`). Les opérations du plugin sont ignorées par ses propres observateurs | — |
 | NF-04 | Performance : pas de recalcul sans modification. Progression dans la barre d'état pendant un recalcul | ENF-06 |
-| NF-05 | Journalisation console `[Solid Procedural] …` pour chaque étape | ENF-04 |
-| NF-06 | Libellés à l'écran **en anglais**. Nommage strictement cohérent « Solid Procedural » (extension, menu, barre d'outils, registre `SolidProcedural`, dictionnaire d'attributs, logs `[Solid Procedural]`) | — |
+| NF-05 | Journalisation console `[Solid Progress] …` pour chaque étape | ENF-04 |
+| NF-06 | Libellés à l'écran **en anglais**. Nom affiché strictement cohérent « Solid Progress » (extension, menu, barre d'outils, titres, messages, logs `[Solid Progress]`, `.rbz`, dépôt) ; les identifiants invisibles gardent l'ancien nom (modules `SolidProcedural`, registre `SolidProcedural`, dictionnaire d'attributs, rôle `procedural`) : décision du 2026-10-26 | — |
 | NF-07 | Table en HTML/CSS/JS **sans dépendance externe** | — |
 | NF-08 | Plugin **autonome** : aucune dépendance à un autre plugin (moteur des cercles copié de Re-Cercle v2.0.0) | ENF-11 |
 | NF-09 | **Coexistence** : Solid Batch v2 n'est ni modifié ni écrasé. Les deux plugins se chargent ensemble sans conflit (modules, dossiers, registre et attributs distincts) | — |
-| NF-10 | **Persistance** : les données procédurales sont dans le modèle (attributs `SolidProcedural`), les options dans le registre `SolidProcedural`. Une option non définie est lue dans `SolidBatch` | ENF-03, ENF-09 |
-| NF-11 | **Dégradation propre** : un `.skp` ouvert sans Solid Procedural montre le Result (sources cachées) | — |
+| NF-10 | **Persistance** : les données des groupes Solid Progress sont dans le modèle (attributs `SolidProcedural`), les options dans le registre `SolidProcedural`. Une option non définie est lue dans `SolidBatch` | ENF-03, ENF-09 |
+| NF-11 | **Dégradation propre** : un `.skp` ouvert sans Solid Progress montre le Result (sources cachées) | — |
 | NF-12 | Robustesse : une source non solide, un volume supprimé ou un groupe vide ne provoquent jamais d'exception non gérée | ENF-05 |
 | NF-13 | **Tests automatiques** avec le moins de manipulations possible : `tools/tests/run_tests.ps1` déploie le plugin, lance SketchUp 2021 puis Make 2017 (`-RubyStartup`), lit le rapport et ferme SketchUp ; seule manipulation : le bouton de l'écran d'accueil de Make 2017 (celui de 2021 est coupé le temps des tests puis remis). Outil de développement, hors `.rbz` | — |
 | NF-14 | **Performance de la restauration des cercles** sur une face percée de nombreux trous : `repair_holes` retrouve les arêtes des trous par des grilles au lieu de parcourir toutes les arêtes pour chaque trou (code de Solid for Maker 1.0.0, `OPTIMISATION_REPAIR_HOLES.md`) ; **résultat identique** à l'ancienne méthode, vérifié par la batterie (T15). **Livrée en 1.1.1** | ENF-06 |
@@ -130,8 +131,8 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
   - `UI::HtmlDialog`.
 - `Entities#weld` (2020.1+), pour la soudure de secours de la restauration des cercles.
 - Aucune dépendance externe (gem, CDN, autre plugin).
-- Dépôt git sur le NAS (lecteur `P:`). Dépôt GitHub **privé** `sketchup-solid-procedural`.
-- Extension **distincte** « Solid Procedural » (loader `solid_procedural.rb`, dossier `solid_procedural/`), installée à côté de Solid Batch (`solid_batch/`) dans le dossier Plugins de SketchUp 2021.
+- Dépôt git sur le NAS (lecteur `P:`). Dépôt GitHub **privé** `sketchup-solid-progress` (`sketchup-solid-procedural` jusqu'à la 1.1.2).
+- Extension **distincte** « Solid Progress » (loader `solid_progress.rb`, dossier `solid_progress/`), installée à côté de Solid Batch (`solid_batch/`) dans le dossier Plugins de SketchUp 2021.
 
 ## 8. Critères d'acceptation
 
@@ -140,31 +141,32 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 | CA-01 | Une boîte et un cylindre rouge → Create → le trou est visible dehors | EF-07, EF-08, EF-14 |
 | CA-02 | Entrer, déplacer le cylindre, sortir → le trou suit | EF-08, EF-09 |
 | CA-03 | Entrer, sortir sans rien modifier → aucun recalcul (console) | EF-09, NF-04 |
-| CA-04 | Ajouter un groupe rouge dans le groupe procédural → il est soustrait à la sortie | EF-12, EF-13 |
+| CA-04 | Ajouter un groupe rouge dans le groupe Solid Progress → il est soustrait à la sortie | EF-12, EF-13 |
 | CA-05 | Ordre Base (+), Trou (−), Tenon (+) → le tenon remplit une partie du trou | EF-14, EF-21 |
 | CA-06 | Choisir Shell pour une ligne → outer shell appliqué à cette ligne seulement | EF-12, EF-20 |
 | CA-07 | Choisir Subtract dans la table → le volume devient rouge. Repasser en Union → l'ancienne couleur revient | EF-13 |
 | CA-08 | Décocher On → le volume n'est plus pris en compte. Recocher → il revient | EF-12, EF-20 |
 | CA-09 | « Unions first » → les unions et shells passent avant les soustractions, et la formule suit | EF-21, EF-22 |
-| CA-10 | *(reporté avec EF-25)* Groupe procédural imbriqué → modifier l'intérieur → le résultat extérieur suit | EF-25 |
+| CA-10 | *(reporté avec EF-25)* Groupe Solid Progress imbriqué → modifier l'intérieur → le résultat extérieur suit | EF-25 |
 | CA-11 | Source non étanche → message qui nomme le volume, ancien résultat conservé | EF-16 |
 | CA-12 | Ctrl+Z juste après une sortie → l'affichage reste cohérent, et la sortie suivante recalcule | EF-19 |
-| CA-13 | Copier un groupe procédural et modifier la copie → l'original ne change pas | EF-17 |
+| CA-13 | Copier un groupe Solid Progress et modifier la copie → l'original ne change pas | EF-17 |
 | CA-14 | Finalize puis export STL → un seul solide, sans les sources | EF-11 |
 | CA-15 | Result avec des trous et des tenons → cercles natifs (inférence du centre), couleur de la base, aucune face rouge | EF-15, EF-18 |
 | CA-16 | Set Subtract Color et Set Repair Options fonctionnent, avec les réglages repris de Solid Batch. Solid Batch v2 reste installé et Combine All y fonctionne toujours | EF-03, EF-04, NF-09, NF-10 |
 | CA-17 | Changer la couleur de soustraction : les volumes existants gardent leur opération. Repeindre une source en rouge la passe en Subtract, la repeindre d'une autre couleur (ou lui rendre le matériau par défaut) la remet en Union ou Shell | EF-13 |
-| CA-18 | Explode d'un groupe procédural → le Result et tous les volumes sont visibles, en objets ordinaires. Un seul Ctrl+Z remet le groupe procédural | EF-26 |
+| CA-18 | Explode d'un groupe Solid Progress → le Result et tous les volumes sont visibles, en objets ordinaires. Un seul Ctrl+Z remet le groupe Solid Progress | EF-26 |
 | CA-19 | Ligne 1 sans poignée ni ▲▼, case On grisée ; glisser une ligne tout en haut → elle se place en ligne 2 ; *Unions first* garde la Base ; choisir « Base » sur une ligne Subtract → elle passe en ligne 1 avec son ancienne couleur, un seul Ctrl+Z annule | EF-27 |
 | CA-20 | Groupe fermé sélectionné, cocher / décocher On dans la table → le résultat suit, le groupe reste sélectionné et la table reste remplie | EF-24, EF-28 |
-| CA-21 | Groupe procédural sélectionné → cadre vert ; groupe ordinaire ou sélection mixte → cadre bleu ; enregistrer avec le cadre vert puis rouvrir → couleur d'origine ; sélectionner puis fermer sans rien modifier → pas de demande d'enregistrement | EF-29 |
+| CA-21 | Groupe Solid Progress sélectionné → cadre vert ; groupe ordinaire ou sélection mixte → cadre bleu ; enregistrer avec le cadre vert puis rouvrir → couleur d'origine ; sélectionner puis fermer sans rien modifier → pas de demande d'enregistrement | EF-29 |
 | CA-22 | Table ouverte : après On, ▲▼, une opération, Unions first, un double-clic ou un nom validé, W agit sur SketchUp ; un clic sur le fond de la table ne fait rien ; la souris sortie de la table, W agit sur SketchUp | EF-30 |
-| CA-23 | Copier un solide procédural (Ctrl+C / Ctrl+V ou Move + Ctrl) puis Finalize sur la copie → pas d'erreur, l'original reste procédural ; le solide finalisé a un cadre bleu ; Ctrl+Z remet le solide procédural | EF-11, EF-17, EF-29 |
+| CA-23 | Copier un groupe Solid Progress (Ctrl+C / Ctrl+V ou Move + Ctrl) puis Finalize sur la copie → pas d'erreur, l'original reste procédural ; le solide finalisé a un cadre bleu ; Ctrl+Z remet le groupe Solid Progress | EF-11, EF-17, EF-29 |
 | CA-24 | SketchUp Make 2017 : une boîte et un cylindre rouge → Create → le trou est soustrait (moteur intégré) ; ouvrir le solide, déplacer le trou, sortir → Result recalculé ; double-clic sur une ligne de la table → message dans la table | EF-31, EF-33 |
 | CA-25 | Ligne Pro seulement décommentée, sous Make (ou Make simulé sous Pro) → Create, Rebuild, Finalize, le recalcul et la table affichent « PRO Only vs. procedural.rb:<ligne> », rien n'est modifié ; ligne commentée (par défaut) → aucun changement ; un seul `Sketchup.is_pro?` dans le plugin (T10) | EF-32 |
-| CA-26 | Procedural Table d'un solide fermé → Finalize → solide simple sélectionné, Ctrl+Z le remet ; solide ouvert → bouton grisé, rien ne change | EF-34 |
+| CA-26 | Progress Table d'un solide fermé → Finalize → solide simple sélectionné, Ctrl+Z le remet ; solide ouvert → bouton grisé, rien ne change | EF-34 |
 | CA-27 | Plaque et 20 volumes Subtract → Create → 40 cercles natifs, volume exact (T12) ; sur 13 cas (plaque très percée, trous près d'un bord, faces colorées, faces coplanaires, très petits et très grands trous, chambrages, fraisurages à épaulement, trous sur deux faces, troncs de cône, tétons, trous borgnes), faces, arêtes et cercles identiques à l'ancienne méthode (T15) ; plaque à 20 trous : restauration des cercles au moins 2 fois plus rapide (mesuré : 4 à 5 fois) | NF-14 |
 | CA-28 | Trous soustraits d'abord, puis chambrages (T15 « counterbores after the holes ») : résultat solide et cercles natifs, avec les booléens natifs comme avec le moteur intégré | EF-33, Q-7 |
+| CA-29 | Plugin installé : extension « Solid Progress » chargée, plus d'extension « Solid Procedural » ni de fichiers `solid_procedural` ; aucun « procedural » dans les chaînes du code ni dans la page de la table hors identifiants ; nom par défaut et matière « Solid Progress » ; message de Rebuild sans sélection « … Solid Progress groups … » (T16) ; batterie complète sous 2021 et Make 2017 | EF-35 |
 
 ## 9. Questions ouvertes et décisions
 
@@ -175,8 +177,8 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 | Q-1 | ~~Que fait l'export STL de SketchUp 2021 avec les entités cachées ?~~ | **Résolue** (2026-10-23) : il faut **toujours lancer Finalize avant l'export STL** ; le cadre vert (EF-29) sert de rappel |
 | Q-2 | ~~`onActivePathChanged` existe-t-il dans SketchUp 2021 ?~~ | **Résolue** (2026-10-23) : oui, le recalcul automatique à la sortie fonctionne |
 | Q-3 | ~~Quel opérande les booléens natifs effacent-ils (`union`, `outer_shell`) ? Quels matériaux gardent les faces du résultat ?~~ | **Résolue en pratique** (2026-10-23) : le calcul efface toutes ses copies quel que soit l'opérande effacé ; Result à la couleur de la base, sans face rouge (test utilisateur) |
-| Q-4 | ~~Que se passe-t-il quand on fait Explode sur un groupe procédural ?~~ | **Résolue** (2026-10-23) : le Result restait visible, les sources restaient cachées avec leurs attributs → décision : Explode libère les volumes (EF-26) |
-| Q-5 | ~~Où placer l'entrée « Procedural Table » ?~~ | **Résolue** (2026-10-23) : menu, barre d'outils et clic droit |
+| Q-4 | ~~Que se passe-t-il quand on fait Explode sur un groupe Solid Progress ?~~ | **Résolue** (2026-10-23) : le Result restait visible, les sources restaient cachées avec leurs attributs → décision : Explode libère les volumes (EF-26) |
+| Q-5 | ~~Où placer l'entrée « Progress Table » ?~~ | **Résolue** (2026-10-23) : menu, barre d'outils et clic droit |
 | Q-6 | ~~Incident du 2026-10-24 (SketchUp 2021, 1.0.0) : après plusieurs Ctrl+Z, le cadre de sélection restait bleu et l'entrée dans le groupe n'affichait plus les sources (Result visible) ; la table et les recalculs marchaient. Diagnostic : observateurs attachés, rien en attente, minuteurs actifs. Disparu après un redémarrage de SketchUp. Cause inconnue — hypothèse : `@synced_paths` faux après les annulations (groupe cru déjà ouvert). Pas d'interférence possible avec SketchUp 2017 (processus et registre séparés) ~~ | **Résolue** (2026-10-25, 1.1.0) : SketchUp 2017 **et 2021** gardent le même objet `Model` après File > Open (ou New) mais perdent ses observateurs ; `attach` sautait le modèle déjà connu → plus de bascule à l'entrée, plus de suivi de la sélection (cadre resté vert). Constaté par l'utilisateur sous Make 2017 (fichier intact, vérifié), reproduit par T14 avec l'ancien code sous 2021. Correctif : observateurs retirés puis remis à chaque ouverture ou création, couleur d'origine oubliée |
 | Q-7 | ~~Moteur intégré (Make) : soustraire un **chambrage après son trou** échoue (« Subtract of volume … failed »), même avec un seul trou ; l'ordre inverse (chambrage puis trou) marche. Défaut du moteur de Solid for Maker~~ | **Résolue** (2026-10-26, 1.1.2) : défaut du code d'Eneroth (`wrapping_face`), corrigé dans Solid for Maker 1.0.1 (commit `2b2a596`, kit de non-régression sous Make 2017) puis moteur recopié ; T15 « counterbores after the holes » (CA-28) |
 | Q-8 | Booléens natifs (Pro) : un outil fait de **plusieurs solides** (un groupe de plusieurs cylindres) laisse des définitions inutilisées `TempInstance#n` dans le modèle (une par solide) ; *Purge Unused* les enlève | Constat du 2026-10-25 (tests T15) : vérifier si une source faite de plusieurs solides en laisse à chaque recalcul du plugin |
@@ -185,7 +187,7 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 
 #### Diagnostic de Q-6 (console Ruby, une ligne à la fois)
 
-Solide procédural sélectionné et fermé :
+Groupe Solid Progress sélectionné et fermé :
 
 ```ruby
 m = Sketchup.active_model; pr = SolidProcedural::Procedural; s = m.selection.first
@@ -246,6 +248,7 @@ UI.start_timer(0, false) { puts 'timer OK' }
 | 2026-10-23 | Imbrication (étape 3) | **Reportée** : l'utilisateur pense pouvoir s'en passer ; travail et risque de régression jugés trop importants pour le besoin. Condition posée : aucun effet de bord sans groupes imbriqués (vérifié : seuls Create, la validation du recalcul et l'état de la table traitent un volume procédural, et seulement pour le refuser). Plan conservé pour plus tard : copie du Result intérieur par copie + Explode d'une enveloppe, recalcul de l'intérieur vers l'extérieur avant l'empreinte, rang gardé par Finalize, identifiants `group_id` / `owner` pour la libération après Explode dans un groupe ouvert |
 | 2026-10-25 | Accélération de `repair_holes` | Faite dans Solid Procedural seulement (Re-Cercle, Cylinder Resize, Solid Batch et Circle Advanced restent en attente) ; validée par comparaison avec l'ancienne méthode sur la même géométrie (T15) ; l'ancienne méthode reste dans les tests comme référence, jamais dans le plugin ; plus de test à la main quand la batterie couvre le changement |
 | 2026-10-26 | Diffusion et édition | Pas d'Extension Warehouse (sa règle n'accepte une extension qui reproduit une fonction de Pro que si elle est réservée à Pro) ; diffusion sur GitHub et SketchUcation. Make par défaut, **une seule ligne** à décommenter pour réserver le plugin à Pro, **un seul** test `Sketchup.is_pro?` (décision commune aux trois plugins Solid, modèle Solid Batch 2.5.0) |
+| 2026-10-26 | Nom | « Solid Procedural » → **« Solid Progress »** (SketchUp 2027.0, 21 octobre 2026, introduit les *Procedural Components* ; « Dynamic » écarté : *Dynamic Components* de SketchUp). « Solid » en premier ; seulement ce que l'utilisateur voit, plus le chargeur et son dossier (`solid_progress.rb`, `solid_progress/`) ; identifiants et données des modèles inchangés ; version 2.0.0 ; dépôt GitHub renommé `sketchup-solid-progress` |
 | 2026-10-23 | Approches écartées | Bascule manuelle Sources / Résultat (gardée en repli), recalcul en direct, opération codée dans le nom, attributs de Dynamic Components |
 
 ## 10. Historique des livraisons
@@ -268,3 +271,4 @@ UI.start_timer(0, false) { puts 'timer OK' }
 | 2026-10-25 | **Solid Procedural 1.1.0** — SketchUp Pro 2021 et SketchUp Make 2017 (M1 `084a488`, M2 `fcbb4a8`, M3), release GitHub `v1.1.0` | EF-31 à EF-34, NF-13 livrées ; correctifs (solide à un volume composant, matière du Result, définition de l'ancien Result, observateurs perdus après File > Open — Q-6) ; CA-24 à CA-26 |
 | 2026-10-25 | **Solid Procedural 1.1.1** — restauration des cercles accélérée (`repair_holes` par grilles), release GitHub `v1.1.1` | NF-14 livrée ; CA-27 ; tests 2021 Pro 51/51, Make 2017 32 OK + T07 sauté ; constats Q-7 à Q-10 |
 | 2026-10-26 | **Solid Procedural 1.1.2** — moteur intégré de Solid for Maker 1.0.1 (`2b2a596`), release GitHub `v1.1.2` | Q-7 résolue (chambrage après son trou) ; CA-28 ; tests 2021 Pro 53/53, Make 2017 33 OK + T07 sauté |
+| 2026-10-26 | **Solid Progress 2.0.0** — renommage (ex-Solid Procedural), un seul contrôle de l'édition, lanceur de tests sûr ; dépôt GitHub renommé `sketchup-solid-progress`, release GitHub `v2.0.0` | EF-32 (une seule ligne), EF-35 livrées ; CA-25, CA-29 ; tests 2021 Pro 54/54, Make 2017 34 OK + T07 sauté |

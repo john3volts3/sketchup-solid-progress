@@ -64,7 +64,7 @@ module SolidProcedural
       chains = Detector.find_chains(Detector.all_edges(entities))
       chains.reject! { |chain| short_arc?(chain, min_arc_segments) }
       chains.each_with_index do |found, i|
-        Sketchup.status_text = "Solid Procedural — Restoring circles and arcs #{i + 1}/#{chains.length}"
+        Sketchup.status_text = "Solid Progress — Restoring circles and arcs #{i + 1}/#{chains.length}"
         restore_chain(found, result, min_arc_segments)
       end
       result

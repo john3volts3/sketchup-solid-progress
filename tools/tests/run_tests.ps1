@@ -77,9 +77,9 @@ foreach ($version in $Versions) {
     if (-not $NoDeploy) {
         $plugins = Join-Path $env:APPDATA "SketchUp\SketchUp $version\SketchUp\Plugins"
         if (-not (Test-Path $plugins)) { Write-Host "Plugins folder of SketchUp $version not found"; $failed++; continue }
-        Copy-Item (Join-Path $project 'solid_procedural.rb') $plugins -Force
+        Copy-Item (Join-Path $project 'solid_progress.rb') $plugins -Force
         # Mirror: files removed from the project are removed from the plugin too.
-        robocopy (Join-Path $project 'solid_procedural') (Join-Path $plugins 'solid_procedural') /MIR /NJH /NJS /NFL /NDL /NP | Out-Null
+        robocopy (Join-Path $project 'solid_progress') (Join-Path $plugins 'solid_progress') /MIR /NJH /NJS /NFL /NDL /NP | Out-Null
         if ($LASTEXITCODE -ge 8) { Write-Host "Deployment to SketchUp $version failed"; $failed++; continue }
     }
 

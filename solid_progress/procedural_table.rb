@@ -13,8 +13,8 @@ module SolidProcedural
   # After an action, the page gives the keyboard back to SketchUp, so that
   # its shortcuts keep working while the table is open.
   module ProceduralTable
-    HTML_FILE = File.join(PLUGIN_DIR, 'solid_procedural', 'html', 'procedural_table.html').freeze
-    LOG = '[Solid Procedural]'.freeze
+    HTML_FILE = File.join(PLUGIN_DIR, 'solid_progress', 'html', 'procedural_table.html').freeze
+    LOG = '[Solid Progress]'.freeze
     OPERATIONS = %w[union outer_shell subtract].freeze
 
     # Windows API through Fiddle (Ruby standard library), to give the
@@ -72,7 +72,7 @@ module SolidProcedural
       @main_window = Win32.sketchup_window unless Sketchup.respond_to?(:focus)
       @ready = false
       @dialog = UI::HtmlDialog.new(
-        dialog_title: "#{PLUGIN_NAME} — Procedural Table",
+        dialog_title: "#{PLUGIN_NAME} — Progress Table",
         preferences_key: 'SolidProcedural_ProceduralTable',
         scrollable: false,
         resizable: true,
@@ -133,7 +133,7 @@ module SolidProcedural
       unless group
         many = model && model.selection.count { |e| Procedural.procedural?(e) } > 1
         return { group: nil,
-                 message: many ? 'Select a single procedural solid.' : 'Select or open a procedural solid.' }
+                 message: many ? 'Select a single Solid Progress group.' : 'Select or open a Solid Progress group.' }
       end
       sources = Procedural.sources_of(group)
       keys = Procedural.row_keys(sources)
@@ -238,7 +238,7 @@ module SolidProcedural
       unless path.include?(group)
         context = path.empty? ? model : path.last.definition
         return unless group.parent == context
-        return status_no_active_path(group, 'Double-click the procedural solid in the model to open it') unless active_path_settable?(model)
+        return status_no_active_path(group, 'Double-click the Solid Progress group in the model to open it') unless active_path_settable?(model)
         model.active_path = path + [group]
       end
       select_row(model, group, key)
@@ -249,7 +249,7 @@ module SolidProcedural
     # plugin). Shown closed, it is the only procedural solid selected.
     def self.finalize_group(model, group)
       if (model.active_path || []).include?(group)
-        @notice = [group, 'Close the procedural solid to finalize it.']
+        @notice = [group, 'Close the Solid Progress group to finalize it.']
         return
       end
       Procedural.do_finalize
@@ -262,7 +262,7 @@ module SolidProcedural
 
     def self.status_no_active_path(group, text)
       message = "#{text} (not available from the table in this SketchUp version)"
-      Sketchup.status_text = "Solid Procedural — #{message}"
+      Sketchup.status_text = "Solid Progress — #{message}"
       # Also shown in the table, until its next action.
       @notice = [group, "#{message}."]
       nil

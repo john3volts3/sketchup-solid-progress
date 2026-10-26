@@ -12,6 +12,26 @@
 
 ## Session du 2026-10-26
 
+### Renommage en Solid Progress (2.0.0)
+
+- **Demande utilisateur** : le nom « procedural » reprend celui des *Procedural Components* de SketchUp 2027.0 (sortie le 21 octobre 2026, Solid Tools non destructifs) ; « Dynamic » écarté (*Dynamic Components* de SketchUp) ; nom choisi par l'utilisateur : **Solid Progress** (« Solid » en premier). Portée : seulement ce que l'utilisateur voit, pas les sources si ce n'est pas indispensable ; chargeur et dossier renommés ; dépôt GitHub renommé ; version 2.0.0 ; historique gardé tel quel. Plan validé (« continue »).
+- **Commit `b32b623`** (avant le renommage) : travail validé de la session (un seul `is_pro?`, lanceur sûr, licence, README).
+- **solid_procedural.rb → solid_progress.rb, solid_procedural/ → solid_progress/** (`git mv`) ; chemins adaptés : `SketchupExtension` du chargeur, `icons_dir` (`main.rb`), `HTML_FILE` (`procedural_table.rb`).
+- **Textes visibles** (chaînes des lignes de code seulement, commentaires inchangés ; 64 lignes dans 8 fichiers dont `procedural_table.html`) : « Solid Procedural » → « Solid Progress » (extension, menu, barre d'outils, Annuler, barre d'état, logs) ; « Create / Rebuild / Finalize Procedural Solid » → « … Solid Progress » ; « Procedural Table » → « Progress Table » ; « procedural solid(s) » → « Solid Progress group(s) » ; nom par défaut `Solid Progress` ; matière `Solid Progress Subtract` (retrouvée par sa couleur, aucun effet de bord) ; description de l'extension. **Inchangés** : modules et méthodes (`SolidProcedural`, `Procedural`, `ProceduralTable`), fichiers internes (`procedural.rb`, icônes, `procedural_table.html`), dictionnaire `SolidProcedural` et rôle `procedural` des modèles (modèles existants reconnus), registre `SolidProcedural` (réglages gardés), clé de fenêtre et espace JavaScript.
+- **solid_progress/version.rb, solid_progress.rb** — Version 2.0.0.
+- **tools/tests/run_tests.ps1** — Déploiement de `solid_progress.rb` et `solid_progress/`. **tools/tests/run_tests.rb** — Chemins du plugin ; message attendu par T13 ; **T16 « Visible names: Solid Progress »** : nom de l'extension, plus d'extension ni de fichiers « Solid Procedural », chaînes du code (Ripper) et page de la table sans « procedural » hors identifiants autorisés, titre de la table, nom par défaut et matière, message de Rebuild sans sélection.
+- **Plugins SketchUp 2021 et Make 2017** — `solid_procedural.rb` et `solid_procedural/` supprimés (copies de déploiement identiques au dépôt), `solid_progress` déployé par le lanceur.
+- **README.md, docs/USER_MANUAL_*.md, docs/FSD_*.md, PRD.md** — Nouveau nom hors identifiants de code (lignes d'historique datées inchangées) ; version 2.0.0 ; README : section « Upgrading from Solid Procedural » (EN + FR) et nouvelle accroche ; PRD : EF-35, CA-29, NF-06 réécrite, décision « Nom » ; FSD : T16.
+- **Tests** : 2021 Pro **54/54** (T16 : 9 vérifications), Make 2017 **34 OK + T07 sauté**.
+- Après la session : dossier local à renommer (`sketchup-solid-progress`), mémoire de Claude à recopier.
+
+### Livraison 2.0.0
+
+- **Validation** : « Teste OK, livraison » (utilisateur), avec renommage du dépôt GitHub.
+- **PRD.md** — EF-32 (une seule ligne) et EF-35 « livrées en 2.0.0 » ; ligne d'historique 2.0.0. **docs/FSD_EN.md, docs/FSD_FR.md** — Ligne d'historique 2.0.0.
+- **build/solid_progress.rbz** — Construit : 26 fichiers (`solid_progress.rb` + `solid_progress/`), 56 168 octets, SHA-256 `66555dc9770c…`. Plugin installé dans SketchUp 2021 et Make 2017 par le lanceur des tests (copie miroir, identique au projet, T01). L'ancien `build/solid_procedural.rbz` reste dans `build/` (non suivi).
+- **Commit**, tag `v2.0.0`, dépôt GitHub renommé `sketchup-solid-progress` (adresse du dépôt distant mise à jour), push, **release GitHub** `v2.0.0` avec `solid_progress.rbz`.
+
 ### Sauvegarde avant modification, lanceur des tests, un seul `is_pro?`, licence, README (vers la 1.1.3)
 
 - **Demande utilisateur** : reprendre les quatre tâches de `TACHES.md` et ignorer `mes tests/` ; proposition de l'utilisateur : sauvegarder tout fichier de Windows avant de le modifier, règle dans le CLAUDE.md général. Règle et plan validés (« ok, go pour la règle et le plan »).

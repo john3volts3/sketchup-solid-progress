@@ -26,6 +26,13 @@ Créé le 2026-10-26 depuis la session Solid Batch, à la demande de l'utilisate
   - **Reste à décider avant de rendre le dépôt public** : l'historique garde une ligne un chemin personnel (journal importé de Solid Batch, commits `62d1ce6`, `49b376b`) et 4 lignes de chemins absolus du lecteur réseau. Options : (a) accepter ; (b) dépôt public neuf, un seul commit, le dépôt privé garde son historique (recommandé : rien à installer, pas de push forcé) ; (c) réécrire l'historique (`git filter-repo` à installer, push forcé, tags déplacés).
   - **Reste à faire, second temps** : modèles de démonstration par script (`tools/demo/`), liste des captures par section du manuel et scénario vidéo de 60 à 90 s (`docs/PUBLICATION.md`).
 
+## Renommage en Solid Progress (2026-10-26)
+
+- [x] Plugin renommé **Solid Progress** 2.0.0 (voir `JOURNAL.md`, PRD EF-35) : textes visibles, `solid_progress.rb`, `solid_progress/`, docs ; identifiants et données des modèles inchangés.
+- [ ] Livraison 2.0.0 : `.rbz`, commit, tag, `gh repo rename sketchup-solid-progress`, push, release.
+- [ ] Après la session : renommer le dossier local en `sketchup-solid-progress` (Claude recopie d'abord sa mémoire de projet).
+- [ ] Solid Batch et Solid for Maker citent encore « Solid Procedural » dans leurs documents (notes déposées dans leurs `TACHES.md`).
+
 ## Repères
 
 - Lanceur de tests : `tools/tests/run_tests.ps1`, en ASCII depuis le 2026-10-26 : `powershell` (5.1) et `pwsh` (7) marchent. Make 2017 : cliquer sur le bouton de son écran d'accueil ; si personne n'est devant l'écran, `-Timeout 600`.

@@ -170,7 +170,7 @@ module SolidProcedural
     ].freeze
 
     def self.plugin_dir
-      File.join(SolidProcedural::PLUGIN_DIR, 'solid_procedural')
+      File.join(SolidProcedural::PLUGIN_DIR, 'solid_progress')
     end
 
     def self.reload_plugin
@@ -536,7 +536,7 @@ module SolidProcedural
                "Pro=#{Sketchup.is_pro?}, Ruby #{RUBY_VERSION}, union defined=#{Sketchup::Group.method_defined?(:union)}")
         c.check(Procedural.respond_to?(:remove_definition), 'Procedural.remove_definition defined')
         c.check(ProceduralTable.respond_to?(:active_path_settable?), 'ProceduralTable.active_path_settable? defined')
-        project = File.join(tests::PROJECT_DIR, 'solid_procedural')
+        project = File.join(tests::PROJECT_DIR, 'solid_progress')
         files = Dir.glob(File.join(project, '**', '*')).select { |f| File.file?(f) }
         different = files.reject do |f|
           tests.digest(f) == tests.digest(File.join(tests.plugin_dir, f[(project.length + 1)..-1]))
@@ -781,7 +781,7 @@ module SolidProcedural
       # changed. In SketchUp Pro, SketchUp Make is simulated.
       test 'T10 One edition check; the Pro only line (commented out by default)' do |c, model|
         files = Dir.glob(File.join(tests.plugin_dir, '**', '*.rb')) +
-                [File.join(SolidProcedural::PLUGIN_DIR, 'solid_procedural.rb')]
+                [File.join(SolidProcedural::PLUGIN_DIR, 'solid_progress.rb')]
         hits = []
         texts = []
         files.each do |f|
@@ -871,7 +871,7 @@ module SolidProcedural
           ProceduralTable.on_action({ type: 'finalize', group: g.entityID }.to_json)
           c.check(g.valid? && Procedural.procedural?(g), 'open: not finalized')
           notice = ProceduralTable.payload(model)[:notice].to_s
-          c.check(notice.include?('Close the procedural solid'), 'open: message in the table', notice)
+          c.check(notice.include?('Close the Solid Progress group'), 'open: message in the table', notice)
           tests.close_all(model)
         else
           c.note('open case not tested: no Model#active_path=')
@@ -1172,6 +1172,52 @@ module SolidProcedural
             end
           end
         end
+      end
+
+      # T16: the plugin shows the name Solid Progress (2.0.0); "procedural"
+      # is left only in identifiers the user never sees.
+      test 'T16 Visible names: Solid Progress' do |c, model|
+        c.check(SolidProcedural::PLUGIN_NAME == 'Solid Progress', 'PLUGIN_NAME is Solid Progress',
+                SolidProcedural::PLUGIN_NAME)
+        names = []
+        Sketchup.extensions.each { |e| names << e.name }
+        ext = Sketchup.extensions['Solid Progress']
+        c.check(ext && ext.loaded?, 'extension Solid Progress registered and loaded')
+        c.check(!names.include?('Solid Procedural'), 'no extension Solid Procedural (former name)')
+        plugins = SolidProcedural::PLUGIN_DIR
+        c.check(!File.exist?(File.join(plugins, 'solid_procedural.rb')) &&
+                !File.exist?(File.join(plugins, 'solid_procedural')), 'former files not installed')
+        c.check(Procedural::DEFAULT_NAME == 'Solid Progress' &&
+                Procedural::SUBTRACT_MATERIAL_NAME == 'Solid Progress Subtract', 'default group and material names')
+        # Identifiers kept on purpose: file names, registry, model dictionary
+        # and role, table window key, JavaScript namespace.
+        allowed = /\A(procedural|procedural_table|procedural_observer|procedural_table\.html|SolidProcedural|
+                      SolidProcedural_ProceduralTable|SolidProcedural\.update\(|\w+_procedural_(16|24)\.png)\z/x
+        begin
+          require 'ripper'
+          files = Dir.glob(File.join(tests.plugin_dir, '**', '*.rb')) + [File.join(plugins, 'solid_progress.rb')]
+          visible = []
+          files.each do |f|
+            Ripper.lex(File.open(f, 'r:UTF-8', &:read)).each do |(line, _col), type, tok|
+              next unless type == :on_tstring_content && tok =~ /procedural/i && tok.strip !~ allowed
+              visible << "#{File.basename(f)}:#{line} #{tok.strip[0, 40]}"
+            end
+          end
+          c.check(visible.empty?, "no visible \"procedural\" in the strings of #{files.length} files", visible.join(', '))
+        rescue LoadError
+          c.note('Ripper not available: strings of the code not scanned')
+        end
+        html = File.open(File.join(tests.plugin_dir, 'html', 'procedural_table.html'), 'r:UTF-8', &:readlines)
+        left = html.each_with_index.reject do |l, _k|
+          l !~ /procedural/i || l.strip.start_with?('//') || l.include?('window.SolidProcedural')
+        end
+        c.check(left.empty?, 'no visible "procedural" in the table page', left.map { |_l, k| k + 1 }.join(', '))
+        c.check(html.join.include?('<title>Progress Table</title>'), 'table page title: Progress Table')
+        model.selection.clear
+        tests.messages.clear
+        Procedural.do_rebuild
+        c.check(tests.messages.length == 1 && tests.messages[0].include?('Solid Progress group'),
+                'Rebuild without selection: message names Solid Progress groups', tests.messages.inspect)
       end
 
       test 'T11 No unused definition left' do |c, model|

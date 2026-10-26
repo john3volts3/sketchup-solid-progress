@@ -132,7 +132,7 @@ module SolidProcedural
       end
       release_orphans(model) if kinds.include?(:commit)
     rescue => e
-      puts "[Solid Procedural] Synchronization error: #{e.message}"
+      puts "[Solid Progress] Synchronization error: #{e.message}"
       e.backtrace.first(10).each { |line| puts "  #{line}" }
     ensure
       @busy = false

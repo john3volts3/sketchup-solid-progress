@@ -10,38 +10,38 @@ module SolidProcedural
   unless @loaded
     submenu = UI.menu('Extensions').add_submenu(PLUGIN_NAME)
 
-    submenu.add_item('Create Procedural Solid') { Procedural.do_create }
-    submenu.add_item('Procedural Table') { ProceduralTable.show }
-    submenu.add_item('Rebuild Procedural Solid') { Procedural.do_rebuild }
-    submenu.add_item('Finalize Procedural Solid') { Procedural.do_finalize }
+    submenu.add_item('Create Solid Progress') { Procedural.do_create }
+    submenu.add_item('Progress Table') { ProceduralTable.show }
+    submenu.add_item('Rebuild Solid Progress') { Procedural.do_rebuild }
+    submenu.add_item('Finalize Solid Progress') { Procedural.do_finalize }
     submenu.add_separator
     submenu.add_item('Set Subtract Color') { self.do_set_subtract_color }
     submenu.add_item('Set Repair Options') { self.do_set_repair_options }
 
     toolbar = UI::Toolbar.new(PLUGIN_NAME)
 
-    icons_dir = File.join(PLUGIN_DIR, 'solid_procedural', 'icons')
+    icons_dir = File.join(PLUGIN_DIR, 'solid_progress', 'icons')
 
-    cmd_create = UI::Command.new('Create Procedural Solid') { Procedural.do_create }
-    cmd_create.tooltip = 'Create Procedural Solid — group the selected solids, result rebuilt on exit'
+    cmd_create = UI::Command.new('Create Solid Progress') { Procedural.do_create }
+    cmd_create.tooltip = 'Create Solid Progress — group the selected solids, result rebuilt on exit'
     cmd_create.small_icon = File.join(icons_dir, 'create_procedural_16.png')
     cmd_create.large_icon = File.join(icons_dir, 'create_procedural_24.png')
     toolbar.add_item(cmd_create)
 
-    cmd_table = UI::Command.new('Procedural Table') { ProceduralTable.show }
-    cmd_table.tooltip = 'Procedural Table — order and operation of the volumes of a procedural solid'
+    cmd_table = UI::Command.new('Progress Table') { ProceduralTable.show }
+    cmd_table.tooltip = 'Progress Table — order and operation of the volumes of a Solid Progress group'
     cmd_table.small_icon = File.join(icons_dir, 'table_procedural_16.png')
     cmd_table.large_icon = File.join(icons_dir, 'table_procedural_24.png')
     toolbar.add_item(cmd_table)
 
-    cmd_rebuild = UI::Command.new('Rebuild Procedural Solid') { Procedural.do_rebuild }
-    cmd_rebuild.tooltip = 'Rebuild Procedural Solid — force the rebuild of the selected procedural solids'
+    cmd_rebuild = UI::Command.new('Rebuild Solid Progress') { Procedural.do_rebuild }
+    cmd_rebuild.tooltip = 'Rebuild Solid Progress — force the rebuild of the selected Solid Progress groups'
     cmd_rebuild.small_icon = File.join(icons_dir, 'rebuild_procedural_16.png')
     cmd_rebuild.large_icon = File.join(icons_dir, 'rebuild_procedural_24.png')
     toolbar.add_item(cmd_rebuild)
 
-    cmd_finalize = UI::Command.new('Finalize Procedural Solid') { Procedural.do_finalize }
-    cmd_finalize.tooltip = 'Finalize Procedural Solid — replace by a plain solid, without its sources'
+    cmd_finalize = UI::Command.new('Finalize Solid Progress') { Procedural.do_finalize }
+    cmd_finalize.tooltip = 'Finalize Solid Progress — replace by a plain solid, without its sources'
     cmd_finalize.small_icon = File.join(icons_dir, 'finalize_procedural_16.png')
     cmd_finalize.large_icon = File.join(icons_dir, 'finalize_procedural_24.png')
     toolbar.add_item(cmd_finalize)
@@ -64,7 +64,7 @@ module SolidProcedural
     UI.add_context_menu_handler do |menu|
       if ProceduralTable.target_group(Sketchup.active_model)
         menu.add_separator
-        menu.add_item('Procedural Table') { ProceduralTable.show }
+        menu.add_item('Progress Table') { ProceduralTable.show }
       end
     end
 
@@ -155,7 +155,7 @@ module SolidProcedural
     unless entity
       UI.messagebox(
         "Select a group or component with a material/color applied.\n" \
-        "That color will be used to identify the volumes to subtract in procedural solids.",
+        "That color will be used to identify the volumes to subtract in Solid Progress groups.",
         MB_OK
       )
       return
@@ -165,7 +165,7 @@ module SolidProcedural
     save_subtract_color(color)
     UI.messagebox(
       "Subtract color set to RGB(#{color.red}, #{color.green}, #{color.blue}).\n" \
-      "Volumes painted with this color will be subtracted in procedural solids.\n" \
+      "Volumes painted with this color will be subtracted in Solid Progress groups.\n" \
       "Existing volumes keep their operation until they are repainted.",
       MB_OK
     )
@@ -205,7 +205,7 @@ module SolidProcedural
       "  Min segments for arc detection: #{arc_segments}\n\n" \
       "Lower 'Min segments for arc detection' = catches shorter arcs " \
       "but may produce false positives. Higher = safer.\n\n" \
-      "When the result of a procedural solid exceeds the large threshold and " \
+      "When the result of a Solid Progress group exceeds the large threshold and " \
       "auto-repair is set to No, restoration is skipped (a message is shown).",
       MB_OK
     )

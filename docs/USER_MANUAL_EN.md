@@ -1,21 +1,21 @@
-# Solid Procedural — User Manual
+# Solid Progress — User Manual
 
 *[Version française](USER_MANUAL_FR.md)*
 
-Version 1.1.2 — SketchUp Pro 2021 and SketchUp Make 2017
+Version 2.0.0 — SketchUp Pro 2021 and SketchUp Make 2017
 
 ## Overview
 
-Solid Procedural is a SketchUp plugin for **non-destructive boolean modelling**. A **procedural solid** is a group that holds:
+Solid Progress is a SketchUp plugin for **non-destructive boolean modelling**. A **Solid Progress group** is a group that holds:
 
 - its **source volumes** — solid groups or components, added or subtracted;
 - its **Result** — the combination of the sources, computed with SketchUp Pro's native booleans (with SketchUp Make, with the built-in engine).
 
 Inside the group you edit the sources; outside, you see the Result, rebuilt automatically when you close the group. When the part is done, **Finalize** turns it into a plain solid, ready for the STL export.
 
-The commands are in the **Extensions > Solid Procedural** menu, the **Solid Procedural** toolbar and the context menu (right-click).
+The commands are in the **Extensions > Solid Progress** menu, the **Solid Progress** toolbar and the context menu (right-click).
 
-Solid Procedural installs next to **Solid Batch**, which keeps its one-click, destructive Combine All.
+Solid Progress installs next to **Solid Batch**, which keeps its one-click, destructive Combine All.
 
 ## Requirements
 
@@ -26,9 +26,9 @@ Solid Procedural installs next to **Solid Batch**, which keeps its one-click, de
 
 | Term | Meaning |
 |------|---------|
-| **Procedural solid** | A group created by *Create Procedural Solid*. Selected, it shows a **green** frame |
-| **Source** (volume) | A solid group or component inside the procedural solid |
-| **Result** | The combination of the enabled sources, in order. Visible when the procedural solid is closed, hidden while you edit it |
+| **Solid Progress group** | A group created by *Create Solid Progress*. Selected, it shows a **green** frame |
+| **Source** (volume) | A solid group or component inside the Solid Progress group |
+| **Result** | The combination of the enabled sources, in order. Visible when the Solid Progress group is closed, hidden while you edit it |
 | **Base** | Row 1 of the list: the volume the others are added to or subtracted from. Always first and always enabled |
 | **Operation** | For every other row: **Union** (add), **Shell** (add with *Outer Shell*: internal faces removed), **Subtract** (remove) |
 | **Subtract color** | Painting a volume with this color (red by default) makes it a Subtract volume; repainting it with another color makes it an added volume again |
@@ -39,38 +39,38 @@ The Result takes the material of the Base; the faces cut by a subtracted volume 
 
 1. **Model the volumes** — a base, the volumes to add, the volumes to remove (holes, slots), each as a solid group.
 2. **Paint the volumes to remove** with the subtract color (red by default).
-3. **Select them all** and click **Create Procedural Solid**. The order is: every added volume, then every subtracted one. The Result appears, the sources are hidden. Check in the Procedural Table which volume is the Base (its material is the one of the Result); choose *Base* on another row to change it.
-4. **Edit** — double-click the procedural solid: the sources appear, the Result is hidden. Move a hole, resize a pin, paint a volume, add a new solid group (it goes last in the list).
-5. **Close** the procedural solid (click outside or Escape): if the sources changed, the Result is rebuilt. The Ruby Console shows `[Solid Procedural] Rebuild '…'`; nothing is rebuilt when nothing changed.
-6. **Adjust** the order and the operations in the **Procedural Table**.
+3. **Select them all** and click **Create Solid Progress**. The order is: every added volume, then every subtracted one. The Result appears, the sources are hidden. Check in the Progress Table which volume is the Base (its material is the one of the Result); choose *Base* on another row to change it.
+4. **Edit** — double-click the Solid Progress group: the sources appear, the Result is hidden. Move a hole, resize a pin, paint a volume, add a new solid group (it goes last in the list).
+5. **Close** the Solid Progress group (click outside or Escape): if the sources changed, the Result is rebuilt. The Ruby Console shows `[Solid Progress] Rebuild '…'`; nothing is rebuilt when nothing changed.
+6. **Adjust** the order and the operations in the **Progress Table**.
 7. **Finalize** before exporting to STL.
 
 ### Example: plate with a hole and a pin
 
 1. A box (base), a red cylinder through it (hole), a small cylinder in the hole (pin).
-2. *Create Procedural Solid*: Base (the box — check it in the table), then the pin (added), then the hole (subtracted) → the hole cuts the pin too.
-3. In the Procedural Table, move the pin after the hole → the pin now fills part of the hole.
+2. *Create Solid Progress*: Base (the box — check it in the table), then the pin (added), then the hole (subtracted) → the hole cuts the pin too.
+3. In the Progress Table, move the pin after the hole → the pin now fills part of the hole.
 
 ## Commands
 
-### Create Procedural Solid
+### Create Solid Progress
 
-Select one or more solid groups or components, then click **Create Procedural Solid**.
+Select one or more solid groups or components, then click **Create Solid Progress**.
 
-- The selection is grouped into a new procedural solid named `Procedural Solid` and its Result is computed.
+- The selection is grouped into a new Solid Progress group named `Solid Progress` and its Result is computed.
 - Every object must be a solid; otherwise a message lists the objects to repair or deselect.
 - At least one object must **not** have the subtract color.
-- A procedural solid cannot be used as a volume of another one (nesting is not supported): to reuse a sub-part, finalize it first.
+- A Solid Progress group cannot be used as a volume of another one (nesting is not supported): to reuse a sub-part, finalize it first.
 - One Ctrl+Z undoes the whole creation.
 
-### Procedural Table
+### Progress Table
 
-Opened by the menu, the toolbar button (after *Create*) or a right-click on a procedural solid (selected or open). The window stays open while you work.
+Opened by the menu, the toolbar button (after *Create*) or a right-click on a Solid Progress group (selected or open). The window stays open while you work.
 
-The table shows the **open** procedural solid, or else the **selected** one. Its header shows the name and the mode:
+The table shows the **open** Solid Progress group, or else the **selected** one. Its header shows the name and the mode:
 
-- **Closed — applied now** (green): the procedural solid is closed; every change rebuilds the Result at once and keeps it selected.
-- **Open — applied on exit** (yellow): you are editing the procedural solid; changes are applied when you close it.
+- **Closed — applied now** (green): the Solid Progress group is closed; every change rebuilds the Result at once and keeps it selected.
+- **Open — applied on exit** (yellow): you are editing the Solid Progress group; changes are applied when you close it.
 
 | Column | Use |
 |--------|-----|
@@ -85,26 +85,26 @@ Below the table:
 
 - the **formula** of the operations actually computed, enabled rows in order, for example `(((1 ∪ 2) shell 3) − 4) ∪ 6`;
 - **Unions first**: the Base, then every Union and Shell, then every Subtract, each in its current order;
-- **Finalize**: the same as *Finalize Procedural Solid* on the procedural solid shown. Greyed while it is open: close it first. One Ctrl+Z brings it back.
+- **Finalize**: the same as *Finalize Solid Progress* on the Solid Progress group shown. Greyed while it is open: close it first. One Ctrl+Z brings it back.
 
 **Selection:**
 
-- in an open procedural solid, clicking a row selects its volume, and selecting a volume highlights its row;
-- on a closed procedural solid, double-clicking a row opens it and selects the volume (not with SketchUp 2017: see [SketchUp Make 2017](#sketchup-make-2017)).
+- in an open Solid Progress group, clicking a row selects its volume, and selecting a volume highlights its row;
+- on a closed Solid Progress group, double-clicking a row opens it and selects the volume (not with SketchUp 2017: see [SketchUp Make 2017](#sketchup-make-2017)).
 
 **Keyboard:** after an action in the table (and when the mouse leaves it), the keyboard goes back to SketchUp, so its shortcuts (W, etc.) work without clicking in the model. While you type a name, the field keeps the keyboard until Enter or Escape.
 
 Every change of the table is **one Ctrl+Z**, its rebuild included.
 
-### Rebuild Procedural Solid
+### Rebuild Solid Progress
 
-Rebuilds the **selected** procedural solids, even if nothing changed (for example after changing the repair options). A procedural solid being edited is rebuilt when you close it.
+Rebuilds the **selected** Solid Progress groups, even if nothing changed (for example after changing the repair options). A Solid Progress group being edited is rebuilt when you close it.
 
-### Finalize Procedural Solid
+### Finalize Solid Progress
 
-Replaces each selected procedural solid by its Result: a plain solid group that keeps the name and the tag of the procedural solid; the sources are deleted. The Result is rebuilt first if needed. One Ctrl+Z brings the procedural solid back.
+Replaces each selected Solid Progress group by its Result: a plain solid group that keeps the name and the tag of the Solid Progress group; the sources are deleted. The Result is rebuilt first if needed. One Ctrl+Z brings the Solid Progress group back.
 
-**Always finalize before an STL export**: the export would also include the hidden sources of a procedural solid. The green selection frame reminds you which objects are still procedural.
+**Always finalize before an STL export**: the export would also include the hidden sources of a Solid Progress group. The green selection frame reminds you which objects are not finalized yet.
 
 ### Set Subtract Color
 
@@ -150,18 +150,18 @@ A summary is shown in the status bar and, with the reason of each weld, in the R
 
 ## Explode
 
-Exploding a procedural solid gives back the Result **and** all the source volumes as plain, visible groups. One Ctrl+Z brings the procedural solid back. To keep only the Result, use **Finalize** instead.
+Exploding a Solid Progress group gives back the Result **and** all the source volumes as plain, visible groups. One Ctrl+Z brings the Solid Progress group back. To keep only the Result, use **Finalize** instead.
 
 ## Green selection frame
 
-While the selection holds only procedural solids, SketchUp's selection frame is green; otherwise it keeps its usual color. The green is never saved in the file, and selecting a procedural solid does not mark the model as modified.
+While the selection holds only Solid Progress groups, SketchUp's selection frame is green; otherwise it keeps its usual color. The green is never saved in the file, and selecting a Solid Progress group does not mark the model as modified.
 
 ## SketchUp Make 2017
 
-SketchUp Make has no native booleans. Solid Procedural then uses its **built-in engine** — the engine of Solid for Maker, based on Eneroth Solid Tools (MIT License) — for Union, Shell and Subtract. Everything else works as with SketchUp Pro, with these differences:
+SketchUp Make has no native booleans. Solid Progress then uses its **built-in engine** — the engine of Solid for Maker, based on Eneroth Solid Tools (MIT License) — for Union, Shell and Subtract. Everything else works as with SketchUp Pro, with these differences:
 
-- **Speed** — the built-in engine is slower: on a part with many volumes or holes, the rebuild when you close the procedural solid can take a few seconds (progress in the status bar).
-- **Procedural Table** — SketchUp 2017 does not let a plugin open a group: double-clicking a row does not open the procedural solid, and a message in the table (and in the status bar) tells you to double-click the procedural solid in the model. Once it is open, clicking a row selects its volume as usual. The message goes away at the next action in the table.
+- **Speed** — the built-in engine is slower: on a part with many volumes or holes, the rebuild when you close the Solid Progress group can take a few seconds (progress in the status bar).
+- **Progress Table** — SketchUp 2017 does not let a plugin open a group: double-clicking a row does not open the Solid Progress group, and a message in the table (and in the status bar) tells you to double-click the Solid Progress group in the model. Once it is open, clicking a row selects its volume as usual. The message goes away at the next action in the table.
 - **Shell and enclosed volumes** — a volume entirely enclosed in another one is removed by the built-in Shell. SketchUp Pro's native Outer Shell keeps it inside the Result: hidden, but exported.
 - **Circles** — the circles and arcs of the Result are rebuilt as native circles too. The weld fallback needs SketchUp 2020.1: with SketchUp 2017, a circle that cannot be rebuilt natively stays as segments (for example the circle shared by a countersink whose cone meets the hole).
 - **Counterbores and countersinks** — since version 1.1.2, a counterbore or countersink cut after its hole works with the built-in engine too (before, the rebuild failed with *Subtract of volume … failed*).
@@ -174,19 +174,19 @@ SketchUp Make has no native booleans. Solid Procedural then uses its **built-in 
 | *No base volume found: all the selected objects have the subtract color* | Repaint at least one object with another color |
 | *Volume #2 … is not a solid.* | A source was damaged while editing: repair it; the former Result is kept |
 | *Subtract of volume #3 … failed.* | The boolean failed (native with SketchUp Pro, built-in engine with SketchUp Make; volumes that do not touch, coplanar faces…): move or simplify the volume |
-| *Double-click the procedural solid in the model to open it …* (table) | SketchUp 2017: the table cannot open a procedural solid; double-click it in the model |
-| *PRO Only vs. procedural.rb:…* | This copy of the plugin was set to SketchUp Pro only (a line uncommented in `solid_procedural/procedural.rb`): nothing is changed. To use it with SketchUp Make, comment that line out again (`#` at its start) and restart SketchUp |
+| *Double-click the Solid Progress group in the model to open it …* (table) | SketchUp 2017: the table cannot open a Solid Progress group; double-click it in the model |
+| *PRO Only vs. procedural.rb:…* | This copy of the plugin was set to SketchUp Pro only (a line uncommented in `solid_progress/procedural.rb`): nothing is changed. To use it with SketchUp Make, comment that line out again (`#` at its start) and restart SketchUp |
 | *The first volume … has the subtract color* | The Base is painted with the subtract color: repaint it, or choose *Base* on another row |
 | *The base volume is always enabled* | Choose *Base* on another row before disabling this volume |
-| *Close the procedural solid to rebuild it* | *Rebuild* works on closed procedural solids; an open one is rebuilt when you close it |
-| *Nested procedural solids are not supported yet* | A procedural solid cannot be a volume of another one: finalize it first |
-| *… procedural solid(s) out of date* (status bar) | After an undo, a Result no longer matches its sources: open and close it, or use *Rebuild* |
+| *Close the Solid Progress group to rebuild it* | *Rebuild* works on closed Solid Progress groups; an open one is rebuilt when you close it |
+| *Nested Solid Progress groups are not supported yet* | A Solid Progress group cannot be a volume of another one: finalize it first |
+| *… Solid Progress group(s) out of date* (status bar) | After an undo, a Result no longer matches its sources: open and close it, or use *Rebuild* |
 
-Loose edges and faces inside a procedural solid are not volumes: make them a group to use them.
+Loose edges and faces inside a Solid Progress group are not volumes: make them a group to use them.
 
 ## Limitations
 
-- Nesting of procedural solids is not supported (finalize a sub-part to reuse it).
-- The Result is rebuilt when you close the procedural solid, not while you edit it; on a closed procedural solid, the Procedural Table applies its changes at once.
+- Nesting of Solid Progress groups is not supported (finalize a sub-part to reuse it).
+- The Result is rebuilt when you close the Solid Progress group, not while you edit it; on a closed Solid Progress group, the Progress Table applies its changes at once.
 - Faces rebuilt around a repaired circle keep their material, tag and orientation, but lose their texture position and attributes. A regular polygon of 6 sides or more cannot be told apart from a circle.
 - Tested on SketchUp Pro 2021 and SketchUp Make 2017 (Windows).

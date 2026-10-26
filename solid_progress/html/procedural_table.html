@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Procedural Table</title>
+<title>Progress Table</title>
 <style>
   :root {
     --bg: #ffffff;
@@ -190,11 +190,11 @@
 </head>
 <body>
   <header>
-    <span id="title">Procedural Table</span>
+    <span id="title">Progress Table</span>
     <span id="mode" class="mode hidden"></span>
   </header>
   <div id="list">
-    <div id="empty">Select or open a procedural solid.</div>
+    <div id="empty">Select or open a Solid Progress group.</div>
     <table id="table" class="hidden">
       <thead>
         <tr>
@@ -214,7 +214,7 @@
     <span id="formula" title="Operations computed, in order"></span>
     <span class="actions">
       <button id="unions-first" type="button" title="Every Union and Shell, then every Subtract, each in its current order">Unions first</button>
-      <button id="finalize" type="button" title="Finalize Procedural Solid — replace by a plain solid, without its sources (Ctrl+Z to undo)">Finalize</button>
+      <button id="finalize" type="button" title="Finalize Solid Progress — replace by a plain solid, without its sources (Ctrl+Z to undo)">Finalize</button>
     </span>
   </footer>
 
@@ -503,11 +503,11 @@
     notice.classList.toggle('hidden', !(data && data.notice));
 
     if (!data || !data.group) {
-      title.textContent = 'Procedural Table';
+      title.textContent = 'Progress Table';
       mode.classList.add('hidden');
       table.classList.add('hidden');
       footer.classList.add('hidden');
-      empty.textContent = data ? data.message : 'Select or open a procedural solid.';
+      empty.textContent = data ? data.message : 'Select or open a Solid Progress group.';
       empty.classList.remove('hidden');
       return;
     }
@@ -538,7 +538,7 @@
     tbody.innerHTML = '';
     tbody.appendChild(fragment);
     if (!data.rows.length) {
-      empty.textContent = 'This procedural solid has no volume.';
+      empty.textContent = 'This Solid Progress group has no volume.';
       empty.classList.remove('hidden');
     }
     document.getElementById('formula').textContent = formula(data.rows);
@@ -546,8 +546,8 @@
     // cannot close it from a plugin).
     var finalize = document.getElementById('finalize');
     finalize.disabled = !!data.open;
-    finalize.title = data.open ? 'Close the procedural solid to finalize it'
-                               : 'Finalize Procedural Solid — replace by a plain solid, without its sources (Ctrl+Z to undo)';
+    finalize.title = data.open ? 'Close the Solid Progress group to finalize it'
+                               : 'Finalize Solid Progress — replace by a plain solid, without its sources (Ctrl+Z to undo)';
 
     if (keep && inputs[keep.key]) {
       var input = inputs[keep.key];
