@@ -1,6 +1,6 @@
-# Solid Procedural — Tâches (reprise de session)
+# Solid Progress — Tâches (reprise de session)
 
-Créé le 2026-10-26 depuis la session Solid Batch, à la demande de l'utilisateur. Version actuelle : **1.1.2**. À lire au démarrage d'une session Solid Procedural, avec `JOURNAL.md` et `PRD.md`.
+Créé le 2026-10-26 depuis la session Solid Batch, à la demande de l'utilisateur (le plugin s'appelait alors Solid Procedural). Version actuelle : **2.0.0**. À lire au démarrage d'une session Solid Procedural, avec `JOURNAL.md` et `PRD.md`.
 
 ## Décision du 2026-10-26 (les trois plugins Solid)
 
@@ -30,7 +30,7 @@ Créé le 2026-10-26 depuis la session Solid Batch, à la demande de l'utilisate
 
 - [x] Plugin renommé **Solid Progress** 2.0.0 (voir `JOURNAL.md`, PRD EF-35) : textes visibles, `solid_progress.rb`, `solid_progress/`, docs ; identifiants et données des modèles inchangés.
 - [x] Livraison 2.0.0 : `.rbz`, commit, tag, `gh repo rename sketchup-solid-progress`, push, release.
-- [ ] Après la session : renommer le dossier local en `sketchup-solid-progress` (Claude recopie d'abord sa mémoire de projet).
+- [x] *(fait le 2026-10-26)* Après la session : renommer le dossier local en `sketchup-solid-progress` (Claude recopie d'abord sa mémoire de projet).
 - [ ] Solid Batch et Solid for Maker citent encore « Solid Procedural » dans leurs documents (notes déposées dans leurs `TACHES.md`).
 
 ## Repères

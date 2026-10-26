@@ -1,6 +1,6 @@
-# Journal des modifications — Solid Procedural
+# Journal des modifications — Solid Progress
 
-> Solid Procedural est issu de **Solid Batch v2.3.0** (dépôt `sketchup-solid-batch`). Les sessions antérieures au 2026-10-23 sont l'historique de Solid Batch.
+> Solid Progress s'appelait Solid Procedural jusqu'à la 2.0.0 (2026-10-26). Solid Procedural est issu de **Solid Batch v2.3.0** (dépôt `sketchup-solid-batch`). Les sessions antérieures au 2026-10-23 sont l'historique de Solid Batch.
 
 ## Roadmap
 
@@ -9,6 +9,15 @@
 - **Solid Procedural 1.0.0** (livrée le 2026-10-23 pour SketchUp 2021 Pro, plugin séparé, dépôt privé `sketchup-solid-procedural`) — **Procedural Solid** : groupes procéduraux non destructifs (sources modifiables dedans, résultat recalculé automatiquement à la sortie), table des opérations (ordre, Union / Shell / Subtract par volume, désactivation), imbrication. Installé à côté de Solid Batch v2, qui garde Combine All. Voir `SOLID_PROCEDURAL_PROJET.md` et `PRD.md`. *(L'ancien plan « Solid Batch v3.0 = backend Python trimesh/CGAL » est abandonné.)*
 
 ---
+
+## Session du 2026-10-26 (2)
+
+### Après le renommage du dossier
+
+- **Demande utilisateur** : nettoyage proposé en reprise de session ; validé (« ok, go pour 1 à 4 »).
+- **Dossier local** renommé en `sketchup-solid-progress` par l'utilisateur ; dépôt distant `sketchup-solid-progress` vérifié.
+- **Mémoire de Claude** (hors dépôt) : recopiée sous le nouveau nom de dossier (6 fichiers identiques, vérifiés par empreinte) ; ancienne copie sauvegardée dans `%USERPROFILE%\claude-backups\2026-10-26_140047\` puis supprimée. Les transcriptions des anciennes sessions sont gardées.
+- **TACHES.md** — Titre « Solid Progress », version 2.0.0, tâche du renommage du dossier cochée. **JOURNAL.md** — Titre « Solid Progress » et rappel de l'ancien nom.
 
 ## Session du 2026-10-26
 
