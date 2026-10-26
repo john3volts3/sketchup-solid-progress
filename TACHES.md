@@ -23,13 +23,13 @@ Créé le 2026-10-26 depuis la session Solid Batch, à la demande de l'utilisate
 - [x] *(fait le 2026-10-26 : liens retirés, nom gardé sans lien)* **Lien vers Solid for Maker** dans le README (`https://github.com/john3volts3/sketchup-solid-for-maker`) : ce dépôt est **privé**, le lien serait mort une fois Solid Procedural public. Le retirer, ou attendre que Solid for Maker soit public.
 - [ ] **Publication** (idée de l'utilisateur, 2026-10-26) : vidéos de démonstration et captures d'écran (Claude peut préparer des modèles de démonstration par script, la liste des captures par section du manuel et un scénario de 60 à 90 s) ; dépôt GitHub `sketchup-solid-procedural` encore **privé** : avant de le rendre public, vérifier l'historique (chemins locaux) ; diffusion sur GitHub et SketchUcation. Rappel possible dans le README : « SketchUp Make is licensed by Trimble for non-commercial use only ».
   - *Fait le 2026-10-26* : rappel Trimble dans le README ; chemins locaux retirés des fichiers suivis (`run_tests.rb`, `run_tests.ps1`, `SOLID_PROCEDURAL_PROJET.md`, `JOURNAL.md`) ; audit : adresses des commits `noreply`.
-  - **Reste à décider avant de rendre le dépôt public** : l'historique garde une ligne un chemin personnel (journal importé de Solid Batch, commits `62d1ce6`, `49b376b`) et 4 lignes de chemins absolus du lecteur réseau. Options : (a) accepter ; (b) dépôt public neuf, un seul commit, le dépôt privé garde son historique (recommandé : rien à installer, pas de push forcé) ; (c) réécrire l'historique (`git filter-repo` à installer, push forcé, tags déplacés).
+  - *Fait le 2026-10-26* : historique Git nettoyé de toute donnée personnelle (réécrit, dépôt GitHub recréé, releases recréées ; voir `JOURNAL.md`). Le dépôt peut être rendu public quand l'utilisateur le décide.
   - **Reste à faire, second temps** : modèles de démonstration par script (`tools/demo/`), liste des captures par section du manuel et scénario vidéo de 60 à 90 s (`docs/PUBLICATION.md`).
 
 ## Renommage en Solid Progress (2026-10-26)
 
 - [x] Plugin renommé **Solid Progress** 2.0.0 (voir `JOURNAL.md`, PRD EF-35) : textes visibles, `solid_progress.rb`, `solid_progress/`, docs ; identifiants et données des modèles inchangés.
-- [ ] Livraison 2.0.0 : `.rbz`, commit, tag, `gh repo rename sketchup-solid-progress`, push, release.
+- [x] Livraison 2.0.0 : `.rbz`, commit, tag, `gh repo rename sketchup-solid-progress`, push, release.
 - [ ] Après la session : renommer le dossier local en `sketchup-solid-progress` (Claude recopie d'abord sa mémoire de projet).
 - [ ] Solid Batch et Solid for Maker citent encore « Solid Procedural » dans leurs documents (notes déposées dans leurs `TACHES.md`).
 
