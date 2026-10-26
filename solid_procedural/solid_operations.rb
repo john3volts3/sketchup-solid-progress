@@ -1,8 +1,8 @@
 #-------------------------------------------------------------------------------
 #
 #  Solid Procedural - boolean engine for SketchUp without native booleans
-#  (SketchUp Make): copy of solid_operations.rb of Solid for Maker 1.0.0
-#  (commit 47e9002), module SolidForMaker renamed to SolidProcedural; no other
+#  (SketchUp Make): copy of solid_operations.rb of Solid for Maker 1.0.1
+#  (commit 2b2a596), module SolidForMaker renamed to SolidProcedural; no other
 #  change. Solid Procedural does not depend on Solid for Maker.
 #
 #  Solid for Maker ported it from Eneroth Solid Tools 3.0.0
@@ -34,6 +34,9 @@
 #    instead of again for each tested point; within? keeps its interface.
 #  - New: outer_shell (union, then remove_cavities: shells lying inside
 #    another shell of the container are erased).
+#  - wrapping_face: only the edges of the outer loop are looked at. A new
+#    face cut around an existing hole (counterbore or countersink after the
+#    hole) was erased by interior_hole_hack, which left the solid open.
 #
 #-------------------------------------------------------------------------------
 
@@ -977,9 +980,13 @@ module SolidOperations
   #   )
   #   outer_face = SkippyLib::LFace.wrapping_face(inner_face)
   #
+  # Only the edges of the outer loop are looked at: a face cut around a hole
+  # that already exists (a counterbore after the hole) has that hole as an
+  # inner loop, whose edges are bound to the walls of the hole.
+  #
   # @return [Sketchup::Face, nil]
   def self.wrapping_face(face)
-    (face.edges.map(&:faces).inject(:&) - [face]).first
+    (face.outer_loop.edges.map(&:faces).inject(:&) - [face]).first
   end
   private_class_method :wrapping_face
 

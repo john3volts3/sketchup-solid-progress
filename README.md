@@ -29,7 +29,7 @@ It derives from [Solid Batch](https://github.com/john3volts3/sketchup-solid-batc
 - **Explode releases the volumes** — exploding a procedural solid gives back the Result and all the source volumes as plain, visible objects.
 - **Set Subtract Color / Set Repair Options** — as in Solid Batch; the settings of Solid Batch are taken over until you change them.
 
-With **SketchUp Pro**, the operations use SketchUp's native booleans. **SketchUp Make**, which has none, uses the built-in engine of [Solid for Maker](https://github.com/john3volts3/sketchup-solid-for-maker), based on [Eneroth Solid Tools](https://github.com/Eneroth3/eneroth-solid-tools).
+With **SketchUp Pro**, the operations use SketchUp's native booleans. **SketchUp Make**, which has none, uses the built-in engine of [Solid for Maker](https://github.com/john3volts3/sketchup-solid-for-maker), based on [Eneroth Solid Tools](https://github.com/Eneroth3/eneroth-solid-tools); since 1.1.2 (Solid for Maker 1.0.1), it also handles a counterbore or countersink cut after its hole.
 
 > **Always run Finalize before an STL export**: the hidden sources of a procedural solid would be exported too.
 
@@ -97,7 +97,7 @@ Il est issu de [Solid Batch](https://github.com/john3volts3/sketchup-solid-batch
 - **Explode libère les volumes** — éclater un solide procédural rend le Result et tous les volumes sources en objets ordinaires visibles.
 - **Set Subtract Color / Set Repair Options** — comme dans Solid Batch ; les réglages de Solid Batch sont repris tant que vous ne les changez pas.
 
-Avec **SketchUp Pro**, les opérations utilisent les booléens natifs de SketchUp. **SketchUp Make**, qui n'en a pas, utilise le moteur intégré de [Solid for Maker](https://github.com/john3volts3/sketchup-solid-for-maker), basé sur [Eneroth Solid Tools](https://github.com/Eneroth3/eneroth-solid-tools).
+Avec **SketchUp Pro**, les opérations utilisent les booléens natifs de SketchUp. **SketchUp Make**, qui n'en a pas, utilise le moteur intégré de [Solid for Maker](https://github.com/john3volts3/sketchup-solid-for-maker), basé sur [Eneroth Solid Tools](https://github.com/Eneroth3/eneroth-solid-tools) ; depuis la 1.1.2 (Solid for Maker 1.0.1), il traite aussi un chambrage ou un fraisurage taillé après son trou.
 
 > **Lancez toujours Finalize avant un export STL** : les sources cachées d'un solide procédural seraient exportées aussi.
 

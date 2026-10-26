@@ -2,7 +2,7 @@
 
 *[English version](USER_MANUAL_EN.md)*
 
-Version 1.1.1 — SketchUp Pro 2021 et SketchUp Make 2017
+Version 1.1.2 — SketchUp Pro 2021 et SketchUp Make 2017
 
 ## Présentation
 
@@ -163,7 +163,8 @@ SketchUp Make n'a pas de booléens natifs. Solid Procedural utilise alors son **
 - **Vitesse** — le moteur intégré est plus lent : sur une pièce avec beaucoup de volumes ou de trous, le recalcul à la fermeture du solide procédural peut prendre quelques secondes (progression dans la barre d'état).
 - **Procedural Table** — SketchUp 2017 ne permet pas à un plugin d'ouvrir un groupe : un double-clic sur une ligne n'ouvre pas le solide procédural, et un message dans la table (et dans la barre d'état) vous invite à double-cliquer sur le solide procédural dans le modèle. Une fois qu'il est ouvert, un clic sur une ligne sélectionne son volume comme d'habitude. Le message disparaît à l'action suivante dans la table.
 - **Shell et volumes enfermés** — un volume entièrement enfermé dans un autre est supprimé par le Shell intégré. L'Outer Shell natif de SketchUp Pro le garde dans le Result : caché, mais exporté.
-- **Cercles** — les cercles et arcs du Result sont aussi reconstruits en cercles natifs. La soudure de secours demande SketchUp 2020.1 : avec SketchUp 2017, un cercle qui ne peut pas être reconstruit nativement reste en segments.
+- **Cercles** — les cercles et arcs du Result sont aussi reconstruits en cercles natifs. La soudure de secours demande SketchUp 2020.1 : avec SketchUp 2017, un cercle qui ne peut pas être reconstruit nativement reste en segments (par exemple le cercle commun d'un fraisurage dont le cône rejoint le trou).
+- **Chambrages et fraisurages** — depuis la version 1.1.2, un chambrage ou un fraisurage taillé après son trou marche aussi avec le moteur intégré (avant, le recalcul échouait avec *Subtract of volume … failed*).
 
 ## Dépannage
 

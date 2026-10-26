@@ -10,6 +10,25 @@
 
 ---
 
+## Session du 2026-10-26
+
+### Chambrage après son trou (Q-7) : moteur de Solid for Maker 1.0.1
+
+- **Demande utilisateur** : « on attaque le chambrage dans Solid for Maker » ; plan validé (« ok, go, diagnostic sous 2021 »), correctif validé (« ok, go »). Le travail est fait dans Solid for Maker (kit de non-régression, voir son `JOURNAL.md`) : défaut du code d'Eneroth, `wrapping_face` exigeait une face commune à **toutes** les arêtes de la nouvelle face, contour intérieur compris ; la face coupée autour d'un trou existant était effacée par `interior_hole_hack`, la pièce s'ouvrait, et les 5 opérations échouaient. Correctif : contour extérieur seulement. Solid for Maker 1.0.1, commit `2b2a596`.
+- **solid_procedural/solid_operations.rb** — Même ligne (`face.outer_loop.edges`) et même commentaire ; en-tête : copie de Solid for Maker 1.0.1 (commit `2b2a596`), ligne du changement. Corps identique à celui de Solid for Maker hors nom du module (vérifié par `diff`).
+- **tools/tests/run_tests.rb** — T15 : cas « counterbores after the holes » (trous soustraits d'abord, puis chambrages r 2). Un cas « countersinks meeting the holes » a été essayé puis retiré : le résultat est un solide avec les deux moteurs, mais `repair_holes` n'y est jamais appelé (ce que T15 compare) et le cercle commun au cône et au trou n'est pas reconstruit en natif (« cylinder end with a line attached », soudé sous 2021, segments sous 2017) : c'est Q-9, inchangée.
+- **Tests** (`run_tests.ps1`, PowerShell 7 : le script contient des tirets longs sans BOM, illisible par Windows PowerShell 5.1) : 2021 Pro 53/53, Make 2017 33 OK + T07 sauté ; le nouveau cas passe en natif et avec le moteur intégré (12 cercles natifs, faces identiques avec l'ancienne et la nouvelle `repair_holes`).
+
+### Livraison 1.1.2
+
+- **Validation** : « Teste OK, livraison » (utilisateur), sur la foi de la batterie.
+- **solid_procedural/version.rb, solid_procedural.rb** — Version 1.1.2.
+- **PRD.md** — Date de mise à jour, EF-33 (moteur 1.0.1), CA-28, Q-7 résolue, Q-9 revue, ligne d'historique 1.1.2.
+- **docs/FSD_FR.md, docs/FSD_EN.md** — Version 1.1.2 ; moteur intégré = Solid for Maker 1.0.1 (`2b2a596`) ; T15 sur 14 cas ; limite du cercle commun d'un fraisurage (Q-9) ; historique.
+- **docs/USER_MANUAL_FR.md, docs/USER_MANUAL_EN.md** — Version 1.1.2 ; section SketchUp Make 2017 : chambrages et fraisurages après leur trou, exemple du cercle laissé en segments.
+- **README.md** — Le moteur intégré traite le chambrage ou le fraisurage taillé après son trou (FR + EN). **OPTIMISATION_REPAIR_HOLES.md** — § 7 : 14e cas de T15.
+- **build/solid_procedural.rbz** — Reconstruit : 26 fichiers, mêmes noms qu'en 1.1.1 (56 204 octets, SHA-256 `42c96ae8…cb7158c79228`). Plugin installé dans SketchUp 2021 et Make 2017 (copie miroir, identique au projet).
+
 ## Session du 2026-10-25
 
 ### Correctifs : Finalize d'une copie, cadre vert après Finalize

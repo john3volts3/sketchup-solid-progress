@@ -8,7 +8,7 @@ module SolidProcedural
   ext = SketchupExtension.new(PLUGIN_NAME, File.join('solid_procedural', 'main'))
   ext.description = 'Non-destructive procedural solids: native booleans with SketchUp Pro, ' \
                     'built-in engine with SketchUp Make'
-  ext.version = '1.1.1'
+  ext.version = '1.1.2'
   ext.creator = 'DRO'
   ext.copyright = '2026'
 

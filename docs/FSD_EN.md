@@ -2,10 +2,10 @@
 
 *[Version française](FSD_FR.md)*
 
-> This document describes **Solid Procedural 1.1.1**, delivered on 2026-10-25 for SketchUp Pro 2021 and SketchUp Make 2017. Nesting is postponed (EF-25 of `PRD.md`, French).
+> This document describes **Solid Procedural 1.1.2**, delivered on 2026-10-26 for SketchUp Pro 2021 and SketchUp Make 2017. Nesting is postponed (EF-25 of `PRD.md`, French).
 
-**Version:** 1.1.1
-**Date:** 2026-10-25
+**Version:** 1.1.2
+**Date:** 2026-10-26
 **Author:** DRO
 
 ---
@@ -23,7 +23,7 @@ Solid Procedural derives from **Solid Batch v2.3.0** and installs **next to** it
 
 ## 2. Scope
 
-### Included (1.1.1)
+### Included (1.1.2)
 
 - Create, Rebuild and Finalize Procedural Solid
 - Automatic sources / Result display switch when entering and exiting the group
@@ -35,7 +35,7 @@ Solid Procedural derives from **Solid Batch v2.3.0** and installs **next to** it
 - Consistent Ctrl+Z / Ctrl+Y: the automatic rebuild is merged with the last edit (option B)
 - Set Subtract Color and Set Repair Options, taken over from Solid Batch; Solid Batch settings read by default
 - Native circle and arc restoration on each Result (Re-Cercle v2.0.0 method), faster on faces with many holes (`repair_holes` with grids, 1.1.1)
-- **SketchUp Make 2017**: built-in Ruby boolean engine (Solid for Maker 1.0.0) when `Sketchup.is_pro?` is false; guards for the APIs newer than 2017 (EF-31, EF-33)
+- **SketchUp Make 2017**: built-in Ruby boolean engine (Solid for Maker 1.0.1) when `Sketchup.is_pro?` is false; guards for the APIs newer than 2017 (EF-31, EF-33)
 - **`PRO_ONLY`** switch in `main.rb`: `true` brings back the SketchUp Pro only mode (EF-32)
 
 ### Planned
@@ -250,10 +250,10 @@ Color of the material of the first selected group/component that has one, stored
 | Element | Description |
 |---------|-------------|
 | **Engine choice** | `Procedural.ruby_engine?` = `!Sketchup.is_pro?` (in Make, `Group#union` exists but does nothing: `respond_to?` cannot detect Make). With Pro: native booleans only |
-| **Built-in engine** | `solid_procedural/solid_operations.rb`, copy of Solid for Maker 1.0.0 (commit `47e9002`, ported from Eneroth Solid Tools 3.0.0), module renamed `SolidProcedural::SolidOperations`, body unchanged; MIT License in `LICENSE-solid-operations.txt`. Union, Shell (union then `remove_cavities`) and Subtract (trim then the tool erased), small parts scaled up × 1000 |
+| **Built-in engine** | `solid_procedural/solid_operations.rb`, copy of Solid for Maker 1.0.1 (commit `2b2a596`, ported from Eneroth Solid Tools 3.0.0; `wrapping_face` on the outer loop: counterbore after its hole, 1.1.2), module renamed `SolidProcedural::SolidOperations`, body unchanged; MIT License in `LICENSE-solid-operations.txt`. Union, Shell (union then `remove_cavities`) and Subtract (trim then the tool erased), small parts scaled up × 1000 |
 | **Known difference** | A volume entirely enclosed in another one: kept by the native Outer Shell (Result volume 1000 + 64 in T12), erased by the Shell of the built-in engine (1000) |
 | **`PRO_ONLY`** | Constant in `main.rb` (`false` by default), read by `SolidProcedural.pro_only?`. `true` and SketchUp not Pro: Create, Rebuild and Finalize show "This function requires SketchUp Pro."; `rebuild_in_operation` raises the same error (rebuild on exit, table). The built-in engine is then never used |
-| **Tests** | `tools/tests/` (not in the `.rbz`, NF-13): T01 to T15; T12 compares volumes known in advance, native then built-in engine forced in 2021, built-in engine in Make 2017 (including a plate with 20 holes made by Create, 960 edges in native circles expected); T15 compares `repair_holes` with the former method (`repair_holes_scan`, kept in the test file) on the same geometry (operation aborted in between), on 13 cases, and the grids with the full scan |
+| **Tests** | `tools/tests/` (not in the `.rbz`, NF-13): T01 to T15; T12 compares volumes known in advance, native then built-in engine forced in 2021, built-in engine in Make 2017 (including a plate with 20 holes made by Create, 960 edges in native circles expected); T15 compares `repair_holes` with the former method (`repair_holes_scan`, kept in the test file) on the same geometry (operation aborted in between), on 14 cases (including "counterbores after the holes", 1.1.2), and the grids with the full scan |
 
 ## 6. Non-functional requirements
 
@@ -280,7 +280,7 @@ Color of the material of the first selected group/component that has one, stored
 ```
 solid_procedural.rb             # Entry point — extension registration
 solid_procedural/
-  version.rb                    # VERSION = '1.1.1'
+  version.rb                    # VERSION = '1.1.2'
   main.rb                       # Menu, toolbar, context menu, options (registry), Set Subtract Color, Set Repair Options
   procedural.rb                 # Procedural groups: data, signature, display, rebuild, commands, synchronization
   procedural_table.rb           # Procedural Table: window, row data, page actions
@@ -293,7 +293,7 @@ solid_procedural/
     detector.rb
     rebuilder.rb
     volume.rb
-  solid_operations.rb           # Ruby boolean engine for SketchUp Make (copy of Solid for Maker 1.0.0)
+  solid_operations.rb           # Ruby boolean engine for SketchUp Make (copy of Solid for Maker 1.0.1)
   LICENSE-solid-operations.txt  # MIT License of the engine (Eneroth Solid Tools, Solid for Maker)
   icons/
     create_procedural_16/24.png
@@ -342,7 +342,7 @@ SolidProcedural::CircleRestore         # Copy of Re-Cercle v2.0.0
   restore_in_solid, count_edges, summary, Detector, Rebuilder, Volume
   Volume.repair_holes, hole_edge, point_grid, cell_of, near_items, near_grid? (grids, 1.1.1)
 
-SolidProcedural::SolidOperations       # Copy of Solid for Maker 1.0.0 (Eneroth Solid Tools)
+SolidProcedural::SolidOperations       # Copy of Solid for Maker 1.0.1 (Eneroth Solid Tools)
   union, subtract, trim, intersect, outer_shell, remove_cavities, solid?, within?
 ```
 
@@ -446,11 +446,11 @@ See EF-20 to EF-24. Title "Solid Procedural — Procedural Table".
 
 A setting missing from `SolidProcedural` is read from `SolidBatch` (Solid Batch v2 settings carried over). Writes always go to `SolidProcedural`.
 
-## 10. Known limitations (1.1.1)
+## 10. Known limitations (1.1.2)
 
 - In an open group, the effect of a table change shows only on exit (the Result is hidden while editing); on a closed group, it is applied at once.
 - A row selects its volume only in an open group (a double-click opens it, except with SketchUp 2017: message in the table).
-- **SketchUp Make 2017**: slower built-in engine (a few seconds for a heavy part); a volume enclosed in another one is removed by Shell (kept by Pro's native Outer Shell); no weld fallback for circles (a circle that cannot be rebuilt stays as segments); the table cannot open a group.
+- **SketchUp Make 2017**: slower built-in engine (a few seconds for a heavy part); a volume enclosed in another one is removed by Shell (kept by Pro's native Outer Shell); no weld fallback for circles (a circle that cannot be rebuilt stays as segments, for example the circle shared by a countersink whose cone meets the hole, Q-9); the table cannot open a group.
 - After an Explode, the hidden loose geometry of the group stays hidden: only grouped volumes are released.
 - The green frame is the selection color of the style: while it is shown, the Styles panel shows this green, and updating the style at that time would store it there. A style whose selection color is exactly `(0, 170, 0)` is taken as left by the plugin.
 - Nested procedural groups refused (nesting postponed): Create refuses a selection holding one, the rebuild stops with a message (former result kept) and the table shows the row as an error. To reuse a sub-part, finalize it, then use it as a volume. An Explode of a procedural group pasted inside an open procedural group would mix its volumes with the ones of that group.
@@ -463,6 +463,7 @@ A setting missing from `SolidProcedural` is read from `SolidBatch` (Solid Batch 
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.1.2 | 2026-10-26 | Built-in engine of **Solid for Maker 1.0.1** (commit `2b2a596`): a counterbore or countersink cut after its hole works (Q-7; Eneroth's `wrapping_face` required a face common to all the edges of the new face, hole included: the face was erased and the rebuild failed). Test T15 "counterbores after the holes" |
 | 1.1.1 | 2026-10-25 | **Faster** circle restoration on faces with many holes: `Volume.repair_holes` with grids (code of Solid for Maker 1.0.0), same result as the former method (T15, 13 cases, native and built-in engine); plate with 20 holes: 9 → 2 s (2021), 6.6 → 1.4 s (Make 2017). Tests T15 and case "plate with 20 holes" of T12 |
 | 1.1.0 | 2026-10-25 | **SketchUp Make 2017**: built-in boolean engine (Solid for Maker 1.0.0) when SketchUp is not Pro, guards for the APIs newer than 2017 (`DefinitionList#remove`, `Model#active_path=` with a message in the table, `Entities#weld`), native circles in 2017, Set Repair Options in every version; `PRO_ONLY` switch; **Finalize** button in the Procedural Table; fixes: procedural solid with a single component volume (crashed), Result material lost by the circle restoration, definition of the former Result left unused by Rebuild, **observers lost after File > Open / New** (same `Model` object kept by SketchUp 2017 and 2021: no switch on entering, frame left green; Q-6); automatic tests (`tools/tests/`) |
 | 1.0.1 | 2026-10-25 | Fixes: Finalize of a copied procedural solid ("reference to deleted Group" error); selection frame staying green after Finalize |

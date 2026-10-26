@@ -2,7 +2,7 @@
 
 *[Version française](USER_MANUAL_FR.md)*
 
-Version 1.1.1 — SketchUp Pro 2021 and SketchUp Make 2017
+Version 1.1.2 — SketchUp Pro 2021 and SketchUp Make 2017
 
 ## Overview
 
@@ -163,7 +163,8 @@ SketchUp Make has no native booleans. Solid Procedural then uses its **built-in 
 - **Speed** — the built-in engine is slower: on a part with many volumes or holes, the rebuild when you close the procedural solid can take a few seconds (progress in the status bar).
 - **Procedural Table** — SketchUp 2017 does not let a plugin open a group: double-clicking a row does not open the procedural solid, and a message in the table (and in the status bar) tells you to double-click the procedural solid in the model. Once it is open, clicking a row selects its volume as usual. The message goes away at the next action in the table.
 - **Shell and enclosed volumes** — a volume entirely enclosed in another one is removed by the built-in Shell. SketchUp Pro's native Outer Shell keeps it inside the Result: hidden, but exported.
-- **Circles** — the circles and arcs of the Result are rebuilt as native circles too. The weld fallback needs SketchUp 2020.1: with SketchUp 2017, a circle that cannot be rebuilt natively stays as segments.
+- **Circles** — the circles and arcs of the Result are rebuilt as native circles too. The weld fallback needs SketchUp 2020.1: with SketchUp 2017, a circle that cannot be rebuilt natively stays as segments (for example the circle shared by a countersink whose cone meets the hole).
+- **Counterbores and countersinks** — since version 1.1.2, a counterbore or countersink cut after its hole works with the built-in engine too (before, the rebuild failed with *Subtract of volume … failed*).
 
 ## Troubleshooting
 

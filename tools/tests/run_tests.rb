@@ -983,6 +983,15 @@ module SolidProcedural
            [['subtract', tests.cones(m.entities, sinks, 1.2, 2.7, 1.5)],
             ['subtract', tests.cylinders(m.entities, holes, Z_AXIS, 1, 5)]]]
         end],
+        # Hole first: the counterbore cuts the top face around the hole
+        # (Solid for Maker 1.0.1, wrapping_face).
+        ['counterbores after the holes', lambda do |m, x, y|
+          holes = [5, 12, 19].map { |a| tests.pt(x + a, y + 5, -1) }
+          bores = holes.map { |p| tests.pt(p.x, p.y, 2) }
+          [tests.box(m.entities, x, y, 0, 24, 10, 3),
+           [['subtract', tests.cylinders(m.entities, holes, Z_AXIS, 1, 5)],
+            ['subtract', tests.cylinders(m.entities, bores, Z_AXIS, 2, 2)]]]
+        end],
         ['holes on the top and on a side', lambda do |m, x, y|
           top = [[5, 5], [15, 5], [5, 15], [15, 15]].map { |a, b| tests.pt(x + a, y + b, -1) }
           side = [3, 7].map { |h| tests.pt(x - 1, y + 10, h) }
