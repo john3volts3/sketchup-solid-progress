@@ -1,6 +1,6 @@
 # Solid Progress — Tâches (reprise de session)
 
-Créé le 2026-10-26 depuis la session Solid Batch, à la demande de l'utilisateur (le plugin s'appelait alors Solid Procedural). Version actuelle : **2.0.0**. À lire au démarrage d'une session Solid Procedural, avec `JOURNAL.md` et `PRD.md`.
+Créé le 2026-10-26 depuis la session Solid Batch, à la demande de l'utilisateur (le plugin s'appelait alors Solid Procedural). Version actuelle : **2.0.1**. À lire au démarrage d'une session Solid Procedural, avec `JOURNAL.md` et `PRD.md`.
 
 ## Décision du 2026-10-26 (les trois plugins Solid)
 
@@ -24,7 +24,10 @@ Créé le 2026-10-26 depuis la session Solid Batch, à la demande de l'utilisate
 - [ ] **Publication** (idée de l'utilisateur, 2026-10-26) : vidéos de démonstration et captures d'écran (Claude peut préparer des modèles de démonstration par script, la liste des captures par section du manuel et un scénario de 60 à 90 s) ; dépôt GitHub `sketchup-solid-procedural` encore **privé** : avant de le rendre public, vérifier l'historique (chemins locaux) ; diffusion sur GitHub et SketchUcation. Rappel possible dans le README : « SketchUp Make is licensed by Trimble for non-commercial use only ».
   - *Fait le 2026-10-26* : rappel Trimble dans le README ; chemins locaux retirés des fichiers suivis (`run_tests.rb`, `run_tests.ps1`, `SOLID_PROCEDURAL_PROJET.md`, `JOURNAL.md`) ; audit : adresses des commits `noreply`.
   - *Fait le 2026-10-26* : historique Git nettoyé de toute donnée personnelle (réécrit, dépôt GitHub recréé, releases recréées ; voir `JOURNAL.md`). Le dépôt peut être rendu public quand l'utilisateur le décide.
-  - **Reste à faire, second temps** : modèles de démonstration par script (`tools/demo/`), liste des captures par section du manuel et scénario vidéo de 60 à 90 s (`docs/PUBLICATION.md`).
+  - *Fait le 2026-10-26* : modèle de démonstration par script (`tools/demo/build_demo.rb`, `docs/demo.skp`, `docs/demo-2017.skp`, tests T17 et T18), scénario vidéo de **20 s** enregistré à la main et liste des captures (`docs/PUBLICATION.md`), texte de la page SketchUcation (`docs/SKETCHUCATION.md`).
+  - *Fait le 2026-10-26* : vidéo de l'utilisateur sur YouTube (https://youtu.be/g1BOtZyySh8), captures dans `docs/images/`, modèle de démo de l'utilisateur `docs/demo.skp` (format 2017, chemin public) ; liens et images dans le README, les manuels et `docs/SKETCHUCATION.md`.
+  - **Reste à faire** : page SketchUcation (Claude la remplit dans Chrome, l'utilisateur vérifie avant de publier) ; icône de la page ; dépôt public quand l'utilisateur le décide (les liens vers GitHub de la page SketchUcation en dépendent).
+  - **À vérifier dans Solid Batch** : son `docs/demo.skp` (suivi par git) garde probablement le chemin où il a été enregistré (un `.skp` garde le chemin de son dernier enregistrement, avec le nom d'utilisateur s'il est dans un dossier personnel).
 
 ## Renommage en Solid Progress (2026-10-26)
 

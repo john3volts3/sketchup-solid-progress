@@ -11,6 +11,10 @@
 #   powershell -File tools\tests\run_tests.ps1 -Versions 2017 -Manual
 #       manual test of onActivePathChanged: double-click "SP Test - open me",
 #       then exit it (results/manual-<major>.txt)
+#   powershell -File tools\tests\run_tests.ps1 -Versions 2021 -Demo
+#       demo only (tools/demo/demo_images.rb): builds it, one image per
+#       scene in results/demo-<major>-<n>.png, results/demo.skp and
+#       results/demo-2017.skp written (2021), report results/demo-<major>.txt
 #
 # SketchUp is found through the registry (InstallLocation). It must be closed:
 # an open session is never touched, and only the SketchUp started here is
@@ -22,7 +26,8 @@ param(
     [string[]]$Versions = @('2021', '2017'),
     [int]$Timeout = 300,
     [switch]$NoDeploy,
-    [switch]$Manual
+    [switch]$Manual,
+    [switch]$Demo
 )
 
 $ErrorActionPreference = 'Stop'
@@ -109,9 +114,11 @@ foreach ($version in $Versions) {
         }
     }
 
-    $kind = if ($Manual) { 'manual' } else { 'latest' }
+    $kind = if ($Manual) { 'manual' } elseif ($Demo) { 'demo' } else { 'latest' }
     $report = Join-Path $results ("{0}-{1}.txt" -f $kind, $majors[$version])
-    $startup = Join-Path $tests $(if ($Manual) { 'manual_open.rb' } else { 'run_tests.rb' })
+    $startup = Join-Path $tests 'run_tests.rb'
+    if ($Manual) { $startup = Join-Path $tests 'manual_open.rb' }
+    if ($Demo) { $startup = Join-Path $project 'tools\demo\demo_images.rb' }
     $start = Get-Date
     Write-Host "SketchUp $version - tests running..."
     if (-not $welcomeSwitched) { Write-Host "  If the welcome screen of SketchUp $version shows, click its start button." }

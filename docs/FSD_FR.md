@@ -2,9 +2,9 @@
 
 *[English version](FSD_EN.md)*
 
-> Ce document décrit **Solid Progress 1.1.2**, livré le 2026-10-26 pour SketchUp Pro 2021 et SketchUp Make 2017. L'imbrication est reportée (EF-25 du `PRD.md`).
+> Ce document décrit **Solid Progress 2.0.1**, livré le 2026-10-26 pour SketchUp Pro 2021 et SketchUp Make 2017. L'imbrication est reportée (EF-25 du `PRD.md`).
 
-**Version :** 2.0.0
+**Version :** 2.0.1
 **Date :** 2026-10-26
 **Auteur :** DRO
 
@@ -155,7 +155,7 @@ Changer la couleur de soustraction (Set Subtract Color) ou ouvrir le modèle sur
 7. Ancien Result effacé (si c'est une instance de composant, sa définition est supprimée quand plus aucune instance ne l'utilise) ; nouveau Result marqué (`role=result`, nom `Result`) ; empreinte enregistrée ; affichage appliqué.
 8. Sélection remise (les entités encore valides), même en cas d'erreur : les booléens vident la sélection, et un groupe sélectionné doit le rester (table, Rebuild).
 
-En cas d'échec à l'étape 4, toutes les copies sont effacées dans un `ensure`, les définitions de composants créées et inutilisées sont supprimées (`remove_definition` : `DefinitionList#remove`, ou sous SketchUp 2017 `entities.clear!`, une définition vide sans instance disparaissant), et l'ancien Result reste en place. Un seul volume composant donne un Result instance de composant : ses faces sont lues dans sa définition.
+En cas d'échec à l'étape 4, toutes les copies sont effacées dans un `ensure`, les définitions de composants créées et inutilisées sont supprimées (`remove_definition` : `DefinitionList#remove`, ou sous SketchUp 2017 `entities.clear!`, une définition vide sans instance disparaissant), et l'ancien Result reste en place. Les booléens natifs avec un volume fait de plusieurs solides (un groupe de plusieurs cylindres) laissent une définition de composant inutilisée par solide (`TempInstance#n`) : à la fin du calcul, réussi ou non, les définitions de composant apparues pendant le calcul et sans instance sont supprimées de la même façon (2.0.1, Q-8, T19). Un seul volume composant donne un Result instance de composant : ses faces sont lues dans sa définition.
 
 #### EF-16 : Échec de calcul
 
@@ -253,7 +253,7 @@ Couleur du matériau du premier groupe/composant sélectionné qui en a un, enre
 | **Moteur intégré** | `solid_progress/solid_operations.rb`, copie de Solid for Maker 1.0.1 (commit `2b2a596`, porté d'Eneroth Solid Tools 3.0.0 ; `wrapping_face` sur le contour extérieur : chambrage après son trou, 1.1.2), module renommé `SolidProcedural::SolidOperations`, corps inchangé ; licence MIT dans `LICENSE-solid-operations.txt`. Union, Shell (union puis `remove_cavities`) et Subtract (trim puis effacement de l'outil), avec mise à l'échelle × 1000 des petites pièces |
 | **Différence connue** | Un volume entièrement enfermé dans un autre : gardé par l'Outer Shell natif (Result de volume 1000 + 64 dans T12), effacé par le Shell du moteur intégré (1000) |
 | **Pro seulement** | La ligne `# raise ProOnly, __LINE__ if ruby`, juste après le contrôle de l'édition dans `ruby_engine?` (`solid_progress/procedural.rb`), est commentée par défaut. Décommentée et SketchUp non Pro : `ruby_engine?` lève `ProOnly` (une `RebuildError`), message « PRO Only vs. procedural.rb:<ligne> » (la ligne à recommenter). Create, Rebuild et Finalize l'affichent tel quel (`pro_refused?`, en tête de commande) ; `rebuild_in_operation` le lève avant toute modification (recalcul à la sortie : « Rebuild failed — the former result is kept » ; table : opération annulée). Rien n'est modifié ; le moteur intégré n'est jamais utilisé. Remplace la constante `PRO_ONLY` de la 1.1.0 |
-| **Tests** | `tools/tests/` (hors `.rbz`, NF-13) : T01 à T16 (T16 : noms visibles, Solid Progress) ; T10 : un seul `is_pro?` dans le plugin, ligne Pro seulement commentée par défaut, puis copie de `procedural.rb` chargée avec la ligne décommentée et Make simulé → message exact pour Create, Rebuild, Finalize, le recalcul et la table, rien de modifié ; T12 compare des volumes calculés d'avance, en natif puis moteur intégré forcé sous 2021, en moteur intégré sous Make 2017 (dont une plaque à 20 trous passée par Create, 960 arêtes en cercles natifs attendues) ; T15 compare `repair_holes` à l'ancienne méthode (`repair_holes_scan`, gardée dans le fichier de tests) sur la même géométrie (opération annulée entre les deux), sur 14 cas (dont « counterbores after the holes », 1.1.2), et les grilles au parcours complet |
+| **Tests** | `tools/tests/` (hors `.rbz`, NF-13) : T01 à T19 (T16 : noms visibles, Solid Progress ; T17 : le script de démo construit sa pièce dans le modèle des tests, volumes exacts, table appliquée tout de suite, une image par scène ; T18 : le modèle de démonstration publié `docs/demo.skp` (fait à la main, format SketchUp 2017) s'ouvre sous 2021 comme sous Make, groupes Solid Progress à jour, Result solide et affiché, sources cachées, fichier inchangé ; T19 : un volume de 4 cylindres ne laisse aucune définition inutilisée, Q-8) ; `run_tests.ps1 -Demo` : le script de démo seul (images des scènes, fichiers dans `results/`) ; T10 : un seul `is_pro?` dans le plugin, ligne Pro seulement commentée par défaut, puis copie de `procedural.rb` chargée avec la ligne décommentée et Make simulé → message exact pour Create, Rebuild, Finalize, le recalcul et la table, rien de modifié ; T12 compare des volumes calculés d'avance, en natif puis moteur intégré forcé sous 2021, en moteur intégré sous Make 2017 (dont une plaque à 20 trous passée par Create, 960 arêtes en cercles natifs attendues) ; T15 compare `repair_holes` à l'ancienne méthode (`repair_holes_scan`, gardée dans le fichier de tests) sur la même géométrie (opération annulée entre les deux), sur 14 cas (dont « counterbores after the holes », 1.1.2), et les grilles au parcours complet |
 
 ## 6. Exigences non fonctionnelles
 
@@ -303,6 +303,8 @@ solid_progress/
     setcolor_16/24.png
     repair_circles_16/24.png
 tools/tests/                    # Hors .rbz : run_tests.ps1, run_tests.rb, manual_open.rb, results/ (ignoré par git)
+tools/demo/                     # Hors .rbz : build_demo.rb (pièce de démo des tests), demo_images.rb (run_tests.ps1 -Demo)
+docs/demo.skp                   # Modèle de démonstration publié (fait à la main, format SketchUp 2017) ; images/, PUBLICATION.md, SKETCHUCATION.md
 ```
 
 ### 7.2 Structure des modules
@@ -463,6 +465,7 @@ Un réglage absent de `SolidProcedural` est lu dans `SolidBatch` (réglages de S
 
 | Version | Date | Changements |
 |---------|------|-------------|
+| 2.0.1 | 2026-10-26 | Un volume fait de plusieurs solides ne laisse plus de définitions inutilisées `TempInstance#n` à chaque recalcul (booléens natifs, Q-8). Modèle de démonstration `docs/demo.skp` (fait à la main, la pièce de la vidéo), script de démo des tests (`tools/demo/build_demo.rb`), tests T17 à T19, `run_tests.ps1 -Demo` |
 | 1.1.2 | 2026-10-26 | Moteur intégré de **Solid for Maker 1.0.1** (commit `2b2a596`) : un chambrage ou un fraisurage taillé après son trou marche (Q-7 ; `wrapping_face` d'Eneroth exigeait une face commune à toutes les arêtes de la nouvelle face, trou compris : la face était effacée et le recalcul échouait). Test T15 « counterbores after the holes » |
 | 2.0.0 | 2026-10-26 | Renommé **Solid Progress** (SketchUp 2027 apporte ses propres *Procedural Components*) : tous les noms vus par l'utilisateur, `solid_progress.rb`, `solid_progress/`, `solid_progress.rbz` ; identifiants du code et données des modèles inchangés (modèles existants reconnus) ; désinstaller d'abord Solid Procedural. Un seul contrôle de l'édition (`ruby_engine?`) et une ligne commentée pour Pro seulement (« PRO Only vs. procedural.rb:<ligne> »), à la place de `PRO_ONLY`. Test T16 (noms visibles) ; lanceur de tests sûr pour les préférences de SketchUp |
 | 1.1.1 | 2026-10-25 | Restauration des cercles **accélérée** sur les faces percées de nombreux trous : `Volume.repair_holes` par grilles (code de Solid for Maker 1.0.0), résultat identique à l'ancienne méthode (T15, 13 cas, natif et moteur intégré) ; plaque à 20 trous : 9 → 2 s (2021), 6,6 → 1,4 s (Make 2017). Tests T15 et cas « plate with 20 holes » de T12 |

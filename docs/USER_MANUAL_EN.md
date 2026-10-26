@@ -2,7 +2,7 @@
 
 *[Version française](USER_MANUAL_FR.md)*
 
-Version 2.0.0 — SketchUp Pro 2021 and SketchUp Make 2017
+Version 2.0.1 — SketchUp Pro 2021 and SketchUp Make 2017
 
 ## Overview
 
@@ -47,9 +47,11 @@ The Result takes the material of the Base; the faces cut by a subtracted volume 
 
 ### Example: plate with a hole and a pin
 
-1. A box (base), a red cylinder through it (hole), a small cylinder in the hole (pin).
-2. *Create Solid Progress*: Base (the box — check it in the table), then the pin (added), then the hole (subtracted) → the hole cuts the pin too.
-3. In the Progress Table, move the pin after the hole → the pin now fills part of the hole.
+To try Solid Progress on a ready-made part, open the demo model `docs/demo.skp` (the part of the video).
+
+1. A plate (base), a pin standing on it, a red cylinder through both (hole).
+2. *Create Solid Progress*: Base (the plate — check it in the table), then the pin (added), then the hole (subtracted) → the hole goes through the pin too: a tube.
+3. In the Progress Table, move the pin after the hole → the pin is full again; the hole stays in the plate, under the pin.
 
 ## Commands
 
@@ -66,6 +68,8 @@ Select one or more solid groups or components, then click **Create Solid Progres
 ### Progress Table
 
 Opened by the menu, the toolbar button (after *Create*) or a right-click on a Solid Progress group (selected or open). The window stays open while you work.
+
+![Progress Table of an open Solid Progress group](images/table-open.png)
 
 The table shows the **open** Solid Progress group, or else the **selected** one. Its header shows the name and the mode:
 

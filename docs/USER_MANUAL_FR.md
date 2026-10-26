@@ -2,7 +2,7 @@
 
 *[English version](USER_MANUAL_EN.md)*
 
-Version 2.0.0 — SketchUp Pro 2021 et SketchUp Make 2017
+Version 2.0.1 — SketchUp Pro 2021 et SketchUp Make 2017
 
 ## Présentation
 
@@ -47,9 +47,11 @@ Le Result prend le matériau de la Base ; les faces taillées par un volume sous
 
 ### Exemple : plaque avec un trou et un tenon
 
-1. Une boîte (base), un cylindre rouge qui la traverse (trou), un petit cylindre dans le trou (tenon).
-2. *Create Solid Progress* : la Base (la boîte — vérifiez-le dans la table), puis le tenon (ajouté), puis le trou (soustrait) → le trou perce aussi le tenon.
-3. Dans la Progress Table, placez le tenon après le trou → le tenon remplit maintenant une partie du trou.
+Pour essayer Solid Progress sur une pièce toute prête, ouvrez le modèle de démonstration `docs/demo.skp` (la pièce de la vidéo).
+
+1. Une plaque (base), un tenon posé dessus, un cylindre rouge qui les traverse tous les deux (trou).
+2. *Create Solid Progress* : la Base (la plaque — vérifiez-le dans la table), puis le tenon (ajouté), puis le trou (soustrait) → le trou perce aussi le tenon : un tube.
+3. Dans la Progress Table, placez le tenon après le trou → le tenon redevient plein ; le trou reste dans la plaque, sous le tenon.
 
 ## Commandes
 
@@ -66,6 +68,8 @@ Sélectionnez un ou plusieurs groupes ou composants solides, puis cliquez sur **
 ### Progress Table
 
 Ouverte par le menu, le bouton de la barre d'outils (après *Create*) ou un clic droit sur un groupe Solid Progress (sélectionné ou ouvert). La fenêtre reste ouverte pendant que vous travaillez.
+
+![Progress Table d'un groupe Solid Progress ouvert](images/table-open.png)
 
 La table montre le groupe Solid Progress **ouvert**, sinon le groupe Solid Progress **sélectionné**. Son en-tête affiche le nom et le mode :
 

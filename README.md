@@ -6,6 +6,12 @@
 
 ---
 
+## Demo
+
+Non-destructive booleans: edit dynamically after the cut.
+
+[![Solid Progress Demo](https://img.youtube.com/vi/g1BOtZyySh8/0.jpg)](https://youtu.be/g1BOtZyySh8)
+
 ## Why Solid Progress?
 
 When designing technical parts for 3D printing in SketchUp, a part is often built from simple volumes — a base, added blocks, holes, pins — combined with boolean operations. Native booleans are destructive: once the hole is cut, moving it means undoing or remodelling.
@@ -61,6 +67,10 @@ Solid Progress 2.0.0 is the new name of Solid Procedural (renamed because Sketch
 4. Open the **Progress Table** to change the order or the operation of each volume
 5. Before exporting to STL: **Finalize Solid Progress**
 
+### Demo model
+
+Open [docs/demo.skp](docs/demo.skp) (SketchUp 2017 format: opens in SketchUp Make 2017 and later versions): the part of the video, as a Solid Progress group. Double-click it to edit its sources, click outside to rebuild the Result, open the **Progress Table** to change the order or the operations.
+
 ## SketchUp Pro only (developers)
 
 To keep Solid Progress for SketchUp Pro only, uncomment the line `# raise ProOnly, __LINE__ if ruby` in `ruby_engine?` (`solid_progress/procedural.rb`), just after the only SketchUp edition check of the plugin. In SketchUp Make, Create, Rebuild, Finalize, the automatic rebuild and the Progress Table then show `PRO Only vs. procedural.rb:<line>`, the line to comment out again, and change nothing.
@@ -81,6 +91,12 @@ MIT License — see [LICENSE.md](LICENSE.md). The built-in engine for SketchUp M
 # Solid Progress — Plugin SketchUp
 
 **Booléens non destructifs pour SketchUp Pro et SketchUp Make : les volumes sources de vos opérations booléennes restent modifiables, un travail en cours jusqu'à ce que vous le finalisiez.**
+
+## Démo
+
+Booléens non destructifs : modifiez dynamiquement après la découpe.
+
+[![Démo de Solid Progress](https://img.youtube.com/vi/g1BOtZyySh8/0.jpg)](https://youtu.be/g1BOtZyySh8)
 
 ## Pourquoi Solid Progress ?
 
@@ -136,6 +152,10 @@ Solid Progress 2.0.0 est le nouveau nom de Solid Procedural (renommé parce que 
 3. Double-cliquez sur le groupe Solid Progress pour modifier ses sources ; fermez-le (clic à l'extérieur ou Échap) : le Result est recalculé
 4. Ouvrez la **Progress Table** pour changer l'ordre ou l'opération de chaque volume
 5. Avant un export STL : **Finalize Solid Progress**
+
+### Modèle de démonstration
+
+Ouvrez [docs/demo.skp](docs/demo.skp) (format SketchUp 2017 : s'ouvre dans SketchUp Make 2017 et les versions suivantes) : la pièce de la vidéo, en groupe Solid Progress. Double-cliquez dessus pour modifier ses sources, cliquez à côté pour recalculer le Result, ouvrez la **Progress Table** pour changer l'ordre ou les opérations.
 
 ## SketchUp Pro seulement (développeurs)
 

@@ -1220,6 +1220,111 @@ module SolidProcedural
                 'Rebuild without selection: message names Solid Progress groups', tests.messages.inspect)
       end
 
+      # The demo model of tools/demo, built with the engine of this
+      # SketchUp; the changes shown in the video, then undone by the table.
+      test 'T17 Demo model builds (tools/demo)' do |c, model|
+        $sp_demo_no_autorun = true
+        begin
+          load File.join(tests::PROJECT_DIR, 'tools', 'demo', 'build_demo.rb')
+        ensure
+          $sp_demo_no_autorun = nil
+        end
+        demo = SolidProcedural::Demo
+        # Circles restored whatever the Set Repair Options of this PC.
+        tests.force_auto_repair
+        tests.messages.clear
+        started = Time.now
+        # Far from the other tests (the demo is in meters), and behind the
+        # camera of its scenes.
+        parts = demo.build(model, tests.pt(0, 10_000, 0))
+        c.note(format('built in %.1f s', Time.now - started))
+        c.check(tests.messages.empty?, 'no message', tests.messages.join(' / '))
+        raw = parts[:raw]
+        c.check(raw.map(&:name) == demo::PLATE_ORDER && raw.all?(&:manifold?) &&
+                raw.none? { |v| Procedural.procedural?(v) }, 'scene 1: plate, pin and hole, solids, not grouped')
+        plate = parts[:plate]
+        r = Procedural.result_of(plate)
+        c.check(r && r.manifold? && !r.hidden? && !Procedural.stale?(plate) &&
+                Procedural.sources_of(plate).all?(&:hidden?), 'scene 2: Result solid, shown, up to date; sources hidden')
+        c.check(Procedural.sources_of(plate).map(&:name) == demo::PLATE_ORDER, 'scene 2: rows Plate, Pin, Hole')
+        c.check(tests.arc_edges(tests.inner(r)) > 0, 'scene 2: native circles in the Result')
+        # Expected volumes (m3, polygons of the circles): the hole goes
+        # through the pin (tube), the pin fills the hole above its base, or
+        # the pin is disabled.
+        area = ->(spec) { spec[:segments] / 2.0 * spec[:r]**2 * Math.sin(2 * Math::PI / spec[:segments]) }
+        size = demo::PLATE
+        top = demo::PIN[:z] + demo::PIN[:h]
+        slab = size[:w] * size[:d] * size[:h]
+        pin = area.call(demo::PIN) * (top - size[:h])
+        tube = slab + pin - area.call(demo::HOLE) * top
+        full = slab + pin - area.call(demo::HOLE) * demo::PIN[:z]
+        no_pin = slab - area.call(demo::HOLE) * size[:h]
+        m3 = 1.m.to_f**3
+        near = ->(v, expected) { (v - expected * m3).abs < expected * m3 * 0.005 }
+        volume = -> { Procedural.result_of(plate).volume }
+        c.check(near.call(volume.call, tube), "scene 2: the hole goes through the pin (#{(volume.call / m3).round} m3)")
+        c.later do
+          tests.messages.clear
+          Procedural.table_order(model, plate, %w[Plate Hole Pin].map { |n| demo.key_of(plate, n) })
+          c.check(tests.messages.empty? && near.call(volume.call, full),
+                  "table: pin after the hole, pin full at once (#{(volume.call / m3).round} m3)",
+                  tests.messages.join(' / '))
+          Procedural.table_order(model, plate, demo::PLATE_ORDER.map { |n| demo.key_of(plate, n) })
+          c.check(near.call(volume.call, tube), 'table: order back, tube again')
+        end
+        c.later do
+          tests.messages.clear
+          Procedural.table_toggle(model, plate, demo.key_of(plate, 'Pin'), false)
+          c.check(tests.messages.empty? && near.call(volume.call, no_pin), 'table: pin disabled, plate with its hole only',
+                  tests.messages.join(' / '))
+          Procedural.table_toggle(model, plate, demo.key_of(plate, 'Pin'), true)
+          c.check(near.call(volume.call, tube), 'table: pin enabled again, tube again')
+          tests.restore_auto_repair
+        end
+        # One image per scene, framed as the scenes of the demo, to check
+        # the framing: results/demo-build-<major>-<n>.png.
+        c.later do
+          view = model.active_view
+          camera = view.camera
+          written = demo::SCENES.each_with_index.count do |(_name, part), k|
+            demo.frame(view, [parts[part]].flatten)
+            view.write_image(File.join(tests::RESULTS_DIR, "demo-build-#{Sketchup.version.to_i}-#{k}.png"))
+          end
+          view.camera = camera
+          c.check(written == demo::SCENES.length, "#{written} scene image(s) written in results")
+        end
+      end
+
+      # Q-8 (2.0.1): native booleans with a volume of several solids (one
+      # group of four cylinders) leave one unused definition per solid; the
+      # rebuild removes them, at Create and at Rebuild.
+      test 'T19 Volume of several solids: no unused definition left' do |c, model|
+        before = model.definitions.to_a
+        unused = lambda do
+          (model.definitions.to_a - before).select { |d| d.valid? && !d.group? && d.count_instances.zero? }
+        end
+        base = tests.box(model.entities, 0, 200, 0, 20, 20, 2, tests.base_material(model))
+        centers = [[5, 5], [15, 5], [5, 15], [15, 15]].map { |a, b| tests.pt(a, 200 + b, -1) }
+        holes = tests.cylinders(model.entities, centers, Z_AXIS, 1, 4)
+        holes.material = tests.red(model)
+        tests.select(model, base, holes)
+        tests.messages.clear
+        Procedural.do_create
+        g = model.selection.find { |e| Procedural.procedural?(e) }
+        c.check(g && tests.messages.empty?, 'Create: Solid Progress group with a volume of 4 holes',
+                tests.messages.join(' / '))
+        next c.phases.clear unless g
+        c.check(unused.call.empty?, 'Create: no unused definition', unused.call.map(&:name).join(', '))
+        c.later do
+          tests.select(model, g)
+          Procedural.do_rebuild
+          r = Procedural.result_of(g)
+          c.check(tests.messages.empty? && r && r.manifold?, 'Rebuild: Result solid', tests.messages.join(' / '))
+          c.check(unused.call.empty?, 'Rebuild: no unused definition', unused.call.map(&:name).join(', '))
+          model.selection.clear
+        end
+      end
+
       test 'T11 No unused definition left' do |c, model|
         left = tests.unused_new_definitions(model)
         c.check(left.empty?, 'no unused component definition after all the tests',
@@ -1291,6 +1396,56 @@ module SolidProcedural
           g = tests.procedural_groups(m).first
           next unless tests.path_settable?(m)
           c.check(g && !Procedural.result_of(g).hidden?, 'opened file: exiting shows the Result')
+        end
+      end
+
+      # After T14: the published demo model docs/demo.skp (made by hand, in
+      # the SketchUp 2017 format: opened by every version) opens in this
+      # SketchUp with its Solid Progress groups up to date. The model of the
+      # tests is saved first, so File > Open asks nothing.
+      test 'T18 Demo file opens (docs)' do |c, model|
+        name = 'demo.skp'
+        demo_path = File.join(tests::PROJECT_DIR, 'docs', name)
+        next c.skip("docs/#{name} not there") unless File.exist?(demo_path)
+        digest = tests.digest(demo_path)
+        path = File.join(tests::RESULTS_DIR, "t18-#{Sketchup.version.to_i}.skp")
+        File.delete(path) if File.exist?(path)
+        c.check(model.save(path), 'model of the tests saved')
+        c.later do
+          if c.check(!Sketchup.active_model.modified?, 'model unchanged after the save')
+            c.check(Sketchup.open_file(demo_path), "docs/#{name} opened")
+          else
+            c.phases.clear
+          end
+        end
+        c.later do
+          m = Sketchup.active_model
+          groups = tests.procedural_groups(m)
+          c.check(!groups.empty?, "#{groups.length} Solid Progress group(s) in the demo")
+          groups.each do |g|
+            r = Procedural.result_of(g)
+            c.check(r && r.manifold? && !r.hidden? && !Procedural.stale?(g) && Procedural.sources_of(g).all?(&:hidden?),
+                    "#{Procedural.group_label(g)}: up to date, Result solid and shown, sources hidden")
+          end
+          # The view of the file (or of each scene), to look at it:
+          # results/demo-<major>-<n>.png.
+          view = m.active_view
+          cameras = m.pages.size.zero? ? [view.camera] : m.pages.map(&:camera)
+          written = cameras.each_with_index.count do |cam, k|
+            view.camera = cam
+            view.write_image(File.join(tests::RESULTS_DIR, "demo-#{Sketchup.version.to_i}-#{k}.png"))
+          end
+          c.check(written == cameras.length, "#{written} image(s) of the demo written in results")
+        end
+        c.later do
+          c.check(tests.digest(demo_path) == digest, "docs/#{name} unchanged by the test")
+          # The demo file is not left open: closing SketchUp by hand would
+          # offer to save it.
+          if Sketchup.active_model.modified?
+            c.note("docs/#{name} modified on opening: still open, do not save it")
+          else
+            Sketchup.file_new
+          end
         end
       end
     end

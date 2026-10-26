@@ -2,9 +2,9 @@
 
 *[Version française](FSD_FR.md)*
 
-> This document describes **Solid Progress 1.1.2**, delivered on 2026-10-26 for SketchUp Pro 2021 and SketchUp Make 2017. Nesting is postponed (EF-25 of `PRD.md`, French).
+> This document describes **Solid Progress 2.0.1**, delivered on 2026-10-26 for SketchUp Pro 2021 and SketchUp Make 2017. Nesting is postponed (EF-25 of `PRD.md`, French).
 
-**Version:** 2.0.0
+**Version:** 2.0.1
 **Date:** 2026-10-26
 **Author:** DRO
 
@@ -155,7 +155,7 @@ Changing the subtract color (Set Subtract Color) or opening the model on another
 7. Former Result erased (when it is a component instance, its definition is removed once no instance uses it any more); new Result marked (`role=result`, name `Result`); signature stored; display applied.
 8. Selection restored (entities still valid), even on an error: the booleans clear the selection, and a selected group must stay selected (table, Rebuild).
 
-On a failure in step 4, every copy is erased in an `ensure`, the unused component definitions created are removed (`remove_definition`: `DefinitionList#remove`, or with SketchUp 2017 `entities.clear!`, an empty definition without instance being dropped), and the former Result stays in place. A single component volume gives a component instance as Result: its faces are read in its definition.
+On a failure in step 4, every copy is erased in an `ensure`, the unused component definitions created are removed (`remove_definition`: `DefinitionList#remove`, or with SketchUp 2017 `entities.clear!`, an empty definition without instance being dropped), and the former Result stays in place. Native booleans with a volume made of several solids (one group of several cylinders) leave one unused component definition per solid (`TempInstance#n`): at the end of the rebuild, successful or not, the component definitions that appeared during the rebuild without instance are removed the same way (2.0.1, Q-8, T19). A single component volume gives a component instance as Result: its faces are read in its definition.
 
 #### EF-16: Rebuild failure
 
@@ -253,7 +253,7 @@ Color of the material of the first selected group/component that has one, stored
 | **Built-in engine** | `solid_progress/solid_operations.rb`, copy of Solid for Maker 1.0.1 (commit `2b2a596`, ported from Eneroth Solid Tools 3.0.0; `wrapping_face` on the outer loop: counterbore after its hole, 1.1.2), module renamed `SolidProcedural::SolidOperations`, body unchanged; MIT License in `LICENSE-solid-operations.txt`. Union, Shell (union then `remove_cavities`) and Subtract (trim then the tool erased), small parts scaled up × 1000 |
 | **Known difference** | A volume entirely enclosed in another one: kept by the native Outer Shell (Result volume 1000 + 64 in T12), erased by the Shell of the built-in engine (1000) |
 | **Pro only** | The line `# raise ProOnly, __LINE__ if ruby`, just after the edition check in `ruby_engine?` (`solid_progress/procedural.rb`), is commented out by default. Uncommented and SketchUp not Pro: `ruby_engine?` raises `ProOnly` (a `RebuildError`), message "PRO Only vs. procedural.rb:<line>" (the line to comment out again). Create, Rebuild and Finalize show it as is (`pro_refused?`, first in the command); `rebuild_in_operation` raises it before any change (rebuild on exit: "Rebuild failed — the former result is kept"; table: operation aborted). Nothing is changed; the built-in engine is never used. Replaces the `PRO_ONLY` constant of 1.1.0 |
-| **Tests** | `tools/tests/` (not in the `.rbz`, NF-13): T01 to T16 (T16: visible names, Solid Progress); T10: one `is_pro?` in the plugin, Pro only line commented out by default, then a copy of `procedural.rb` loaded with the line uncommented and Make simulated → exact message for Create, Rebuild, Finalize, the rebuild and the table, nothing changed; T12 compares volumes known in advance, native then built-in engine forced in 2021, built-in engine in Make 2017 (including a plate with 20 holes made by Create, 960 edges in native circles expected); T15 compares `repair_holes` with the former method (`repair_holes_scan`, kept in the test file) on the same geometry (operation aborted in between), on 14 cases (including "counterbores after the holes", 1.1.2), and the grids with the full scan |
+| **Tests** | `tools/tests/` (not in the `.rbz`, NF-13): T01 to T19 (T16: visible names, Solid Progress; T17: the demo script builds its part in the model of the tests, exact volumes, table applied at once, one image per scene; T18: the published demo model `docs/demo.skp` (made by hand, SketchUp 2017 format) opens in 2021 and in Make, Solid Progress groups up to date, Result solid and shown, sources hidden, file unchanged; T19: a volume of 4 cylinders leaves no unused definition, Q-8); `run_tests.ps1 -Demo`: the demo script only (images of the scenes, files in `results/`); T10: one `is_pro?` in the plugin, Pro only line commented out by default, then a copy of `procedural.rb` loaded with the line uncommented and Make simulated → exact message for Create, Rebuild, Finalize, the rebuild and the table, nothing changed; T12 compares volumes known in advance, native then built-in engine forced in 2021, built-in engine in Make 2017 (including a plate with 20 holes made by Create, 960 edges in native circles expected); T15 compares `repair_holes` with the former method (`repair_holes_scan`, kept in the test file) on the same geometry (operation aborted in between), on 14 cases (including "counterbores after the holes", 1.1.2), and the grids with the full scan |
 
 ## 6. Non-functional requirements
 
@@ -303,6 +303,8 @@ solid_progress/
     setcolor_16/24.png
     repair_circles_16/24.png
 tools/tests/                    # Not in the .rbz: run_tests.ps1, run_tests.rb, manual_open.rb, results/ (ignored by git)
+tools/demo/                     # Not in the .rbz: build_demo.rb (demo part of the tests), demo_images.rb (run_tests.ps1 -Demo)
+docs/demo.skp                   # Published demo model (made by hand, SketchUp 2017 format); images/, PUBLICATION.md, SKETCHUCATION.md
 ```
 
 ### 7.2 Module structure
@@ -463,6 +465,7 @@ A setting missing from `SolidProcedural` is read from `SolidBatch` (Solid Batch 
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 2.0.1 | 2026-10-26 | A volume made of several solids no longer leaves unused `TempInstance#n` definitions at each rebuild (native booleans, Q-8). Demo model `docs/demo.skp` (made by hand, the part of the video), demo script of the tests (`tools/demo/build_demo.rb`), tests T17 to T19, `run_tests.ps1 -Demo` |
 | 1.1.2 | 2026-10-26 | Built-in engine of **Solid for Maker 1.0.1** (commit `2b2a596`): a counterbore or countersink cut after its hole works (Q-7; Eneroth's `wrapping_face` required a face common to all the edges of the new face, hole included: the face was erased and the rebuild failed). Test T15 "counterbores after the holes" |
 | 2.0.0 | 2026-10-26 | Renamed **Solid Progress** (SketchUp 2027 brings its own *Procedural Components*): every name the user sees, `solid_progress.rb`, `solid_progress/`, `solid_progress.rbz`; code identifiers and model data unchanged (existing models recognized); uninstall Solid Procedural first. One SketchUp edition check (`ruby_engine?`) and one commented line for Pro only ("PRO Only vs. procedural.rb:<line>"), replacing `PRO_ONLY`. Test T16 (visible names); test launcher safe for the SketchUp preferences |
 | 1.1.1 | 2026-10-25 | **Faster** circle restoration on faces with many holes: `Volume.repair_holes` with grids (code of Solid for Maker 1.0.0), same result as the former method (T15, 13 cases, native and built-in engine); plate with 20 holes: 9 → 2 s (2021), 6.6 → 1.4 s (Make 2017). Tests T15 and case "plate with 20 holes" of T12 |

@@ -294,6 +294,7 @@ module SolidProcedural
       end
 
       created = []
+      definitions = model.definitions.to_a
       begin
         copies = []
         result = nil
@@ -316,6 +317,9 @@ module SolidProcedural
         end
         result, note, warning = restore_circles(result, created)
       ensure
+        # Native booleans with a volume of several solids leave one unused
+        # definition per solid (TempInstance#n): removed too.
+        created.concat((model.definitions.to_a - definitions).reject(&:group?))
         created.each do |d|
           remove_definition(model, d) if d.valid? && d.count_instances.zero?
         end
