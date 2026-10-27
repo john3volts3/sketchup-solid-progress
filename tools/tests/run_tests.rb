@@ -481,6 +481,45 @@ module SolidProcedural
       g
     end
 
+    # Specimens of two volumes in contact (T22).
+    CONTACT_SPECIMENS = [
+      'stacked boxes, same face', 'box on a plate', 'boxes side by side, same face',
+      'boxes side by side, offset faces', 'boxes touching along an edge', 'cylinder on a plate',
+      'tangent cylinders', 'disc in a pocket, same circle', 'disc in a pocket, 0.1 mm larger'
+    ].freeze
+
+    # [base, other] of the specimen +kind+ at (x, y). A red hole through
+    # the base at (x + 4, y + 4) misses the other volume or its contact.
+    def self.contact_specimen(kind, entities, x, y)
+      case kind
+      when 'stacked boxes, same face'
+        [box(entities, x, y, 0, 10, 10, 10), box(entities, x, y, 10, 10, 10, 10)]
+      when 'box on a plate'
+        [box(entities, x, y, 0, 20, 20, 4), box(entities, x + 5, y + 5, 4, 10, 10, 10)]
+      when 'boxes side by side, same face'
+        [box(entities, x, y, 0, 10, 10, 10), box(entities, x + 10, y, 0, 10, 10, 10)]
+      when 'boxes side by side, offset faces'
+        [box(entities, x, y, 0, 10, 10, 10), box(entities, x + 10, y + 5, 0, 10, 10, 10)]
+      when 'boxes touching along an edge'
+        [box(entities, x, y, 0, 10, 10, 10), box(entities, x + 10, y + 10, 0, 10, 10, 10)]
+      when 'cylinder on a plate'
+        [box(entities, x, y, 0, 20, 20, 4), cylinder(entities, x + 10, y + 10, 4, 5, 10)]
+      when 'tangent cylinders'
+        [cylinder(entities, x + 5, y + 5, 0, 5, 10), cylinder(entities, x + 15, y + 5, 0, 5, 10)]
+      when 'disc in a pocket, same circle' then pocket(entities, x, y, 0)
+      when 'disc in a pocket, 0.1 mm larger' then pocket(entities, x, y, 0.1.mm)
+      end
+    end
+
+    # A plate 20 x 20 x 4 with a pocket of radius 5, 2 deep, and a disc 4
+    # high that fills it, +grow+ larger in radius.
+    def self.pocket(entities, x, y, grow)
+      plate = box(entities, x, y, 0, 20, 20, 4)
+      circle = plate.entities.add_circle(pt(x + 10, y + 10, 4), Z_AXIS, 5, 24)
+      circle.first.faces.min_by(&:area).pushpull(-2)
+      [plate, cylinder(entities, x + 10, y + 10, 2, 5 + grow, 4)]
+    end
+
     # Boolean of the plugin's engines (Procedural.combine): the solid that
     # holds the result, or nil.
     def self.boolean(ruby, op, acc, tool)
@@ -1322,6 +1361,110 @@ module SolidProcedural
           c.check(tests.messages.empty? && r && r.manifold?, 'Rebuild: Result solid', tests.messages.join(' / '))
           c.check(unused.call.empty?, 'Rebuild: no unused definition', unused.call.map(&:name).join(', '))
           model.selection.clear
+        end
+      end
+
+      # A result that is not a solid is refused and the volume named, with
+      # both engines. A native boolean on it would fail, and SketchUp then
+      # cancels the whole open operation (a user model showed "reference to
+      # deleted Group"). Two boxes that touch along an edge only give a
+      # union that is not a solid; the subtract volume comes after it.
+      test 'T20 Create: a union that is not a solid is named, nothing changed' do |c, model|
+        a = tests.box(model.entities, 0, 260, 0, 10, 10, 10, tests.base_material(model))
+        b = tests.box(model.entities, 10, 270, 0, 10, 10, 10)
+        hole = tests.box(model.entities, 2, 262, -1, 2, 2, 12, tests.red(model))
+        before = tests.procedural_groups(model).length
+        tests.select(model, a, b, hole)
+        tests.messages.clear
+        Procedural.do_create
+        message = tests.messages.join(' / ')
+        c.check(tests.messages.length == 1 && message.include?('gives a result that is not a solid') &&
+                message.include?('volume #2 ') && message.include?('Nothing was changed'),
+                'message names the union that is not a solid (volume #2)', message)
+        c.check(!message.include?('deleted'), 'no "reference to deleted" error', message)
+        c.check(tests.procedural_groups(model).length == before &&
+                [a, b, hole].all? { |v| v.valid? && v.parent == model }, 'nothing created, volumes left as they were')
+        model.start_operation('Solid Procedural tests — clean up', true)
+        model.entities.erase_entities([a, b, hole].select(&:valid?))
+        model.commit_operation
+      end
+
+      # Same union at the rebuild on exit, a transparent operation appended
+      # to the edit: SketchUp would cancel the edit of the user with it.
+      test 'T21 Rebuild on exit: a union that is not a solid keeps the edit' do |c, model|
+        next c.skip('needs Model#active_path= (SketchUp 2020+)') unless tests.path_settable?(model)
+        a = tests.box(model.entities, 30, 260, 0, 10, 10, 10, tests.base_material(model))
+        b = tests.box(model.entities, 35, 265, 0, 10, 10, 10)
+        hole = tests.box(model.entities, 32, 262, -1, 2, 2, 12, tests.red(model))
+        tests.select(model, a, b, hole)
+        tests.messages.clear
+        Procedural.do_create
+        g = model.selection.find { |e| Procedural.procedural?(e) }
+        c.check(g && tests.messages.empty?, 'Create: Solid Progress group', tests.messages.join(' / '))
+        next c.phases.clear unless g
+        volume = Procedural.result_of(g).volume
+        # The volume without material: it touches the base along an edge
+        # once moved. Its position is read closed, as at the end: in an open
+        # group, SketchUp gives model coordinates.
+        moved = Procedural.sources_of(g).find { |s| s.material.nil? }
+        x = moved.transformation.origin.x
+        model.active_path = [g]
+        c.later do
+          model.start_operation('Solid Procedural tests — move a volume', true)
+          moved.transform!(Geom::Transformation.translation(Geom::Vector3d.new(5, 5, 0)))
+          model.commit_operation
+          tests.messages.clear
+          tests.close_all(model)
+        end
+        c.later do
+          message = tests.messages.join(' / ')
+          c.check(message.include?('Rebuild failed') && message.include?('gives a result that is not a solid'),
+                  'message names the union that is not a solid', message)
+          c.check(moved.valid? && (moved.transformation.origin.x - x - 5).abs < 1e-6, 'the edit of the user is kept')
+          result = Procedural.result_of(g)
+          c.check(result && !result.hidden? && (result.volume - volume).abs < 0.001, 'former Result kept and shown')
+          c.check(Procedural.stale?(g), 'out of date: rebuilt at the next exit')
+          model.start_operation('Solid Procedural tests — clean up', true)
+          g.erase!
+          model.commit_operation
+        end
+      end
+
+      # Volumes in contact (faces, edges, circles), each with a red hole
+      # through the base, so that their union is not the last step: either
+      # a solid Result, or refused with the volume named and nothing
+      # changed. The outcome of each specimen is noted.
+      test 'T22 Specimens of volumes in contact (faces, edges, circles)' do |c, model|
+        tests::CONTACT_SPECIMENS.each_with_index do |kind, k|
+          x = 60 * k
+          base, other = tests.contact_specimen(kind, model.entities, x, 320)
+          hole = tests.box(model.entities, x + 4, 324, -1, 2, 2, 6, tests.red(model))
+          volumes = [base, other, hole]
+          next unless c.check(volumes.all?(&:manifold?), "#{kind}: specimen volumes are solids")
+          before = tests.procedural_groups(model).length
+          tests.select(model, volumes)
+          tests.messages.clear
+          Procedural.do_create
+          message = tests.messages.join(' / ')
+          g = model.selection.find { |e| Procedural.procedural?(e) }
+          result = g && Procedural.result_of(g)
+          outcome = if g && message.empty?
+                      result && result.manifold? ? 'Result solid' : 'Result NOT a solid'
+                    elsif message.include?('gives a result that is not a solid')
+                      'refused: union not a solid'
+                    elsif message =~ /of volume #\d+ .* failed\./
+                      'refused: boolean failed'
+                    else
+                      "unexpected: #{message}"
+                    end
+          c.note("#{kind}: #{outcome}")
+          unchanged = !g && tests.procedural_groups(model).length == before &&
+                      volumes.all? { |v| v.valid? && v.parent == model }
+          c.check(outcome == 'Result solid' || (outcome.start_with?('refused') && unchanged),
+                  "#{kind}: solid Result, or refused with the volume named and nothing changed", message)
+          model.start_operation('Solid Procedural tests — clean up', true)
+          model.entities.erase_entities(g ? [g] : volumes.select(&:valid?))
+          model.commit_operation
         end
       end
 

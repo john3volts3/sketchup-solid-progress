@@ -304,9 +304,12 @@ module SolidProcedural
         ensure
           copies.each { |c| c.erase! if c.valid? && c != result }
           # Whatever an engine left in the group (a temporary group after an
-          # error would become a source): only the result stays.
-          left = (group.entities.to_a - before).select { |e| e.valid? && e != result }
-          group.entities.erase_entities(left) unless left.empty?
+          # error would become a source): only the result stays. A failed
+          # native boolean cancels the whole operation, the new group too.
+          if group.valid?
+            left = (group.entities.to_a - before).select { |e| e.valid? && e != result }
+            group.entities.erase_entities(left) unless left.empty?
+          end
         end
 
         result.material = active.first.material
@@ -356,6 +359,9 @@ module SolidProcedural
       total = active.length - 1
       active.drop(1).each_with_index do |source, i|
         op = op_of(source)
+        # Before the boolean: the operation cancelled by a failed native
+        # boolean takes the rank of the volume with it.
+        name = label(source)
         pct = ((i + 1) * 100.0 / total).round
         Sketchup.status_text = "Solid Progress — #{OP_LABELS[op]} #{i + 1}/#{total} (#{pct}%)" +
                                (ruby ? ' — SketchUp Make engine' : '')
@@ -374,9 +380,19 @@ module SolidProcedural
                 end
               end
         unless res && res.valid?
-          raise RebuildError, "#{OP_LABELS[op]} of volume #{label(source)} failed."
+          raise RebuildError, "#{OP_LABELS[op]} of volume #{name} failed."
         end
         copies << res
+        # A result that is not a solid is refused, whatever the engine. With
+        # the native booleans, the next boolean would fail and SketchUp then
+        # cancels the whole open operation (a transparent one with the
+        # previous edit of the user).
+        unless res.manifold?
+          raise RebuildError, "#{OP_LABELS[op]} of volume #{name} gives a result that is not a solid. " \
+                              'Volumes that only touch (faces in contact, edges that coincide, tangent ' \
+                              'circles or arcs) are a common cause: make them overlap, or enlarge or move ' \
+                              'this volume slightly.'
+        end
         acc = res
       end
       acc

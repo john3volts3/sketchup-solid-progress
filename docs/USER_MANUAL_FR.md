@@ -2,7 +2,7 @@
 
 *[English version](USER_MANUAL_EN.md)*
 
-Version 2.0.1 — SketchUp Pro 2021 et SketchUp Make 2017
+Version 2.0.2 — SketchUp Pro 2021 et SketchUp Make 2017
 
 ## Présentation
 
@@ -37,7 +37,7 @@ Le Result prend le matériau de la Base ; les faces taillées par un volume sous
 
 ## Flux de travail
 
-1. **Modélisez les volumes** — une base, les volumes à ajouter, les volumes à retirer (trous, rainures), chacun en groupe solide.
+1. **Modélisez les volumes** — une base, les volumes à ajouter, les volumes à retirer (trous, rainures), chacun en groupe solide. Les volumes à ajouter se chevauchent un peu, les trous traversent (voir [Bien dessiner les volumes](#bien-dessiner-les-volumes)).
 2. **Peignez les volumes à retirer** de la couleur de soustraction (rouge par défaut).
 3. **Sélectionnez-les tous** et cliquez sur **Create Solid Progress**. L'ordre est : tous les volumes ajoutés, puis tous les volumes soustraits. Le Result apparaît, les sources sont cachées. Vérifiez dans la Progress Table quel volume est la Base (son matériau est celui du Result) ; choisissez *Base* sur une autre ligne pour en changer.
 4. **Modifiez** — double-cliquez sur le groupe Solid Progress : les sources apparaissent, le Result est caché. Déplacez un trou, agrandissez un tenon, peignez un volume, ajoutez un nouveau groupe solide (il va en fin de liste).
@@ -52,6 +52,16 @@ Pour essayer Solid Progress sur une pièce toute prête, ouvrez le modèle de d�
 1. Une plaque (base), un tenon posé dessus, un cylindre rouge qui les traverse tous les deux (trou).
 2. *Create Solid Progress* : la Base (la plaque — vérifiez-le dans la table), puis le tenon (ajouté), puis le trou (soustrait) → le trou perce aussi le tenon : un tube.
 3. Dans la Progress Table, placez le tenon après le trou → le tenon redevient plein ; le trou reste dans la plaque, sous le tenon.
+
+### Bien dessiner les volumes
+
+Les opérations sur les solides de SketchUp (et le moteur intégré de SketchUp Make) gèrent mal les volumes qui ne font que se **toucher** : faces en simple contact, arête d'un volume posée exactement sur une arête d'un autre, cercles ou arcs tangents ou confondus. La combinaison peut alors ne pas être un solide : Solid Progress la refuse.
+
+- **Volumes à ajouter : faites-les se chevaucher.** Enfoncez légèrement un tenon dans la plaque qui le porte plutôt que de le poser exactement sur la face ; faites une pièce qui remplit un logement un peu plus grande que le logement (par exemple un diamètre plus grand de 0,1 mm).
+- **Volumes à retirer : faites-les traverser.** Un trou commence sous les faces qu'il perce et finit au-dessus.
+- **Si un contact doit rester exact**, vérifiez que les volumes se combinent encore : fermez le groupe Solid Progress et vérifiez que le Result est un solide (Infos sur l'entité : *Groupe solide*).
+
+Solid Progress nomme le volume dont la combinaison n'est pas un solide : *Union of volume #4 … gives a result that is not a solid* (voir [Dépannage](#dépannage)).
 
 ## Commandes
 
@@ -178,6 +188,7 @@ SketchUp Make n'a pas de booléens natifs. Solid Progress utilise alors son **mo
 | *No base volume found: all the selected objects have the subtract color* | Repeignez au moins un objet d'une autre couleur |
 | *Volume #2 … is not a solid.* | Une source a été abîmée pendant la modification : réparez-la ; l'ancien Result est gardé |
 | *Subtract of volume #3 … failed.* | Le booléen a échoué (natif avec SketchUp Pro, moteur intégré avec SketchUp Make ; volumes qui ne se touchent pas, faces coplanaires…) : déplacez ou simplifiez le volume |
+| *Union of volume #4 … gives a result that is not a solid. …* | Ce volume ne fait que toucher un autre volume (faces en simple contact, arêtes confondues, cercles ou arcs tangents) et leur combinaison n'est pas un solide. Faites chevaucher les volumes, ou agrandissez ou déplacez légèrement ce volume (voir [Bien dessiner les volumes](#bien-dessiner-les-volumes)). Rien n'est modifié ; à la fermeture d'un groupe Solid Progress, votre modification et l'ancien Result sont gardés |
 | *Double-click the Solid Progress group in the model to open it …* (table) | SketchUp 2017 : la table ne peut pas ouvrir un groupe Solid Progress ; double-cliquez-le dans le modèle |
 | *PRO Only vs. procedural.rb:…* | Cette copie du plugin a été réservée à SketchUp Pro (ligne décommentée dans `solid_progress/procedural.rb`) : rien n'est modifié. Pour l'utiliser avec SketchUp Make, remettez cette ligne en commentaire (`#` en tête) et redémarrez SketchUp |
 | *The first volume … has the subtract color* | La Base est peinte de la couleur de soustraction : repeignez-la, ou choisissez *Base* sur une autre ligne |

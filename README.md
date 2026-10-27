@@ -61,7 +61,7 @@ Solid Progress 2.0.0 is the new name of Solid Procedural (renamed because Sketch
 
 ## Quick Start
 
-1. Model a base and the volumes to add or remove, each as a **solid group**; paint the volumes to remove in red (the default subtract color)
+1. Model a base and the volumes to add or remove, each as a **solid group**; paint the volumes to remove in red (the default subtract color). Make the volumes to add overlap a little and the holes go through: SketchUp's solid tools handle faces in simple contact and tangent circles poorly
 2. Select them all and click **Create Solid Progress**
 3. Double-click the Solid Progress group to edit its sources; close it (click outside or Escape): the Result is rebuilt
 4. Open the **Progress Table** to change the order or the operation of each volume
@@ -147,7 +147,7 @@ Solid Progress 2.0.0 est le nouveau nom de Solid Procedural (renommé parce que 
 
 ## Démarrage rapide
 
-1. Modélisez une base et les volumes à ajouter ou à retirer, chacun en **groupe solide** ; peignez en rouge (couleur de soustraction par défaut) les volumes à retirer
+1. Modélisez une base et les volumes à ajouter ou à retirer, chacun en **groupe solide** ; peignez en rouge (couleur de soustraction par défaut) les volumes à retirer. Faites chevaucher un peu les volumes à ajouter et traverser les trous : les outils solides de SketchUp gèrent mal les faces en simple contact et les cercles tangents
 2. Sélectionnez-les tous et cliquez sur **Create Solid Progress**
 3. Double-cliquez sur le groupe Solid Progress pour modifier ses sources ; fermez-le (clic à l'extérieur ou Échap) : le Result est recalculé
 4. Ouvrez la **Progress Table** pour changer l'ordre ou l'opération de chaque volume

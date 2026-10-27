@@ -2,10 +2,10 @@
 
 *[Version française](FSD_FR.md)*
 
-> This document describes **Solid Progress 2.0.1**, delivered on 2026-10-26 for SketchUp Pro 2021 and SketchUp Make 2017. Nesting is postponed (EF-25 of `PRD.md`, French).
+> This document describes **Solid Progress 2.0.2**, delivered on 2026-10-27 for SketchUp Pro 2021 and SketchUp Make 2017. Nesting is postponed (EF-25 of `PRD.md`, French).
 
-**Version:** 2.0.1
-**Date:** 2026-10-26
+**Version:** 2.0.2
+**Date:** 2026-10-27
 **Author:** DRO
 
 ---
@@ -120,7 +120,7 @@ Guides, texts and dimensions are left alone. A copied group shares its definitio
 | **Trigger** | `onActivePathChanged`, deferred with `UI.start_timer(0, false)` |
 | **Processing** | Difference between the previous and the current active path. Groups **left** (innermost first): rebuild when the signature changed (`stale?`), then "closed" display. Groups **entered**: "open" display |
 | **Operation** | One operation "Solid Progress — Rebuild", **transparent**: merged with the last edit (option B, `MERGE_REBUILD_WITH_LAST_EDIT = true`). With `false`, the rebuild becomes a separate undo step (option A); display switches alone stay transparent |
-| **Error** | The operation is always committed (never `abort_operation` on a transparent operation); the former Result is kept; message "Rebuild failed — the former result is kept." naming the volume |
+| **Error** | The operation is always committed (never `abort_operation` on a transparent operation); the former Result is kept; message "Rebuild failed — the former result is kept." naming the volume. A result that is not a solid is refused before the next boolean (EF-14): a failed native boolean would otherwise cancel the whole operation, **the edit of the user it is merged with included** (2.0.2, T21) |
 
 #### EF-10: Rebuild Solid Progress
 
@@ -149,7 +149,7 @@ Changing the subtract color (Set Subtract Color) or opening the model on another
 1. Selection remembered; `make_unique` of the group; sources normalized (`role`, `rank` 1..n, `uid`, `enabled` — the Base is always enabled —, color → operation).
 2. Validation of the enabled sources: at least one; none is a Solid Progress group (nesting postponed); all `manifold?`; the first one is not `subtract`.
 3. Signature computed.
-4. **Combination on copies** (§ 7.4) in `rank` order: `acc = copy(1)`, then for each next source `acc.union(copy)`, `acc.outer_shell(copy)` or `copy.subtract(acc)`; with the built-in engine (`ruby_engine?`), `SolidOperations.union / outer_shell / subtract(acc, copy)`, which modify `acc` in place and erase the copy. Progress in the status bar (`Solid Procedural — Subtract 2/3 (67%)`, followed by "— SketchUp Make engine" with the built-in engine). Then whatever the combination left in the group besides the result is erased (a temporary group of the engine left after an error would otherwise become a source).
+4. **Combination on copies** (§ 7.4) in `rank` order: `acc = copy(1)`, then for each next source `acc.union(copy)`, `acc.outer_shell(copy)` or `copy.subtract(acc)`; with the built-in engine (`ruby_engine?`), `SolidOperations.union / outer_shell / subtract(acc, copy)`, which modify `acc` in place and erase the copy. Progress in the status bar (`Solid Procedural — Subtract 2/3 (67%)`, followed by "— SketchUp Make engine" with the built-in engine). After each operation, a result that is not a solid (`manifold?` false) stops the rebuild and names the volume, with both engines and at every step (2.0.2): a native boolean on that result would fail, and SketchUp would then cancel the whole open operation (§ 7.4). Then whatever the combination left in the group besides the result is erased (a temporary group of the engine left after an error would otherwise become a source); this clean-up first checks that the group still exists (after a cancellation by SketchUp it does not: the error "reference to deleted Group" hid the real message, 2.0.2).
 5. Result material = base material; faces that inherited the subtract color reset (`nil`).
 6. Circle restoration (EF-18) on a copy of the result.
 7. Former Result erased (when it is a component instance, its definition is removed once no instance uses it any more); new Result marked (`role=result`, name `Result`); signature stored; display applied.
@@ -164,7 +164,8 @@ On a failure in step 4, every copy is erased in an `ensure`, the unused componen
 | No enabled volume | `There is no enabled volume to combine.` |
 | Non-solid source | `Volume #2 Cylinder is not a solid.` |
 | First source is Subtract | `The first volume #1 … has the subtract color: the first volume must be added.` |
-| Boolean failed (native or built-in engine) | `Subtract of volume #3 … failed.` |
+| Boolean failed (native or built-in engine) | `Subtract of volume #3 … failed.` (name and rank read before the boolean: a cancellation by SketchUp erases the rank) |
+| Result not a solid (volumes that only touch) | `Union of volume #4 … gives a result that is not a solid. Volumes that only touch (faces in contact, edges that coincide, tangent circles or arcs) are a common cause: make them overlap, or enlarge or move this volume slightly.` |
 | Nested Solid Progress group | `… nested Solid Progress groups are not supported yet.` |
 
 #### EF-17: Independent copies
@@ -253,7 +254,7 @@ Color of the material of the first selected group/component that has one, stored
 | **Built-in engine** | `solid_progress/solid_operations.rb`, copy of Solid for Maker 1.0.1 (commit `2b2a596`, ported from Eneroth Solid Tools 3.0.0; `wrapping_face` on the outer loop: counterbore after its hole, 1.1.2), module renamed `SolidProcedural::SolidOperations`, body unchanged; MIT License in `LICENSE-solid-operations.txt`. Union, Shell (union then `remove_cavities`) and Subtract (trim then the tool erased), small parts scaled up × 1000 |
 | **Known difference** | A volume entirely enclosed in another one: kept by the native Outer Shell (Result volume 1000 + 64 in T12), erased by the Shell of the built-in engine (1000) |
 | **Pro only** | The line `# raise ProOnly, __LINE__ if ruby`, just after the edition check in `ruby_engine?` (`solid_progress/procedural.rb`), is commented out by default. Uncommented and SketchUp not Pro: `ruby_engine?` raises `ProOnly` (a `RebuildError`), message "PRO Only vs. procedural.rb:<line>" (the line to comment out again). Create, Rebuild and Finalize show it as is (`pro_refused?`, first in the command); `rebuild_in_operation` raises it before any change (rebuild on exit: "Rebuild failed — the former result is kept"; table: operation aborted). Nothing is changed; the built-in engine is never used. Replaces the `PRO_ONLY` constant of 1.1.0 |
-| **Tests** | `tools/tests/` (not in the `.rbz`, NF-13): T01 to T19 (T16: visible names, Solid Progress; T17: the demo script builds its part in the model of the tests, exact volumes, table applied at once, one image per scene; T18: the published demo model `docs/demo.skp` (made by hand, SketchUp 2017 format) opens in 2021 and in Make, Solid Progress groups up to date, Result solid and shown, sources hidden, file unchanged; T19: a volume of 4 cylinders leaves no unused definition, Q-8); `run_tests.ps1 -Demo`: the demo script only (images of the scenes, files in `results/`); T10: one `is_pro?` in the plugin, Pro only line commented out by default, then a copy of `procedural.rb` loaded with the line uncommented and Make simulated → exact message for Create, Rebuild, Finalize, the rebuild and the table, nothing changed; T12 compares volumes known in advance, native then built-in engine forced in 2021, built-in engine in Make 2017 (including a plate with 20 holes made by Create, 960 edges in native circles expected); T15 compares `repair_holes` with the former method (`repair_holes_scan`, kept in the test file) on the same geometry (operation aborted in between), on 14 cases (including "counterbores after the holes", 1.1.2), and the grids with the full scan |
+| **Tests** | `tools/tests/` (not in the `.rbz`, NF-13): T01 to T22 (T20: two boxes that touch along an edge only → Create refused, volume #2 named, nothing changed, no "reference to deleted"; T21: same union at the rebuild on exit → the edit of the user and the former Result are kept (2021); T22: 9 specimens of volumes in contact (faces, edge, circles, disc in a pocket) followed by a hole → solid Result, or refused with the volume named and nothing changed, outcome of each noted; T16: visible names, Solid Progress; T17: the demo script builds its part in the model of the tests, exact volumes, table applied at once, one image per scene; T18: the published demo model `docs/demo.skp` (made by hand, SketchUp 2017 format) opens in 2021 and in Make, Solid Progress groups up to date, Result solid and shown, sources hidden, file unchanged; T19: a volume of 4 cylinders leaves no unused definition, Q-8); `run_tests.ps1 -Demo`: the demo script only (images of the scenes, files in `results/`); T10: one `is_pro?` in the plugin, Pro only line commented out by default, then a copy of `procedural.rb` loaded with the line uncommented and Make simulated → exact message for Create, Rebuild, Finalize, the rebuild and the table, nothing changed; T12 compares volumes known in advance, native then built-in engine forced in 2021, built-in engine in Make 2017 (including a plate with 20 holes made by Create, 960 edges in native circles expected); T15 compares `repair_holes` with the former method (`repair_holes_scan`, kept in the test file) on the same geometry (operation aborted in between), on 14 cases (including "counterbores after the holes", 1.1.2), and the grids with the full scan |
 
 ## 6. Non-functional requirements
 
@@ -363,6 +364,8 @@ MD5 over, for each source in order: `rank`, `op`, `enabled`, material key, trans
 
 The rebuild works on copies only; every copy and intermediate result is listed and erased at the end, whichever operand SketchUp erases.
 
+**Failure of a native boolean** (seen in 2021 on 2026-10-27, undocumented): it returns `nil` **and cancels everything done since `start_operation`** (the group made by Create disappears, the volumes go back to their place). In a transparent operation, the previous operation (the edit of the user) is cancelled too. An `abort_operation` called afterwards has no effect on the previous operations. Usual cause: an operand that is not a solid, hence the stop on any result that is not a solid (EF-14).
+
 **Built-in engine (SketchUp Make)**:
 
 | Method | Target (modified in place) | Tool | Returns |
@@ -457,6 +460,7 @@ A setting missing from `SolidProcedural` is read from `SolidBatch` (Solid Batch 
 - The green frame is the selection color of the style: while it is shown, the Styles panel shows this green, and updating the style at that time would store it there. A style whose selection color is exactly `(0, 170, 0)` is taken as left by the plugin.
 - Nested Solid Progress groups refused (nesting postponed): Create refuses a selection holding one, the rebuild stops with a message (former result kept) and the table shows the row as an error. To reuse a sub-part, finalize it, then use it as a volume. An Explode of a Solid Progress group pasted inside an open Solid Progress group would mix its volumes with the ones of that group.
 - The rebuild runs on exiting the group, not while editing.
+- Volumes that only touch (common edge, tangent cylinders; sometimes faces in contact or coinciding circles): the combination is not a solid and is refused; make the volumes overlap (T22). With the built-in engine, a union may depend on the order (cylinder standing on a plate: plate ∪ cylinder works, cylinder ∪ plate fails). A native boolean failing between two solids would cancel the whole open operation, and at the rebuild on exit the last edit with it (not met, § 7.4).
 - Loose geometry inside a Solid Progress group is not used (make it a group).
 - **STL export: always run Finalize first** (the hidden sources of a non-finalized group go into the export, PRD Q-1). The green frame is a reminder that a group is not finalized yet.
 - Shortcuts while a name is typed: the field keeps the keyboard until Enter or Escape.
@@ -465,6 +469,7 @@ A setting missing from `SolidProcedural` is read from `SolidBatch` (Solid Batch 
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 2.0.2 | 2026-10-27 | **Result that is not a solid refused** at every step of the rebuild, with both engines, naming the volume ("… gives a result that is not a solid. …"). Fixes "Create Solid Progress error: reference to deleted Group": a native boolean failing on a result that is not a solid cancelled the whole open operation (the new group included), and at the rebuild on exit the **edit of the user** with it. Protected clean-up, volume name read before the boolean. Manuals: "Drawing volumes that combine well". Tests T20 to T22 (specimens of volumes in contact) |
 | 2.0.1 | 2026-10-26 | A volume made of several solids no longer leaves unused `TempInstance#n` definitions at each rebuild (native booleans, Q-8). Demo model `docs/demo.skp` (made by hand, the part of the video), demo script of the tests (`tools/demo/build_demo.rb`), tests T17 to T19, `run_tests.ps1 -Demo` |
 | 1.1.2 | 2026-10-26 | Built-in engine of **Solid for Maker 1.0.1** (commit `2b2a596`): a counterbore or countersink cut after its hole works (Q-7; Eneroth's `wrapping_face` required a face common to all the edges of the new face, hole included: the face was erased and the rebuild failed). Test T15 "counterbores after the holes" |
 | 2.0.0 | 2026-10-26 | Renamed **Solid Progress** (SketchUp 2027 brings its own *Procedural Components*): every name the user sees, `solid_progress.rb`, `solid_progress/`, `solid_progress.rbz`; code identifiers and model data unchanged (existing models recognized); uninstall Solid Procedural first. One SketchUp edition check (`ruby_engine?`) and one commented line for Pro only ("PRO Only vs. procedural.rb:<line>"), replacing `PRO_ONLY`. Test T16 (visible names); test launcher safe for the SketchUp preferences |

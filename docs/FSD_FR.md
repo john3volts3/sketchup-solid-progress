@@ -2,10 +2,10 @@
 
 *[English version](FSD_EN.md)*
 
-> Ce document décrit **Solid Progress 2.0.1**, livré le 2026-10-26 pour SketchUp Pro 2021 et SketchUp Make 2017. L'imbrication est reportée (EF-25 du `PRD.md`).
+> Ce document décrit **Solid Progress 2.0.2**, livré le 2026-10-27 pour SketchUp Pro 2021 et SketchUp Make 2017. L'imbrication est reportée (EF-25 du `PRD.md`).
 
-**Version :** 2.0.1
-**Date :** 2026-10-26
+**Version :** 2.0.2
+**Date :** 2026-10-27
 **Auteur :** DRO
 
 ---
@@ -120,7 +120,7 @@ Les repères, textes et cotes ne sont pas touchés. Un groupe copié partage sa 
 | **Déclencheur** | `onActivePathChanged`, différé par `UI.start_timer(0, false)` |
 | **Traitement** | Différence entre le chemin précédent et le chemin actuel. Groupes **quittés** (du plus intérieur au plus extérieur) : recalcul si l'empreinte a changé (`stale?`), puis affichage « fermé ». Groupes **entrés** : affichage « ouvert » |
 | **Opération** | Une seule opération « Solid Progress — Rebuild », **transparente** : fusionnée avec la dernière modification (option B, `MERGE_REBUILD_WITH_LAST_EDIT = true`). Avec `false`, le recalcul devient une étape d'annulation séparée (option A) ; les bascules seules restent transparentes |
-| **Erreur** | L'opération est toujours validée (jamais d'`abort_operation` sur une opération transparente) ; l'ancien Result est conservé ; message « Rebuild failed — the former result is kept. » avec le volume en cause |
+| **Erreur** | L'opération est toujours validée (jamais d'`abort_operation` sur une opération transparente) ; l'ancien Result est conservé ; message « Rebuild failed — the former result is kept. » avec le volume en cause. Un résultat non solide est refusé avant le booléen suivant (EF-14) : un booléen natif en échec annulerait sinon toute l'opération, **y compris la modification de l'utilisateur** à laquelle elle est fusionnée (2.0.2, T21) |
 
 #### EF-10 : Rebuild Solid Progress
 
@@ -149,7 +149,7 @@ Changer la couleur de soustraction (Set Subtract Color) ou ouvrir le modèle sur
 1. Sélection mémorisée ; `make_unique` du groupe ; normalisation des sources (`role`, `rank` 1..n, `uid`, `enabled` — la Base est toujours activée —, couleur → opération).
 2. Validation des sources actives : au moins une ; aucune procédurale (imbrication reportée) ; toutes `manifold?` ; la première n'est pas `subtract`.
 3. Calcul de l'empreinte.
-4. **Combinaison sur des copies** (§ 7.4) dans l'ordre `rank` : `acc = copie(1)`, puis pour chaque source suivante `acc.union(copie)`, `acc.outer_shell(copie)` ou `copie.subtract(acc)` ; avec le moteur intégré (`ruby_engine?`), `SolidOperations.union / outer_shell / subtract(acc, copie)`, qui modifient `acc` sur place et effacent la copie. Progression dans la barre d'état (`Solid Procedural — Subtract 2/3 (67%)`, suivi de « — SketchUp Make engine » avec le moteur intégré). Ensuite, tout ce que la combinaison a laissé dans le groupe en plus du résultat est effacé (un groupe temporaire du moteur oublié après une erreur deviendrait sinon une source).
+4. **Combinaison sur des copies** (§ 7.4) dans l'ordre `rank` : `acc = copie(1)`, puis pour chaque source suivante `acc.union(copie)`, `acc.outer_shell(copie)` ou `copie.subtract(acc)` ; avec le moteur intégré (`ruby_engine?`), `SolidOperations.union / outer_shell / subtract(acc, copie)`, qui modifient `acc` sur place et effacent la copie. Progression dans la barre d'état (`Solid Procedural — Subtract 2/3 (67%)`, suivi de « — SketchUp Make engine » avec le moteur intégré). Après chaque opération, un résultat qui n'est pas un solide (`manifold?` faux) arrête le calcul et nomme le volume, avec les deux moteurs et à chaque étape (2.0.2) : un booléen natif sur ce résultat échouerait, et SketchUp annulerait alors toute l'opération ouverte (§ 7.4). Ensuite, tout ce que la combinaison a laissé dans le groupe en plus du résultat est effacé (un groupe temporaire du moteur oublié après une erreur deviendrait sinon une source) ; ce nettoyage vérifie d'abord que le groupe existe encore (après une annulation par SketchUp, il n'existe plus : l'erreur « reference to deleted Group » masquait le vrai message, 2.0.2).
 5. Matériau du résultat = matériau de la base ; faces ayant hérité de la couleur de soustraction repeintes (`nil`).
 6. Restauration des cercles (EF-18) sur une copie du résultat.
 7. Ancien Result effacé (si c'est une instance de composant, sa définition est supprimée quand plus aucune instance ne l'utilise) ; nouveau Result marqué (`role=result`, nom `Result`) ; empreinte enregistrée ; affichage appliqué.
@@ -164,7 +164,8 @@ En cas d'échec à l'étape 4, toutes les copies sont effacées dans un `ensure`
 | Aucun volume actif | `There is no enabled volume to combine.` |
 | Source non solide | `Volume #2 Cylinder is not a solid.` |
 | Première source Subtract | `The first volume #1 … has the subtract color: the first volume must be added.` |
-| Booléen en échec (natif ou moteur intégré) | `Subtract of volume #3 … failed.` |
+| Booléen en échec (natif ou moteur intégré) | `Subtract of volume #3 … failed.` (nom et rang lus avant le booléen : une annulation par SketchUp efface le rang) |
+| Résultat non solide (volumes qui ne font que se toucher) | `Union of volume #4 … gives a result that is not a solid. Volumes that only touch (faces in contact, edges that coincide, tangent circles or arcs) are a common cause: make them overlap, or enlarge or move this volume slightly.` |
 | Groupe Solid Progress imbriqué | `… nested Solid Progress groups are not supported yet.` |
 
 #### EF-17 : Copies indépendantes
@@ -253,7 +254,7 @@ Couleur du matériau du premier groupe/composant sélectionné qui en a un, enre
 | **Moteur intégré** | `solid_progress/solid_operations.rb`, copie de Solid for Maker 1.0.1 (commit `2b2a596`, porté d'Eneroth Solid Tools 3.0.0 ; `wrapping_face` sur le contour extérieur : chambrage après son trou, 1.1.2), module renommé `SolidProcedural::SolidOperations`, corps inchangé ; licence MIT dans `LICENSE-solid-operations.txt`. Union, Shell (union puis `remove_cavities`) et Subtract (trim puis effacement de l'outil), avec mise à l'échelle × 1000 des petites pièces |
 | **Différence connue** | Un volume entièrement enfermé dans un autre : gardé par l'Outer Shell natif (Result de volume 1000 + 64 dans T12), effacé par le Shell du moteur intégré (1000) |
 | **Pro seulement** | La ligne `# raise ProOnly, __LINE__ if ruby`, juste après le contrôle de l'édition dans `ruby_engine?` (`solid_progress/procedural.rb`), est commentée par défaut. Décommentée et SketchUp non Pro : `ruby_engine?` lève `ProOnly` (une `RebuildError`), message « PRO Only vs. procedural.rb:<ligne> » (la ligne à recommenter). Create, Rebuild et Finalize l'affichent tel quel (`pro_refused?`, en tête de commande) ; `rebuild_in_operation` le lève avant toute modification (recalcul à la sortie : « Rebuild failed — the former result is kept » ; table : opération annulée). Rien n'est modifié ; le moteur intégré n'est jamais utilisé. Remplace la constante `PRO_ONLY` de la 1.1.0 |
-| **Tests** | `tools/tests/` (hors `.rbz`, NF-13) : T01 à T19 (T16 : noms visibles, Solid Progress ; T17 : le script de démo construit sa pièce dans le modèle des tests, volumes exacts, table appliquée tout de suite, une image par scène ; T18 : le modèle de démonstration publié `docs/demo.skp` (fait à la main, format SketchUp 2017) s'ouvre sous 2021 comme sous Make, groupes Solid Progress à jour, Result solide et affiché, sources cachées, fichier inchangé ; T19 : un volume de 4 cylindres ne laisse aucune définition inutilisée, Q-8) ; `run_tests.ps1 -Demo` : le script de démo seul (images des scènes, fichiers dans `results/`) ; T10 : un seul `is_pro?` dans le plugin, ligne Pro seulement commentée par défaut, puis copie de `procedural.rb` chargée avec la ligne décommentée et Make simulé → message exact pour Create, Rebuild, Finalize, le recalcul et la table, rien de modifié ; T12 compare des volumes calculés d'avance, en natif puis moteur intégré forcé sous 2021, en moteur intégré sous Make 2017 (dont une plaque à 20 trous passée par Create, 960 arêtes en cercles natifs attendues) ; T15 compare `repair_holes` à l'ancienne méthode (`repair_holes_scan`, gardée dans le fichier de tests) sur la même géométrie (opération annulée entre les deux), sur 14 cas (dont « counterbores after the holes », 1.1.2), et les grilles au parcours complet |
+| **Tests** | `tools/tests/` (hors `.rbz`, NF-13) : T01 à T22 (T20 : deux boîtes qui ne se touchent que par une arête → Create refusé, volume #2 nommé, rien de modifié, pas de « reference to deleted » ; T21 : même union au recalcul à la sortie → la modification de l'utilisateur et l'ancien Result sont gardés (2021) ; T22 : 9 éprouvettes de volumes en contact (faces, arête, cercles, disque dans un logement) suivies d'un trou → Result solide, ou refus avec le volume nommé et rien de modifié, résultat de chacune noté ; T16 : noms visibles, Solid Progress ; T17 : le script de démo construit sa pièce dans le modèle des tests, volumes exacts, table appliquée tout de suite, une image par scène ; T18 : le modèle de démonstration publié `docs/demo.skp` (fait à la main, format SketchUp 2017) s'ouvre sous 2021 comme sous Make, groupes Solid Progress à jour, Result solide et affiché, sources cachées, fichier inchangé ; T19 : un volume de 4 cylindres ne laisse aucune définition inutilisée, Q-8) ; `run_tests.ps1 -Demo` : le script de démo seul (images des scènes, fichiers dans `results/`) ; T10 : un seul `is_pro?` dans le plugin, ligne Pro seulement commentée par défaut, puis copie de `procedural.rb` chargée avec la ligne décommentée et Make simulé → message exact pour Create, Rebuild, Finalize, le recalcul et la table, rien de modifié ; T12 compare des volumes calculés d'avance, en natif puis moteur intégré forcé sous 2021, en moteur intégré sous Make 2017 (dont une plaque à 20 trous passée par Create, 960 arêtes en cercles natifs attendues) ; T15 compare `repair_holes` à l'ancienne méthode (`repair_holes_scan`, gardée dans le fichier de tests) sur la même géométrie (opération annulée entre les deux), sur 14 cas (dont « counterbores after the holes », 1.1.2), et les grilles au parcours complet |
 
 ## 6. Exigences non fonctionnelles
 
@@ -363,6 +364,8 @@ MD5 sur, pour chaque source dans l'ordre : `rank`, `op`, `enabled`, clé du mat�
 
 Le calcul ne travaille que sur des copies ; toutes les copies et résultats intermédiaires sont listés et effacés à la fin, quel que soit l'opérande que SketchUp efface.
 
+**Échec d'un booléen natif** (constaté sous 2021 le 2026-10-27, non documenté) : il renvoie `nil` **et annule tout ce qui a été fait depuis `start_operation`** (le groupe créé par Create disparaît, les volumes reviennent à leur place). Dans une opération transparente, l'opération précédente (la modification de l'utilisateur) est annulée aussi. Un `abort_operation` lancé ensuite est sans effet sur les opérations précédentes. Cause habituelle : un opérande non solide, d'où l'arrêt sur tout résultat non solide (EF-14).
+
 **Moteur intégré (SketchUp Make)** :
 
 | Méthode | Cible (modifiée sur place) | Outil | Retour |
@@ -457,6 +460,7 @@ Un réglage absent de `SolidProcedural` est lu dans `SolidBatch` (réglages de S
 - Le cadre vert est la couleur de sélection du style : pendant qu'il est affiché, le panneau Styles montre ce vert, et mettre à jour le style à ce moment l'y enregistrerait. Un style dont la couleur de sélection est exactement `(0, 170, 0)` est considéré comme laissé par le plugin.
 - Groupes Solid Progress imbriqués refusés (imbrication reportée) : Create refuse une sélection qui en contient, le recalcul s'arrête avec un message (ancien résultat gardé) et la table affiche la ligne en erreur. Pour réutiliser une sous-pièce, la finaliser puis l'utiliser comme volume. Un Explode d'un groupe Solid Progress collé à l'intérieur d'un groupe Solid Progress ouvert mélangerait ses volumes avec ceux de ce groupe.
 - Le recalcul a lieu à la sortie du groupe, pas pendant l'édition.
+- Volumes qui ne font que se toucher (arête commune, cylindres tangents ; parfois faces en contact ou cercles confondus) : la combinaison n'est pas un solide et elle est refusée ; il faut faire chevaucher les volumes (T22). Avec le moteur intégré, une union peut dépendre de l'ordre (cylindre posé sur une plaque : plaque ∪ cylindre réussit, cylindre ∪ plaque échoue). Un booléen natif qui échouerait entre deux solides annulerait toute l'opération ouverte, et au recalcul à la sortie la dernière modification avec (cas non rencontré, § 7.4).
 - La géométrie libre dans un groupe Solid Progress n'est pas utilisée (il faut en faire un groupe).
 - **Export STL : toujours lancer Finalize avant** (les sources cachées d'un groupe non finalisé partent dans l'export, Q-1 du PRD). Le cadre vert rappelle qu'un groupe n'est pas encore finalisé.
 - Raccourcis pendant la saisie d'un nom : le champ garde le clavier jusqu'à Entrée ou Échap.
@@ -465,6 +469,7 @@ Un réglage absent de `SolidProcedural` est lu dans `SolidBatch` (réglages de S
 
 | Version | Date | Changements |
 |---------|------|-------------|
+| 2.0.2 | 2026-10-27 | **Résultat non solide refusé** à chaque étape du calcul, avec les deux moteurs, en nommant le volume (« … gives a result that is not a solid. … »). Corrige « Create Solid Progress error: reference to deleted Group » : un booléen natif en échec sur un résultat non solide annulait toute l'opération ouverte (groupe créé compris), et au recalcul à la sortie la **modification de l'utilisateur** avec. Nettoyage protégé, nom du volume lu avant le booléen. Manuels : « Bien dessiner les volumes ». Tests T20 à T22 (éprouvettes de volumes en contact) |
 | 2.0.1 | 2026-10-26 | Un volume fait de plusieurs solides ne laisse plus de définitions inutilisées `TempInstance#n` à chaque recalcul (booléens natifs, Q-8). Modèle de démonstration `docs/demo.skp` (fait à la main, la pièce de la vidéo), script de démo des tests (`tools/demo/build_demo.rb`), tests T17 à T19, `run_tests.ps1 -Demo` |
 | 1.1.2 | 2026-10-26 | Moteur intégré de **Solid for Maker 1.0.1** (commit `2b2a596`) : un chambrage ou un fraisurage taillé après son trou marche (Q-7 ; `wrapping_face` d'Eneroth exigeait une face commune à toutes les arêtes de la nouvelle face, trou compris : la face était effacée et le recalcul échouait). Test T15 « counterbores after the holes » |
 | 2.0.0 | 2026-10-26 | Renommé **Solid Progress** (SketchUp 2027 apporte ses propres *Procedural Components*) : tous les noms vus par l'utilisateur, `solid_progress.rb`, `solid_progress/`, `solid_progress.rbz` ; identifiants du code et données des modèles inchangés (modèles existants reconnus) ; désinstaller d'abord Solid Procedural. Un seul contrôle de l'édition (`ruby_engine?`) et une ligne commentée pour Pro seulement (« PRO Only vs. procedural.rb:<ligne> »), à la place de `PRO_ONLY`. Test T16 (noms visibles) ; lanceur de tests sûr pour les préférences de SketchUp |

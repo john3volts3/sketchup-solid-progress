@@ -2,7 +2,7 @@
 
 *[Version française](USER_MANUAL_FR.md)*
 
-Version 2.0.1 — SketchUp Pro 2021 and SketchUp Make 2017
+Version 2.0.2 — SketchUp Pro 2021 and SketchUp Make 2017
 
 ## Overview
 
@@ -37,7 +37,7 @@ The Result takes the material of the Base; the faces cut by a subtracted volume 
 
 ## Basic workflow
 
-1. **Model the volumes** — a base, the volumes to add, the volumes to remove (holes, slots), each as a solid group.
+1. **Model the volumes** — a base, the volumes to add, the volumes to remove (holes, slots), each as a solid group. Volumes to add overlap a little, holes go through (see [Drawing volumes that combine well](#drawing-volumes-that-combine-well)).
 2. **Paint the volumes to remove** with the subtract color (red by default).
 3. **Select them all** and click **Create Solid Progress**. The order is: every added volume, then every subtracted one. The Result appears, the sources are hidden. Check in the Progress Table which volume is the Base (its material is the one of the Result); choose *Base* on another row to change it.
 4. **Edit** — double-click the Solid Progress group: the sources appear, the Result is hidden. Move a hole, resize a pin, paint a volume, add a new solid group (it goes last in the list).
@@ -52,6 +52,16 @@ To try Solid Progress on a ready-made part, open the demo model `docs/demo.skp` 
 1. A plate (base), a pin standing on it, a red cylinder through both (hole).
 2. *Create Solid Progress*: Base (the plate — check it in the table), then the pin (added), then the hole (subtracted) → the hole goes through the pin too: a tube.
 3. In the Progress Table, move the pin after the hole → the pin is full again; the hole stays in the plate, under the pin.
+
+### Drawing volumes that combine well
+
+The solid operations of SketchUp (and the built-in engine of SketchUp Make) handle volumes that only **touch** poorly: faces in simple contact, an edge of one volume lying exactly on an edge of another, circles or arcs that are tangent or coincide. The combination may then not be a solid: Solid Progress refuses it.
+
+- **Volumes to add: make them overlap.** Sink a pin slightly into the plate it stands on instead of setting it exactly on the face; make a part that fills a recess slightly larger than the recess (for example a diameter 0.1 mm larger).
+- **Volumes to remove: make them go through.** A hole starts below and ends above the faces it cuts.
+- **If a contact must stay exact**, check that the volumes still combine: close the Solid Progress group and check that the Result is a solid (Entity Info: *Solid Group*).
+
+Solid Progress names the volume whose combination is not a solid: *Union of volume #4 … gives a result that is not a solid* (see [Troubleshooting](#troubleshooting)).
 
 ## Commands
 
@@ -178,6 +188,7 @@ SketchUp Make has no native booleans. Solid Progress then uses its **built-in en
 | *No base volume found: all the selected objects have the subtract color* | Repaint at least one object with another color |
 | *Volume #2 … is not a solid.* | A source was damaged while editing: repair it; the former Result is kept |
 | *Subtract of volume #3 … failed.* | The boolean failed (native with SketchUp Pro, built-in engine with SketchUp Make; volumes that do not touch, coplanar faces…): move or simplify the volume |
+| *Union of volume #4 … gives a result that is not a solid. …* | This volume only touches another one (faces in simple contact, edges that coincide, tangent circles or arcs) and their combination is not a solid. Make the volumes overlap, or enlarge or move this volume slightly (see [Drawing volumes that combine well](#drawing-volumes-that-combine-well)). Nothing is changed; when you close a Solid Progress group, your edit and the former Result are kept |
 | *Double-click the Solid Progress group in the model to open it …* (table) | SketchUp 2017: the table cannot open a Solid Progress group; double-click it in the model |
 | *PRO Only vs. procedural.rb:…* | This copy of the plugin was set to SketchUp Pro only (a line uncommented in `solid_progress/procedural.rb`): nothing is changed. To use it with SketchUp Make, comment that line out again (`#` at its start) and restart SketchUp |
 | *The first volume … has the subtract color* | The Base is painted with the subtract color: repaint it, or choose *Base* on another row |

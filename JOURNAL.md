@@ -10,6 +10,22 @@
 
 ---
 
+## Session du 2026-10-27 (2)
+
+### « Create Solid Progress error: reference to deleted Group » : résultat non solide refusé (2.0.2)
+
+- **Demande utilisateur** : trouver l'origine de l'erreur « Create Solid Progress error: reference to deleted Group. Nothing was changed. » sur `mes tests/error.skp` (7 volumes sélectionnés, SketchUp 2021).
+- **Diagnostic** (copie du modèle dans le dossier temporaire de Claude, scripts de diagnostic hors dépôt, SketchUp 2021 lancé par `-RubyStartup`) : l'union de la 3ᵉ étape (`Group#33`, plaque enfoncée de 2 000 mm dans `Component#5`) donne un résultat **non solide** (une arête à 4 faces) ; l'union suivante sur ce résultat échoue, et SketchUp **annule alors toute l'opération ouverte** (groupe créé par Create supprimé, volumes revenus à leur place). Le nettoyage de `rebuild_in_operation` appelait ensuite `group.entities` sur ce groupe supprimé : la `TypeError` masquait la vraie erreur (« Union of volume … failed. », sans rang, lu après l'annulation). Vérifié aussi : dans une opération transparente (recalcul à la sortie), l'annulation emporte **la modification précédente de l'utilisateur** ; un `abort_operation` lancé ensuite ne touche pas aux opérations précédentes. L'utilisateur avait déjà corrigé son modèle en agrandissant de 0,1 le diamètre de la plaque (cercles confondus).
+- **solid_progress/procedural.rb** — `combine` : nom et rang du volume lus avant le booléen ; après chaque opération, un résultat non `manifold?` arrête le calcul (`RebuildError` « … gives a result that is not a solid. Volumes that only touch … ») — **avec les deux moteurs et à chaque étape**, choix de l'utilisateur parmi trois (le moteur intégré acceptait en silence un Result non solide). `rebuild_in_operation` : nettoyage du groupe seulement s'il existe encore.
+- **tools/tests/run_tests.rb** — T20 (deux boîtes qui ne se touchent que par une arête + trou : Create refusé, volume #2 nommé, rien de modifié), T21 (même union au recalcul à la sortie : modification et ancien Result gardés ; position lue groupe fermé, SketchUp donnant des coordonnées du modèle dans un groupe ouvert), T22 (9 éprouvettes de volumes en contact, demande de l'utilisateur : faces, arête, cercles, disque dans un logement de même cercle et +0,1 mm ; constructeurs `contact_specimen`, `pocket`). Résultats : contact par face → Result solide avec les deux moteurs ; arête et cylindres tangents → refus propre. Moteur intégré : cylindre ∪ plaque échoue, plaque ∪ cylindre réussit (sonde sous Make 2017 : le contrôle `manifold?` n'y est pour rien, l'ordre des volumes ajoutés varie d'un Create à l'autre ; Q-11).
+- **docs/USER_MANUAL_EN.md**, **docs/USER_MANUAL_FR.md** — Section « Drawing volumes that combine well » / « Bien dessiner les volumes » (demande de l'utilisateur : faire chevaucher les volumes à ajouter, faire traverser les trous, sinon vérifier les contacts), renvoi à l'étape 1 du flux de travail, ligne de dépannage du nouveau message, version 2.0.2. **README.md** (EN + FR) — Phrase à l'étape 1 du démarrage rapide.
+- **docs/FSD_FR.md**, **docs/FSD_EN.md** — EF-09, EF-14, EF-16 (nouveau message), tests T20 à T22, § 7.4 (échec d'un booléen natif = annulation de l'opération ouverte), limitations, version 2.0.2. **PRD.md** — EF-37, NF-12, CA-32, Q-11, Q-12, décision, historique. **TACHES.md**, **docs/SKETCHUCATION.md** (notes de version v2.0.2), **docs/PUBLICATION.md** — 2.0.2.
+- **solid_progress/version.rb**, **solid_progress.rb** — Version 2.0.2.
+- **Tests** : SketchUp 2021 Pro 60/60 ; Make 2017 39 OK, T07 et T21 sautés (pas de `active_path=`). `error.skp` d'origine avec le plugin corrigé : « Create Solid Progress failed: Union of volume #6 Group#33 gives a result that is not a solid. … Nothing was changed. » Test validé par l'utilisateur (« Teste OK, livraison »).
+- **Mémoire de Claude** (hors dépôt) : note « un booléen natif en échec annule l'opération ouverte ».
+
+---
+
 ## Session du 2026-10-27
 
 ### Compatibilité : versions SketchUp 2017 à 2027 vérifiées en théorie
