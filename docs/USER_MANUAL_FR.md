@@ -193,4 +193,4 @@ Les arêtes et faces libres dans un groupe Solid Progress ne sont pas des volume
 - L'imbrication de groupes Solid Progress n'est pas prise en charge (finalisez une sous-pièce pour la réutiliser).
 - Le Result est recalculé quand vous fermez le groupe Solid Progress, pas pendant la modification ; sur un groupe Solid Progress fermé, la Progress Table applique ses changements tout de suite.
 - Les faces reconstruites autour d'un cercle réparé gardent leur matériau, leur balise et leur orientation, mais perdent la position de leur texture et leurs attributs. Un polygone régulier de 6 côtés ou plus ne peut pas être distingué d'un cercle.
-- Testé sous SketchUp Pro 2021 et SketchUp Make 2017 (Windows).
+- Testé sous SketchUp Pro 2021 et SketchUp Make 2017 (Windows). Devrait fonctionner de SketchUp 2017 à 2027 (vérifié d'après les notes de version de l'API Ruby, non testé).

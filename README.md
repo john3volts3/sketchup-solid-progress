@@ -46,7 +46,7 @@ With **SketchUp Pro**, the operations use SketchUp's native booleans. **SketchUp
 | **SketchUp Pro 2021** | native (`union`, `outer_shell`, `subtract`) | 21.0.391 |
 | **SketchUp Make 2017** | built-in engine (slower on heavy parts) | 17.2.2555 |
 
-Other versions from 2017 on should work but are not tested. With SketchUp Make 2017, the Progress Table cannot open a Solid Progress group (double-click it in the model), and Shell removes a volume enclosed in another one (SketchUp Pro's native Outer Shell keeps it): see the user manual. SketchUp Make is licensed by Trimble for non-commercial use only.
+Expected to work on SketchUp 2017 to 2027 (checked against the Ruby API release notes), but only the versions above are tested. With SketchUp Make 2017, the Progress Table cannot open a Solid Progress group (double-click it in the model), and Shell removes a volume enclosed in another one (SketchUp Pro's native Outer Shell keeps it): see the user manual. SketchUp Make is licensed by Trimble for non-commercial use only.
 
 ## Installation
 
@@ -132,7 +132,7 @@ Avec **SketchUp Pro**, les opérations utilisent les booléens natifs de SketchU
 | **SketchUp Pro 2021** | natifs (`union`, `outer_shell`, `subtract`) | 21.0.391 |
 | **SketchUp Make 2017** | moteur intégré (plus lent sur les pièces chargées) | 17.2.2555 |
 
-Les autres versions depuis 2017 devraient marcher mais ne sont pas testées. Avec SketchUp Make 2017, la Progress Table ne peut pas ouvrir un groupe Solid Progress (double-cliquez-le dans le modèle), et Shell supprime un volume enfermé dans un autre (l'Outer Shell natif de SketchUp Pro le garde) : voir le manuel utilisateur. SketchUp Make est concédé par Trimble pour un usage non commercial uniquement.
+Devrait fonctionner de SketchUp 2017 à 2027 (vérifié d'après les notes de version de l'API Ruby), mais seules les versions ci-dessus sont testées. Avec SketchUp Make 2017, la Progress Table ne peut pas ouvrir un groupe Solid Progress (double-cliquez-le dans le modèle), et Shell supprime un volume enfermé dans un autre (l'Outer Shell natif de SketchUp Pro le garde) : voir le manuel utilisateur. SketchUp Make est concédé par Trimble pour un usage non commercial uniquement.
 
 ## Installation
 

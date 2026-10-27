@@ -3,6 +3,8 @@
 Text for the SketchUcation PluginStore listing: copy each section into the matching field of the Dev Tool. Checklist and screenshots: [PUBLICATION.md](PUBLICATION.md).
 
 > **2026-10-26**: PluginStore entry `Solid_Progress` created (Dev Tools > Edit > *Add new plugin*) and filled — Files: `Solid_Progress.rbz` (2.0.1), provisional icon `Solid_Progress.png` (54 px, cropped from `images/hero.png`), article images `solid_progress_hero.png` and `solid_progress_table.png` (690 px wide); Basic Info; Overview (with the video and both images); Start; Documentation; Release Notes. Saved as a draft, then checked and **published by the author** the same day (power button): **awaiting approval by the SketchUcation administrators** (about one more day expected). Author Info left empty (personal data). The GitHub repository was made public the same day: Support Link and GitHub links added. Once approved: add the page link (`https://sketchucation.com/pluginstore?pln=Solid_Progress`) to the README and to the YouTube description.
+>
+> **2026-10-27**: versions SketchUp 2017 to 2027 checked in theory (see `docs/FSD_EN.md`, SketchUp version). To do by the author: tick the compatibility boxes **SU 2017 to SU 2027** (Basic Info) and save, as for Circle Master; then update the Compatibility line below.
 
 ---
 

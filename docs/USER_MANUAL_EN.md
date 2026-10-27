@@ -193,4 +193,4 @@ Loose edges and faces inside a Solid Progress group are not volumes: make them a
 - Nesting of Solid Progress groups is not supported (finalize a sub-part to reuse it).
 - The Result is rebuilt when you close the Solid Progress group, not while you edit it; on a closed Solid Progress group, the Progress Table applies its changes at once.
 - Faces rebuilt around a repaired circle keep their material, tag and orientation, but lose their texture position and attributes. A regular polygon of 6 sides or more cannot be told apart from a circle.
-- Tested on SketchUp Pro 2021 and SketchUp Make 2017 (Windows).
+- Tested on SketchUp Pro 2021 and SketchUp Make 2017 (Windows). Expected to work on SketchUp 2017 to 2027 (checked against the Ruby API release notes, not tested).
