@@ -12,6 +12,16 @@
 
 ## Session du 2026-10-28
 
+### Imbrication des groupes Solid Progress et table hiérarchique (2.1.0)
+
+- **Demandes utilisateur** : « coder la possibilité d'imbrication des solid progress » ; plan proposé (trois approches), approche 1 « le Result comme volume » choisie ; « chaque niveau peut être le résultat d'addition et de soustraction » (opération de la ligne imbriquée dans la table) ; « la table devrait présenter une structure hiérarchique » (option A : une seule livraison).
+- **solid_progress/procedural.rb** (09:00) — `SOURCE_KEYS`, `clear_source_keys`, `solid_volume?` (un groupe imbriqué est solide par son Result) ; `validate` sans refus de l'imbrication ; `rebuild_in_operation` recalcule d'abord les groupes imbriqués périmés ; `copy_of` / `result_copy` (copie unique du Result : copie du groupe, sources effacées, éclatée) ; Create accepte un groupe Solid Progress (ses attributs de groupe gardés) ; `state_of` (« Solid Progress », « to rebuild ») ; `release_orphans` garde un groupe imbriqué libéré par Explode procédural et visible ; `change_table` recalcule les groupes fermés qui contiennent le groupe changé (`procedural_parents`).
+- **solid_progress/procedural_table.rb** (09:10) — `table_rows` (lignes imbriquées : `group`, `parent`, `depth`, `label`), `chain_to` (chaque action sur le groupe de sa ligne), `open_row` ouvre toute la chaîne de groupes. **solid_progress/html/procedural_table.html** — retrait, repli ▾ / ▸, numérotation 2.1…, ordre par niveau, formule avec parenthèses.
+- **tools/tests/run_tests.rb** — T23 (15 vérifications sous 2021, 14 sous Make 2017) ; T04 adapté à `open_row`. Deux erreurs du test lui-même corrigées en route (la Base ne peut pas être soustraite ; ouvrir et fermer les groupes dans deux étapes, la synchronisation étant différée).
+- **docs/USER_MANUAL_EN.md**, **docs/USER_MANUAL_FR.md** — Section « Nested Solid Progress groups » / « Groupes Solid Progress imbriqués », colonne State, dépannage, limitations, version 2.1.0. **README.md** — Fonction « Nesting » / « Imbrication ». **docs/FSD_EN.md**, **docs/FSD_FR.md** — Imbrication, préconditions, validation, message, State, limitations, T23, historique. **PRD.md** — EF-25 et EF-41 livrées, CA-10, CA-36, décisions, historique. **docs/SKETCHUCATION.md**, **docs/PUBLICATION.md**, **TACHES.md** — 2.1.0.
+- **solid_progress/version.rb**, **solid_progress.rb** — Version 2.1.0.
+- **Tests** : SketchUp 2021 Pro 61/61 ; Make 2017 40 OK, T07 et T21 sautés. Validé par l'utilisateur (« Grosso modo, cela marche… livraison », « teste ok ») ; il va l'utiliser pour cerner les améliorations.
+
 ### Tous les volumes en cause nommés, lanceur -Only (2.0.5)
 
 - **Constat** (vidéo « faces alignées » de l'utilisateur) : un cadre affleurant un cylindre n'était pas nommé aux plans z = 0 et z = 6,8795 ; seules 10 arêtes sur 24 étaient testées, et seules les 4 arêtes droites touchent le cadre. L'utilisateur a confirmé que le haut et le bas affleuraient.

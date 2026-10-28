@@ -111,6 +111,21 @@ module SolidProcedural
       source.get_attribute(DICT, 'enabled') != false
     end
 
+    # Attributes of a volume in its Solid Progress group. A nested Solid
+    # Progress group keeps its own attributes (role, signature) next to them.
+    SOURCE_KEYS = %w[rank op uid enabled seen_color last_add_op prev_material].freeze
+
+    def self.clear_source_keys(entity)
+      SOURCE_KEYS.each { |k| entity.delete_attribute(DICT, k) }
+    end
+
+    # A solid volume; a nested Solid Progress group through its Result.
+    def self.solid_volume?(volume)
+      return volume.manifold? unless procedural?(volume)
+      result = result_of(volume)
+      !result.nil? && result.manifold?
+    end
+
     def self.label(source)
       name = source.name.to_s
       name = source.definition.name if name.empty?
@@ -273,11 +288,12 @@ module SolidProcedural
     def self.validate(active)
       raise RebuildError, 'There is no enabled volume to combine.' if active.empty?
       active.each do |s|
+        next if solid_volume?(s)
         if procedural?(s)
-          raise RebuildError, "Volume #{label(s)} is a Solid Progress group: " \
-                              'nested Solid Progress groups are not supported yet.'
+          raise RebuildError, "Volume #{label(s)} is a Solid Progress group whose Result is not a solid: " \
+                              'rebuild it first.'
         end
-        raise RebuildError, "Volume #{label(s)} is not a solid." unless s.manifold?
+        raise RebuildError, "Volume #{label(s)} is not a solid."
       end
       return unless op_of(active.first) == 'subtract'
       raise RebuildError, "The first volume #{label(active.first)} has the subtract color: " \
@@ -295,6 +311,9 @@ module SolidProcedural
       group.make_unique
       sources = normalize_sources(group)
       active = sources.select { |s| enabled?(s) }
+      # Nested Solid Progress groups first, from the inside out: their
+      # Result is the volume used here.
+      active.each { |s| rebuild_in_operation(model, s) if procedural?(s) && stale?(s) }
       validate(active)
       sig = signature(group)
       puts "#{LOG} Rebuild '#{group_label(group)}': #{active.length} volume(s)" +
@@ -576,10 +595,30 @@ module SolidProcedural
     # modify too) and without the procedural attributes.
     def self.copy_of(source, entities, created)
       copy = duplicate(source, entities, created)
-      copy.material = source.material
+      if procedural?(source)
+        copy = result_copy(copy, created)
+        # Its Result keeps its color, unless the group is painted (subtract).
+        copy.material = source.material if source.material
+      else
+        copy.material = source.material
+      end
       copy.hidden = false
       copy.delete_attribute(DICT)
       copy
+    end
+
+    # The Result of +copy+, a copy of a nested Solid Progress group, alone in
+    # the context of the copy: its sources are erased, the copy exploded.
+    # Made unique, so that a boolean never changes the nested Result.
+    def self.result_copy(copy, created)
+      result = result_of(copy)
+      raise RebuildError, "Volume #{label(copy)} has no Result: rebuild it first." unless result
+      copy.entities.erase_entities(copy.entities.to_a - [result])
+      solid = copy.explode.find { |e| instance?(e) && e.valid? }
+      raise RebuildError, "The Result of volume #{label(copy)} could not be used." unless solid
+      solid.make_unique
+      created << solid.definition if solid.is_a?(Sketchup::ComponentInstance)
+      solid
     end
 
     # Unique copy of a group or component instance in +entities+; the
@@ -661,13 +700,8 @@ module SolidProcedural
         UI.messagebox('Select the solid groups or components to combine in a Solid Progress group.', MB_OK)
         return
       end
-      nested =volumes.select { |v| procedural?(v) }
-      unless nested.empty?
-        UI.messagebox('Nested Solid Progress groups are not supported yet: ' \
-                      'deselect the Solid Progress groups.', MB_OK)
-        return
-      end
-      not_solid = volumes.reject(&:manifold?)
+      # A Solid Progress group is a volume too: its Result is used.
+      not_solid = volumes.reject { |v| solid_volume?(v) }
       unless not_solid.empty?
         names = not_solid.map { |v| label(v) }.join(', ')
         UI.messagebox("These objects are not solids: #{names}.\n" \
@@ -697,7 +731,7 @@ module SolidProcedural
         group.set_attribute(DICT, 'role', ROLE_PROCEDURAL)
         # Initial order: every added volume, then every subtracted one.
         inside = group.entities.select { |e| instance?(e) }
-        inside.each { |v| v.delete_attribute(DICT) }
+        inside.each { |v| procedural?(v) ? clear_source_keys(v) : v.delete_attribute(DICT) }
         adds, subs = inside.partition { |v| !SolidProcedural.is_subtract_solid?(v) }
         (adds + subs).each_with_index { |v, i| v.set_attribute(DICT, 'rank', i + 1) }
         outcome = rebuild_in_operation(model, group)
@@ -823,7 +857,12 @@ module SolidProcedural
 
     # [text, level] of the State column; +base+ is the first row.
     def self.state_of(source, base)
-      return ['Nested: not supported yet', 'error'] if procedural?(source)
+      if procedural?(source)
+        return ['Solid Progress: Result not a solid', 'error'] unless solid_volume?(source)
+        return ['Disabled', 'off'] unless enabled?(source)
+        return ['Base must be added', 'error'] if base && op_of(source) == 'subtract'
+        return [stale?(source) ? 'Solid Progress: to rebuild' : 'Solid Progress', 'ok']
+      end
       return ['Not solid', 'error'] unless source.manifold?
       return ['Disabled', 'off'] unless enabled?(source)
       return ['Base must be added', 'error'] if base && op_of(source) == 'subtract'
@@ -843,8 +882,29 @@ module SolidProcedural
         sources = normalize_sources(group)
         order = yield(sources, lookup)
         order.each_with_index { |s, i| set_attribute(s, 'rank', i + 1) } if order
-        !open && stale?(group) ? [rebuild_in_operation(model, group)] : []
+        outcomes = !open && stale?(group) ? [rebuild_in_operation(model, group)] : []
+        # A nested group changed from the table of an outer one: the closed
+        # groups that hold it are rebuilt too, from the inside out.
+        procedural_parents(group).each do |parent|
+          break if open_groups(model).include?(parent)
+          outcomes << rebuild_in_operation(model, parent) if stale?(parent)
+        end
+        outcomes
       end
+    end
+
+    # The Solid Progress groups that hold +group+, innermost first.
+    def self.procedural_parents(group)
+      parents = []
+      current = group
+      loop do
+        definition = current.parent
+        break unless definition.is_a?(Sketchup::ComponentDefinition)
+        current = definition.instances.find { |i| procedural?(i) }
+        break unless current
+        parents << current
+      end
+      parents
     end
 
     def self.table_source(lookup, key)
@@ -1023,13 +1083,15 @@ module SolidProcedural
     def self.release_orphans(model)
       path = model.active_path || []
       return if !path.empty? && procedural?(path.last)
+      # A nested Solid Progress group released stays a Solid Progress group.
       orphans = model.active_entities.select do |e|
-        instance?(e) && [ROLE_SOURCE, ROLE_RESULT].include?(role(e))
+        instance?(e) && ([ROLE_SOURCE, ROLE_RESULT].include?(role(e)) ||
+                         (procedural?(e) && e.get_attribute(DICT, 'rank')))
       end
       return if orphans.empty?
       model.start_operation('Solid Progress — Release', true, false, true)
       orphans.each do |e|
-        e.delete_attribute(DICT)
+        procedural?(e) ? clear_source_keys(e) : e.delete_attribute(DICT)
         e.hidden = false
       end
       model.commit_operation

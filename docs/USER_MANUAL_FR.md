@@ -2,7 +2,7 @@
 
 *[English version](USER_MANUAL_EN.md)*
 
-Version 2.0.5 — SketchUp Pro 2021 et SketchUp Make 2017
+Version 2.1.0 — SketchUp Pro 2021 et SketchUp Make 2017
 
 ## Présentation
 
@@ -74,8 +74,17 @@ Sélectionnez un ou plusieurs groupes ou composants solides, puis cliquez sur **
 - La sélection est regroupée dans un nouveau groupe Solid Progress nommé `Solid Progress`, et son Result est calculé.
 - Chaque objet doit être un solide ; sinon un message liste les objets à réparer ou à désélectionner.
 - Au moins un objet ne doit **pas** avoir la couleur de soustraction.
-- Un groupe Solid Progress ne peut pas servir de volume à un autre (pas d'imbrication) : pour réutiliser une sous-pièce, finalisez-la d'abord.
+- Un groupe Solid Progress peut être un des volumes : voir [Groupes Solid Progress imbriqués](#groupes-solid-progress-imbriqués).
 - Un seul Ctrl+Z annule toute la création.
+
+### Groupes Solid Progress imbriqués
+
+Un groupe Solid Progress peut être le volume d'un autre : sélectionnez-le avec les autres volumes et cliquez sur **Create Solid Progress**, ou déplacez-le dans un groupe Solid Progress ouvert. C'est son **Result** qui est utilisé, avec l'opération de sa ligne : Union, Shell ou Subtract. Peint de la couleur de soustraction, il est retiré : un outil de perçage fait de plusieurs volumes, par exemple.
+
+- Les changements sont recalculés de l'intérieur vers l'extérieur : fermer le groupe intérieur le recalcule, fermer l'extérieur recalcule le Result extérieur. **Rebuild**, **Finalize** et la table recalculent d'abord un groupe intérieur périmé.
+- La **Progress Table** du groupe extérieur montre les volumes de chaque groupe imbriqué sous sa ligne, numérotés 2.1, 2.2… ; ▾ / ▸ replie un niveau. Chaque ligne agit sur son propre groupe (opération, On, nom, ordre dans son niveau), et les groupes fermés qui le contiennent sont recalculés tout de suite. La formule montre les niveaux entre parenthèses, par exemple `1 ∪ (2.1 − 2.2)`. Double-cliquez une ligne imbriquée pour ouvrir les groupes jusqu'à ce volume (SketchUp 2020 et suivants).
+- Pour faire passer un volume dans un autre niveau, déplacez-le dans SketchUp (en ouvrant le groupe), pas dans la table.
+- **Explode** du groupe extérieur rend le groupe intérieur, toujours Solid Progress ; **Finalize** du groupe extérieur donne un seul solide ordinaire.
 
 ### Progress Table
 
@@ -95,7 +104,7 @@ La table montre le groupe Solid Progress **ouvert**, sinon le groupe Solid Progr
 | **Color** | Matériau du volume (hachures = matériau par défaut) |
 | **Name** | Cliquez pour renommer ; Entrée valide, Échap annule |
 | **Operation** | *Base* sur la ligne 1 ; Union / Shell / Subtract sur les autres lignes. **Subtract** peint le volume de la couleur de soustraction (son ancien matériau revient quand il quitte Subtract). Choisir **Base** sur une autre ligne en fait la nouvelle Base (l'ancienne passe en ligne 2) |
-| **State** | `Solid`, `Not solid`, `Disabled`, `Base must be added` (la ligne 1 a la couleur de soustraction), `Nested: not supported yet` |
+| **State** | `Solid`, `Not solid`, `Disabled`, `Base must be added` (la ligne 1 a la couleur de soustraction), `Solid Progress` ou `Solid Progress: to rebuild` (groupe imbriqué) |
 
 Sous la table :
 
@@ -196,14 +205,14 @@ SketchUp Make n'a pas de booléens natifs. Solid Progress utilise alors son **mo
 | *The first volume … has the subtract color* | La Base est peinte de la couleur de soustraction : repeignez-la, ou choisissez *Base* sur une autre ligne |
 | *The base volume is always enabled* | Choisissez *Base* sur une autre ligne avant de désactiver ce volume |
 | *Close the Solid Progress group to rebuild it* | *Rebuild* agit sur des groupes Solid Progress fermés ; un solide ouvert est recalculé quand vous le fermez |
-| *Nested Solid Progress groups are not supported yet* | Un groupe Solid Progress ne peut pas être le volume d'un autre : finalisez-le d'abord |
+| *Volume #2 … is a Solid Progress group whose Result is not a solid: rebuild it first.* | Ouvrez le groupe imbriqué, réparez ses volumes, puis fermez-le |
 | *… Solid Progress group(s) out of date* (barre d'état) | Après une annulation, un Result ne correspond plus à ses sources : ouvrez-le et fermez-le, ou utilisez *Rebuild* |
 
 Les arêtes et faces libres dans un groupe Solid Progress ne sont pas des volumes : faites-en un groupe pour les utiliser.
 
 ## Limitations
 
-- L'imbrication de groupes Solid Progress n'est pas prise en charge (finalisez une sous-pièce pour la réutiliser).
+- Groupes Solid Progress imbriqués : chaque niveau ajoute son propre recalcul (plus lent sur une grosse pièce avec SketchUp Make) ; un volume change de niveau dans SketchUp, pas dans la table.
 - Volumes qui ne font que se toucher : le même modèle peut se combiner à un essai et pas au suivant (voir [Bien dessiner les volumes](#bien-dessiner-les-volumes)).
 - Le Result est recalculé quand vous fermez le groupe Solid Progress, pas pendant la modification ; sur un groupe Solid Progress fermé, la Progress Table applique ses changements tout de suite.
 - Les faces reconstruites autour d'un cercle réparé gardent leur matériau, leur balise et leur orientation, mais perdent la position de leur texture et leurs attributs. Un polygone régulier de 6 côtés ou plus ne peut pas être distingué d'un cercle.

@@ -97,7 +97,7 @@
   }
   .position {
     display: inline-block;
-    min-width: 18px;
+    min-width: 26px;
     text-align: right;
     margin-right: 4px;
   }
@@ -127,6 +127,21 @@
     background: repeating-linear-gradient(45deg, #ffffff 0, #ffffff 3px, #d0d7de 3px, #d0d7de 6px);
   }
   td.name { width: 100%; }
+  .name-cell {
+    display: flex;
+    align-items: center;
+  }
+  .toggle {
+    flex: none;
+    width: 16px;
+    color: var(--muted);
+    cursor: pointer;
+    text-align: center;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .toggle.leaf { visibility: hidden; }
+  tbody tr.nested td { font-weight: 600; }
   input.name {
     width: 100%;
     box-sizing: border-box;
@@ -228,7 +243,10 @@
   // 'base' is not an operation: it makes the row the first one.
   var OPERATIONS = [['base', 'Base'], ['union', 'Union'], ['outer_shell', 'Shell'], ['subtract', 'Subtract']];
   var data = null;
-  var dragKey = null;
+  // Row being dragged: it moves among the rows of its own group only.
+  var dragRow = null;
+  // Nested rows folded by the user (by row id), kept across refreshes.
+  var collapsed = {};
   // True while the rows are replaced: the blur of a removed input is not
   // a rename.
   var rendering = false;
@@ -273,36 +291,48 @@
     return e;
   }
 
-  function rowKeys() {
-    return data.rows.map(function (r) { return r.key; });
+  // Keys of the rows of +group+ (one level of the hierarchy), in order.
+  function rowKeys(group) {
+    return data.rows.filter(function (r) { return r.group === group; })
+                    .map(function (r) { return r.key; });
   }
 
-  function sendOrder(keys) {
-    send({ type: 'order', group: data.group, keys: keys });
+  function sendOrder(group, keys) {
+    send({ type: 'order', group: group, keys: keys });
     releaseSoon(0);
   }
 
-  // The base (row 1) never moves and no row goes above it.
-  function move(key, delta) {
-    var keys = rowKeys();
-    var i = keys.indexOf(key);
+  // The base (row 1 of its level) never moves and no row goes above it.
+  function move(row, delta) {
+    var keys = rowKeys(row.group);
+    var i = keys.indexOf(row.key);
     var j = i + delta;
     if (i < 1 || j < 1 || j >= keys.length) return;
     keys.splice(i, 1);
-    keys.splice(j, 0, key);
-    sendOrder(keys);
+    keys.splice(j, 0, row.key);
+    sendOrder(row.group, keys);
   }
 
-  // (((1 ∪ 2) shell 3) − 4) ∪ 6 : enabled rows, in order.
-  function formula(rows) {
-    var active = rows.filter(function (r) { return r.enabled; });
-    if (!active.length) return 'No enabled volume';
-    var expr = String(active[0].position);
+  // (((1 ∪ 2) shell 3) − 4) ∪ 6 : enabled rows, in order; a nested group
+  // is its own formula in parentheses: 1 ∪ (2.1 − 2.2).
+  function formula(parent) {
+    var active = data.rows.filter(function (r) { return r.parent === parent && r.enabled; });
+    if (!active.length) return parent === null ? 'No enabled volume' : '∅';
+    var term = function (r) { return r.nested ? '(' + formula(r.id) + ')' : r.label; };
+    var expr = term(active[0]);
     for (var i = 1; i < active.length; i++) {
       if (i > 1) expr = '(' + expr + ')';
-      expr += ' ' + SYMBOLS[active[i].op] + ' ' + active[i].position;
+      expr += ' ' + SYMBOLS[active[i].op] + ' ' + term(active[i]);
     }
     return expr;
+  }
+
+  // A row is hidden when a nested row above it is folded.
+  function folded(row, byId) {
+    for (var p = row.parent; p; p = byId[p].parent) {
+      if (collapsed[p]) return true;
+    }
+    return false;
   }
 
   function clearDrop() {
@@ -321,6 +351,7 @@
     var tr = element('tr');
     if (row.selected) tr.classList.add('selected');
     if (!row.enabled) tr.classList.add('off');
+    if (row.nested) tr.classList.add('nested');
 
     // # : drag handle, position, up / down; the base row is fixed.
     var order = element('td', 'order');
@@ -332,17 +363,17 @@
       handle.addEventListener('mousedown', function () { tr.draggable = true; });
     }
     order.appendChild(handle);
-    order.appendChild(element('span', 'position', String(row.position)));
+    order.appendChild(element('span', 'position', row.label));
     var up = element('button', 'arrow', '▲');
     up.type = 'button';
     up.title = 'Move up';
     up.disabled = index <= 1;
-    up.addEventListener('click', function () { move(row.key, -1); });
+    up.addEventListener('click', function () { move(row, -1); });
     var down = element('button', 'arrow', '▼');
     down.type = 'button';
     down.title = 'Move down';
     down.disabled = index === 0 || index === count - 1;
-    down.addEventListener('click', function () { move(row.key, 1); });
+    down.addEventListener('click', function () { move(row, 1); });
     if (row.base) {
       up.style.visibility = 'hidden';
       down.style.visibility = 'hidden';
@@ -361,7 +392,7 @@
       box.title = 'The base is always enabled';
     }
     box.addEventListener('change', function () {
-      send({ type: 'toggle', group: data.group, key: row.key, on: box.checked });
+      send({ type: 'toggle', group: row.group, key: row.key, on: box.checked });
       releaseSoon(0);
     });
     on.appendChild(box);
@@ -377,6 +408,19 @@
 
     // Name
     var name = element('td', 'name');
+    var cell = element('div', 'name-cell');
+    cell.style.paddingLeft = (row.depth * 16) + 'px';
+    var toggle = element('span', row.nested ? 'toggle' : 'toggle leaf', collapsed[row.id] ? '▸' : '▾');
+    if (row.nested) {
+      toggle.title = collapsed[row.id] ? 'Show the volumes of this Solid Progress group'
+                                       : 'Hide the volumes of this Solid Progress group';
+      toggle.addEventListener('click', function (event) {
+        event.stopPropagation();
+        collapsed[row.id] = !collapsed[row.id];
+        render();
+      });
+    }
+    cell.appendChild(toggle);
     var input = element('input', 'name');
     input.type = 'text';
     input.value = row.name;
@@ -401,13 +445,14 @@
     input.addEventListener('blur', function () {
       if (rendering) return;
       if (input.value.trim() !== row.name) {
-        send({ type: 'rename', group: data.group, key: row.key, name: input.value });
+        send({ type: 'rename', group: row.group, key: row.key, name: input.value });
       }
       if (validated) releaseSoon(0, 'name');
       validated = false;
     });
-    inputs[row.key] = input;
-    name.appendChild(input);
+    inputs[row.id] = input;
+    cell.appendChild(input);
+    name.appendChild(cell);
     tr.appendChild(name);
 
     // Operation: the first row is the base; choosing Base on another row
@@ -427,9 +472,9 @@
       select.value = row.op;
       select.addEventListener('change', function () {
         if (select.value === 'base') {
-          send({ type: 'base', group: data.group, key: row.key });
+          send({ type: 'base', group: row.group, key: row.key });
         } else {
-          send({ type: 'op', group: data.group, key: row.key, op: select.value });
+          send({ type: 'op', group: row.group, key: row.key, op: select.value });
         }
         select.blur();
         releaseSoon(0);
@@ -445,29 +490,29 @@
     // later after a click, so that a double-click still reaches the table.
     tr.addEventListener('click', function (event) {
       if (event.target.closest('input, select, button')) return;
-      send({ type: 'select', group: data.group, key: row.key });
+      send({ type: 'select', group: row.group, key: row.key });
       releaseSoon(600, 'row click');
     });
     tr.addEventListener('dblclick', function (event) {
       if (event.target.closest('input, select, button')) return;
-      send({ type: 'open', group: data.group, key: row.key });
+      send({ type: 'open', group: row.group, key: row.key });
       releaseSoon(0, 'double-click');
     });
 
     // Drag and drop, started from the handle only.
     tr.addEventListener('dragstart', function (event) {
-      dragKey = row.key;
+      dragRow = row;
       event.dataTransfer.effectAllowed = 'move';
       event.dataTransfer.setData('text/plain', row.key);
     });
     tr.addEventListener('dragend', function () {
       tr.draggable = false;
-      dragKey = null;
+      dragRow = null;
       clearDrop();
     });
     // Nothing goes above the base: a drop on it lands after it.
     tr.addEventListener('dragover', function (event) {
-      if (!dragKey || dragKey === row.key) return;
+      if (!dragRow || dragRow.id === row.id || dragRow.group !== row.group) return;
       event.preventDefault();
       event.dataTransfer.dropEffect = 'move';
       var after = row.base || dropAfter(tr, event);
@@ -479,13 +524,14 @@
     });
     tr.addEventListener('drop', function (event) {
       event.preventDefault();
-      if (!dragKey || dragKey === row.key) return;
-      var keys = rowKeys().filter(function (k) { return k !== dragKey; });
+      if (!dragRow || dragRow.id === row.id || dragRow.group !== row.group) return;
+      var moved = dragRow.key;
+      var keys = rowKeys(row.group).filter(function (k) { return k !== moved; });
       var target = keys.indexOf(row.key) + (row.base || dropAfter(tr, event) ? 1 : 0);
-      keys.splice(target, 0, dragKey);
-      dragKey = null;
+      keys.splice(target, 0, moved);
+      dragRow = null;
       clearDrop();
-      sendOrder(keys);
+      sendOrder(row.group, keys);
     });
     return tr;
   }
@@ -530,8 +576,15 @@
     var tbody = document.getElementById('rows');
     var inputs = {};
     var fragment = document.createDocumentFragment();
-    data.rows.forEach(function (row, i) {
-      fragment.appendChild(buildRow(row, i, data.rows.length, inputs));
+    var byId = {};
+    var counts = {};
+    data.rows.forEach(function (row) {
+      byId[row.id] = row;
+      counts[row.group] = (counts[row.group] || 0) + 1;
+    });
+    data.rows.forEach(function (row) {
+      if (folded(row, byId)) return;
+      fragment.appendChild(buildRow(row, row.position - 1, counts[row.group], inputs));
     });
     Object.keys(inputs).forEach(function (key) { inputs[key].dataset.key = key; });
     rendering = true;
@@ -541,7 +594,7 @@
       empty.textContent = 'This Solid Progress group has no volume.';
       empty.classList.remove('hidden');
     }
-    document.getElementById('formula').textContent = formula(data.rows);
+    document.getElementById('formula').textContent = formula(null);
     // Finalize works on a closed procedural solid only (SketchUp 2017
     // cannot close it from a plugin).
     var finalize = document.getElementById('finalize');

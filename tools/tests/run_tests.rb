@@ -639,7 +639,7 @@ module SolidProcedural
         c.check(rows.length == 1 && rows[0][:base], 'one row, the base')
         next if rows.empty?
         tests.status.clear
-        ProceduralTable.open_row(model, g, rows[0][:key])
+        ProceduralTable.open_row(model, [g], rows[0][:key])
         if tests.path_settable?(model)
           c.check((model.active_path || []).last == g, 'double-click on a row opens the procedural solid')
           c.later do
@@ -1515,6 +1515,169 @@ module SolidProcedural
                   "#{kind}: solid Result, or refused with the volume named and nothing changed", message)
           model.start_operation('Solid Procedural tests — clean up', true)
           model.entities.erase_entities(g ? [g] : volumes.select(&:valid?))
+          model.commit_operation
+        end
+      end
+
+      # A Solid Progress group used as a volume of another one: its Result is
+      # combined; a change inside rebuilds both, from the inside out.
+      # Inner: block 20 x 20 x 10 with a 4 x 4 hole (3840). Outer: plate
+      # 60 x 40 x 6 under it, overlapping it by 1 (14400 + 3840 - 384).
+      test 'T23 Nested Solid Progress groups' do |c, model|
+        near = ->(a, b) { (a - b).abs < 0.01 }
+        block = tests.box(model.entities, 0, 500, 0, 20, 20, 10, tests.base_material(model))
+        hole = tests.box(model.entities, 4, 504, -1, 4, 4, 12, tests.red(model))
+        tests.select(model, block, hole)
+        tests.messages.clear
+        Procedural.do_create
+        inner = model.selection.find { |e| Procedural.procedural?(e) }
+        next unless c.check(inner && near[Procedural.result_of(inner).volume, 3840],
+                            'inner group: Result 3840', tests.messages.join(' / '))
+        plate = tests.box(model.entities, -10, 490, -5, 60, 40, 6)
+        tests.select(model, plate, inner)
+        Procedural.do_create
+        outer = model.selection.find { |e| Procedural.procedural?(e) }
+        inner = outer && Procedural.sources_of(outer).find { |s| Procedural.procedural?(s) }
+        next unless c.check(outer && inner && tests.messages.empty?, 'Create with a Solid Progress group as volume',
+                            tests.messages.join(' / '))
+        volume = Procedural.result_of(outer).volume
+        c.check(near[volume, 17856], 'outer Result = plate + inner Result (17856)', volume.round(3).to_s)
+        c.check(Procedural.result_of(inner) && Procedural.sources_of(inner).length == 2,
+                'the inner group keeps its Result and its volumes')
+        c.check(Procedural.state_of(inner, false) == ['Solid Progress', 'ok'], 'table: "Solid Progress"',
+                Procedural.state_of(inner, false).inspect)
+
+        # Hole twice as wide, changed without opening: Rebuild of the outer
+        # group rebuilds the inner one first (3680; 14400 + 3680 - 368).
+        hole = Procedural.sources_of(inner).find { |s| s.get_attribute(Procedural::DICT, 'op') == 'subtract' }
+        model.start_operation('Solid Procedural tests — wider hole', true)
+        hole.transform!(Geom::Transformation.scaling(hole.bounds.min, 2, 1, 1))
+        model.commit_operation
+        c.check(Procedural.stale?(inner) && Procedural.stale?(outer), 'both groups out of date')
+        tests.select(model, outer)
+        tests.messages.clear
+        Procedural.do_rebuild
+        c.check(tests.messages.empty? && near[Procedural.result_of(inner).volume, 3680] &&
+                near[Procedural.result_of(outer).volume, 17712] && !Procedural.stale?(inner) &&
+                !Procedural.stale?(outer), 'Rebuild: inner then outer (3680, 17712)',
+                "#{tests.messages.join(' / ')} #{Procedural.result_of(outer).volume.round(3)}")
+
+        # Operation of the nested row in the table of the outer group:
+        # Subtract (14400 - 368), Shell, then Union again (17712).
+        keys = Procedural.row_keys(Procedural.sources_of(outer))
+        key = keys[Procedural.sources_of(outer).index(inner)]
+        # The plate is the base: the base cannot be subtracted.
+        Procedural.table_set_base(model, outer, keys[Procedural.sources_of(outer).index { |s| s != inner }])
+        volumes = %w[subtract outer_shell union].map do |op|
+          tests.messages.clear
+          Procedural.table_operation(model, outer, key, op)
+          [op, Procedural.op_of(inner), Procedural.result_of(outer).volume.round(3), tests.messages.join(' / ')]
+        end
+        c.check(near[volumes[0][2], 14032] && near[volumes[1][2], 17712] && near[volumes[2][2], 17712] &&
+                volumes.all? { |op, now, _v, m| op == now && m.empty? },
+                'table: the nested group subtracted (14032), Shell, Union (17712)', volumes.inspect)
+
+        # Hierarchical table of the outer group: the rows of the inner group
+        # under its row ("2.1", "2.2"), each acting on its own group.
+        tests.select(model, outer)
+        rows = ProceduralTable.payload(model)[:rows] || []
+        nested = rows.find { |r| r[:nested] }
+        children = rows.select { |r| nested && r[:parent] == nested[:id] }
+        c.check(rows.length == 4 && nested && children.length == 2 &&
+                children.all? { |r| r[:group] == inner.entityID && r[:depth] == 1 &&
+                                    r[:label].start_with?("#{nested[:label]}.") },
+                'table: the inner rows under the nested row (2.1, 2.2)',
+                rows.map { |r| "#{r[:label]}:#{r[:depth]}" }.join(' '))
+        # Hole row of the inner group set to Union from the outer table: the
+        # inner group, then the closed outer one, rebuilt (4064, 18032).
+        hole_row = children.find { |r| r[:op] == 'subtract' }
+        if hole_row
+          act = ->(op) do
+            tests.messages.clear
+            ProceduralTable.on_action(JSON.generate(type: 'op', group: inner.entityID, key: hole_row[:key], op: op))
+            [Procedural.result_of(inner).volume.round(3), Procedural.result_of(outer).volume.round(3),
+             tests.messages.join(' / ')]
+          end
+          union = act.call('union')
+          back = act.call('subtract')
+          c.check(near[union[0], 4064] && near[union[1], 18032] && near[back[0], 3680] && near[back[1], 17712] &&
+                  union[2].empty? && back[2].empty? && !Procedural.stale?(outer),
+                  'table: a nested row changes the inner group, then the outer one', [union, back].inspect)
+        end
+
+        # A Solid Progress group painted with the subtract color is removed:
+        # two 4 x 4 tools through a 30 x 30 x 10 plate (9000 - 320).
+        t1 = tests.box(model.entities, 105, 505, -1, 4, 4, 12)
+        t2 = tests.box(model.entities, 115, 515, -1, 4, 4, 12)
+        tests.select(model, t1, t2)
+        Procedural.do_create
+        tool = model.selection.find { |e| Procedural.procedural?(e) }
+        plate2 = tests.box(model.entities, 100, 500, 0, 30, 30, 10)
+        if c.check(tool, 'tool group made', tests.messages.join(' / '))
+          model.start_operation('Solid Procedural tests — paint the tool', true)
+          tool.material = tests.red(model)
+          model.commit_operation
+          tests.select(model, plate2, tool)
+          tests.messages.clear
+          Procedural.do_create
+          drilled = model.selection.find { |e| Procedural.procedural?(e) }
+          volume = drilled && Procedural.result_of(drilled).volume
+          c.check(drilled && near[volume, 8680], 'a red Solid Progress group is subtracted (8680)',
+                  "#{tests.messages.join(' / ')} #{volume}")
+          tool = drilled && Procedural.sources_of(drilled).find { |s| Procedural.procedural?(s) }
+          # Explode of the outer group: the tool stays a Solid Progress group,
+          # shown, without the attributes of a volume (released later).
+          if drilled && tool
+            model.start_operation('Solid Procedural tests — explode', true)
+            released = drilled.explode.select { |e| Procedural.procedural?(e) }
+            model.commit_operation
+            c.later do
+              tool = released.find(&:valid?) || tool
+              c.check(tool.valid? && Procedural.procedural?(tool) && !tool.hidden? &&
+                      tool.get_attribute(Procedural::DICT, 'rank').nil? && Procedural.result_of(tool),
+                      'Explode: the nested group stays a Solid Progress group, shown',
+                      "valid=#{tool.valid?} released=#{released.length} hidden=#{tool.valid? && tool.hidden?} "                       "rank=#{tool.valid? && tool.get_attribute(Procedural::DICT, 'rank').inspect}")
+              model.start_operation('Solid Procedural tests — clean up', true)
+              model.entities.erase_entities(model.entities.select { |e| e.valid? && e.bounds.min.x > 90 && e.bounds.min.y > 490 })
+              model.commit_operation
+            end
+          end
+        end
+
+        # Rebuild on exit (2021): hole back to 4 x 4 from inside the inner
+        # group, then both groups left at once.
+        if tests.path_settable?(model)
+          c.later do
+            model.active_path = [outer, inner]
+          end
+          # Next step: the plugin syncs the open path once SketchUp is idle.
+          c.later do
+            model.start_operation('Solid Procedural tests — narrower hole', true)
+            hole.transform!(Geom::Transformation.scaling(hole.bounds.min, 0.5, 1, 1))
+            model.commit_operation
+            tests.messages.clear
+            tests.close_all(model)
+          end
+          c.later do
+            c.check(tests.messages.empty? && near[Procedural.result_of(inner).volume, 3840] &&
+                    near[Procedural.result_of(outer).volume, 17856], 'rebuilt on exit, inside out (3840, 17856)',
+                    "#{tests.messages.join(' / ')} #{Procedural.result_of(outer).volume.round(3)}")
+          end
+        else
+          c.note('rebuild on exit not tested: no Model#active_path=')
+        end
+
+        # Finalize of the outer group: one plain solid, the inner group gone.
+        c.later do
+          volume = Procedural.result_of(outer).volume
+          tests.select(model, outer)
+          tests.messages.clear
+          Procedural.do_finalize
+          solid = model.selection.first
+          c.check(solid && !Procedural.procedural?(solid) && !inner.valid? && near[solid.volume, volume],
+                  'Finalize: one plain solid, same volume', tests.messages.join(' / '))
+          model.start_operation('Solid Procedural tests — clean up', true)
+          model.entities.erase_entities([solid].compact.select(&:valid?))
           model.commit_operation
         end
       end

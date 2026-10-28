@@ -12,14 +12,16 @@ Text for the SketchUcation PluginStore listing: copy each section into the match
 >
 > **2026-10-28**: PluginStore entry updated to **2.0.5** (Claude through Chrome, at the author's request): version, Overview (warning, second video `RZWHk87HUmk`, "Where it fails"), Quick Start, Documentation and Release Notes v2.0.2 to v2.0.5, checked after reloading; `Solid_Progress.rbz` 2.0.5 uploaded by the author (the browser tool cannot upload files from the project drive). A new `.rbz` unpublishes the entry until the SketchUcation administrators approve it again: **awaiting re-approval**.
 >
-> **2026-10-28**: version **2.0.5** delivered (release `v2.0.5`, which replaces 2.0.2 to 2.0.4, never released on GitHub): the author uploads the new `Solid_Progress.rbz`, adds the v2.0.2 to v2.0.5 release notes below and pastes the updated Description, Quick Start and Documentation (warning about volumes that only touch).
+> **2026-10-28**: version **2.0.5** delivered, without a GitHub release (replaced by 2.1.0 the same day).
+>
+> **2026-10-28**: version **2.1.0** delivered (release `v2.1.0`, which replaces 2.0.2 to 2.0.5): nesting and hierarchical Progress Table. To do on the PluginStore once 2.0.5 is approved: version, new `.rbz` (approval again), release note v2.1.0, "Nesting" in Features.
 
 ---
 
 ## Metadata
 
 - **Plugin name:** Solid Progress
-- **Version:** 2.0.5
+- **Version:** 2.1.0
 - **Author:** DRO
 - **Category:** Construction, Modification
 - **Compatibility:** SU 2017, 2018, 2019, 2020, 2021/22, 2023, 2024, 2025, 2026, 2027 — tested with SketchUp Make 2017 and SketchUp Pro 2021 on Windows; the other versions checked against the Ruby API release notes, not tested; macOS not tested
@@ -50,6 +52,7 @@ Non-destructive booleans: edit dynamically after the cut. Native booleans are de
 - **Automatic rebuild** — on closing the group, only when its sources changed. One Ctrl+Z undoes the edit and its Result.
 - **Progress Table** — order of the operations (drag and drop), Union / Shell / Subtract per volume, disable a volume, the formula computed, Finalize. On a closed group, every change is applied at once.
 - **Native circles** — circles and arcs broken by the booleans are rebuilt as native SketchUp circles and arcs.
+- **Nesting** — a Solid Progress group can be a volume of another one (its Result, as Union, Shell or Subtract); the Progress Table shows the levels as a tree.
 - **Where it fails** — when volumes only touch, the message names the volumes and says where, plane by plane; the edges at fault are shown in magenta until Escape.
 - **Green selection frame** — a Solid Progress group not finalized yet shows a green frame.
 - **No dependencies** — pure Ruby.
@@ -97,6 +100,10 @@ Find and fix SketchUp's own boolean errors on aligned faces: https://youtu.be/RZ
 ---
 
 ## Release Notes
+
+**v2.1.0** (2026-10-28)
+- Nesting: a Solid Progress group can be a volume of another one; its Result is used, as Union, Shell or Subtract, and changes are rebuilt from the inside out
+- Hierarchical Progress Table: the volumes of each nested group under its row (2.1, 2.2…), each row acting on its own group
 
 **v2.0.5** (2026-10-28)
 - The message names every volume at fault, even one that touches only a few edges (a frame flush with a cylinder)

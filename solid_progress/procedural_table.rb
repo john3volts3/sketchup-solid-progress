@@ -135,16 +135,35 @@ module SolidProcedural
         return { group: nil,
                  message: many ? 'Select a single Solid Progress group.' : 'Select or open a Solid Progress group.' }
       end
+      path = model.active_path || []
+      rows = table_rows(model, group, path, 0, '', nil)
+      notice = @notice && @notice[0] == group ? @notice[1] : nil
+      { group: group.entityID, name: Procedural.group_label(group), open: path.include?(group), rows: rows,
+        notice: notice }
+    end
+
+    # Rows of +group+; under the row of a nested Solid Progress group, the
+    # rows of that group (depth + 1, numbered "2.1", "2.2"…). Each row names
+    # the group it belongs to: its actions apply to that group.
+    def self.table_rows(model, group, path, depth, prefix, parent)
       sources = Procedural.sources_of(group)
       keys = Procedural.row_keys(sources)
-      path = model.active_path || []
       # The first row is the base, always enabled (Procedural.normalize_sources).
       base = sources.first
-      rows = sources.each_with_index.map do |s, i|
+      sources.each_with_index.flat_map do |s, i|
         state, level = Procedural.state_of(s, s == base)
-        {
+        label = "#{prefix}#{i + 1}"
+        id = "#{group.entityID}:#{keys[i]}"
+        nested = Procedural.procedural?(s)
+        row = {
           key: keys[i],
+          group: group.entityID,
+          id: id,
+          parent: parent,
+          depth: depth,
+          nested: nested,
           position: i + 1,
+          label: label,
           name: s.name.to_s,
           placeholder: s.definition.name.to_s,
           enabled: Procedural.enabled?(s),
@@ -155,10 +174,20 @@ module SolidProcedural
           level: level,
           selected: model.selection.include?(s) || path.include?(s)
         }
+        [row] + (nested ? table_rows(model, s, path, depth + 1, "#{label}.", id) : [])
       end
-      notice = @notice && @notice[0] == group ? @notice[1] : nil
-      { group: group.entityID, name: Procedural.group_label(group), open: path.include?(group), rows: rows,
-        notice: notice }
+    end
+
+    # The groups from +group+ down to the Solid Progress group nested in it
+    # whose entityID is +id+ ([group] for itself), or nil.
+    def self.chain_to(group, id)
+      return [group] if group.entityID == id
+      Procedural.sources_of(group).each do |s|
+        next unless Procedural.procedural?(s)
+        chain = chain_to(s, id)
+        return [group] + chain if chain
+      end
+      nil
     end
 
     def self.color_hex(material)
@@ -184,17 +213,20 @@ module SolidProcedural
         return
       end
       @notice = nil
-      group = target_group(model)
+      table = target_group(model)
+      # The group of the row: the one of the table or one nested in it.
+      chain = table && chain_to(table, data['group'])
       # The page shows another solid than the model now: refresh only.
-      if group.nil? || group.entityID != data['group']
+      unless chain
         refresh
         return
       end
+      group = chain.last
       case data['type']
       when 'select'
         select_row(model, group, data['key'])
       when 'open'
-        open_row(model, group, data['key'])
+        open_row(model, chain, data['key'])
       when 'toggle'
         Procedural.table_toggle(model, group, data['key'], data['on'] == true)
       when 'op'
@@ -232,14 +264,17 @@ module SolidProcedural
     end
 
     # Double-click: opens the procedural solid if needed, then selects the
-    # volume.
-    def self.open_row(model, group, key)
+    # volume. +chain+: the groups from the one of the table down to the one
+    # of the row (nested rows open every group of the chain).
+    def self.open_row(model, chain, key)
+      group = chain.last
       path = model.active_path || []
-      unless path.include?(group)
+      missing = chain.reject { |g| path.include?(g) }
+      unless missing.empty?
         context = path.empty? ? model : path.last.definition
-        return unless group.parent == context
-        return status_no_active_path(group, 'Double-click the Solid Progress group in the model to open it') unless active_path_settable?(model)
-        model.active_path = path + [group]
+        return unless missing.first.parent == context
+        return status_no_active_path(chain.first, 'Double-click the Solid Progress group in the model to open it') unless active_path_settable?(model)
+        model.active_path = path + missing
       end
       select_row(model, group, key)
     end

@@ -2,7 +2,7 @@
 
 *[Version française](USER_MANUAL_FR.md)*
 
-Version 2.0.5 — SketchUp Pro 2021 and SketchUp Make 2017
+Version 2.1.0 — SketchUp Pro 2021 and SketchUp Make 2017
 
 ## Overview
 
@@ -74,8 +74,17 @@ Select one or more solid groups or components, then click **Create Solid Progres
 - The selection is grouped into a new Solid Progress group named `Solid Progress` and its Result is computed.
 - Every object must be a solid; otherwise a message lists the objects to repair or deselect.
 - At least one object must **not** have the subtract color.
-- A Solid Progress group cannot be used as a volume of another one (nesting is not supported): to reuse a sub-part, finalize it first.
+- A Solid Progress group can be one of the volumes: see [Nested Solid Progress groups](#nested-solid-progress-groups).
 - One Ctrl+Z undoes the whole creation.
+
+### Nested Solid Progress groups
+
+A Solid Progress group can be a volume of another one: select it with the other volumes and click **Create Solid Progress**, or move it into an open Solid Progress group. Its **Result** is used, with the operation of its row: Union, Shell or Subtract. Painted with the subtract color, it is subtracted: a drilling tool made of several volumes, for example.
+
+- Changes are rebuilt from the inside out: closing the inner group rebuilds it, closing the outer one rebuilds the outer Result. **Rebuild**, **Finalize** and the table rebuild an out-of-date inner group first.
+- The **Progress Table** of the outer group shows the volumes of each nested group under its row, numbered 2.1, 2.2…; ▾ / ▸ folds a level. Each row acts on its own group (operation, On, name, order within its level), and the closed groups that hold it are rebuilt at once. The formula shows the levels in parentheses, for example `1 ∪ (2.1 − 2.2)`. Double-click a nested row to open the groups down to that volume (SketchUp 2020 and later).
+- To move a volume to another level, move it in SketchUp (open the group), not in the table.
+- **Explode** of the outer group gives back the inner group, still a Solid Progress group; **Finalize** of the outer group gives one plain solid.
 
 ### Progress Table
 
@@ -95,7 +104,7 @@ The table shows the **open** Solid Progress group, or else the **selected** one.
 | **Color** | Material of the volume (hatched = default material) |
 | **Name** | Click to rename; Enter validates, Escape cancels |
 | **Operation** | *Base* on row 1; Union / Shell / Subtract on the other rows. **Subtract** paints the volume with the subtract color (its former material comes back when it leaves Subtract). Choosing **Base** on another row makes it the new Base (the former Base goes to row 2) |
-| **State** | `Solid`, `Not solid`, `Disabled`, `Base must be added` (row 1 has the subtract color), `Nested: not supported yet` |
+| **State** | `Solid`, `Not solid`, `Disabled`, `Base must be added` (row 1 has the subtract color), `Solid Progress` or `Solid Progress: to rebuild` (nested group) |
 
 Below the table:
 
@@ -196,14 +205,14 @@ SketchUp Make has no native booleans. Solid Progress then uses its **built-in en
 | *The first volume … has the subtract color* | The Base is painted with the subtract color: repaint it, or choose *Base* on another row |
 | *The base volume is always enabled* | Choose *Base* on another row before disabling this volume |
 | *Close the Solid Progress group to rebuild it* | *Rebuild* works on closed Solid Progress groups; an open one is rebuilt when you close it |
-| *Nested Solid Progress groups are not supported yet* | A Solid Progress group cannot be a volume of another one: finalize it first |
+| *Volume #2 … is a Solid Progress group whose Result is not a solid: rebuild it first.* | Open the nested group, repair its volumes, then close it |
 | *… Solid Progress group(s) out of date* (status bar) | After an undo, a Result no longer matches its sources: open and close it, or use *Rebuild* |
 
 Loose edges and faces inside a Solid Progress group are not volumes: make them a group to use them.
 
 ## Limitations
 
-- Nesting of Solid Progress groups is not supported (finalize a sub-part to reuse it).
+- Nested Solid Progress groups: each level adds its own rebuild (slower on heavy parts with SketchUp Make); a volume changes level in SketchUp, not in the table.
 - Volumes that only touch: the same model may combine at one try and not at the next (see [Drawing volumes that combine well](#drawing-volumes-that-combine-well)).
 - The Result is rebuilt when you close the Solid Progress group, not while you edit it; on a closed Solid Progress group, the Progress Table applies its changes at once.
 - Faces rebuilt around a repaired circle keep their material, tag and orientation, but lose their texture position and attributes. A regular polygon of 6 sides or more cannot be told apart from a circle.

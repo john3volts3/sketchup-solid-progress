@@ -1,6 +1,6 @@
 # Solid Progress — Tâches (reprise de session)
 
-Créé le 2026-10-26 depuis la session Solid Batch, à la demande de l'utilisateur (le plugin s'appelait alors Solid Procedural). Version actuelle : **2.0.5**. À lire au démarrage d'une session Solid Procedural, avec `JOURNAL.md` et `PRD.md`.
+Créé le 2026-10-26 depuis la session Solid Batch, à la demande de l'utilisateur (le plugin s'appelait alors Solid Procedural). Version actuelle : **2.1.0**. À lire au démarrage d'une session Solid Procedural, avec `JOURNAL.md` et `PRD.md`.
 
 ## Décision du 2026-10-26 (les trois plugins Solid)
 
@@ -31,13 +31,15 @@ Créé le 2026-10-26 depuis la session Solid Batch, à la demande de l'utilisate
   - *Fait le 2026-10-27* : livraison 2.0.2 (résultat non solide refusé), sans release GitHub.
   - *Fait le 2026-10-28* : livraison 2.0.3 (endroit des arêtes en défaut), sans release GitHub.
   - *Fait le 2026-10-28* : livraison 2.0.4 (volumes en cause, arêtes en magenta, mise en garde), sans release GitHub.
-  - *Fait le 2026-10-28* : livraison 2.0.5 (tous les volumes en cause nommés). **À faire par l'utilisateur** : créer la release `v2.0.5` (commande donnée par Claude), envoyer `Solid_Progress.rbz` 2.0.5 sur la page SketchUcation, ajouter les notes de version v2.0.2 à v2.0.5 et recopier la Description, le Quick Start et le champ Documentation mis à jour (texte dans `docs/SKETCHUCATION.md`).
+  - *Fait le 2026-10-28* : livraison 2.0.5 (tous les volumes en cause nommés), sans release GitHub ; page SketchUcation mise à jour en 2.0.5 par Claude (textes) et l'utilisateur (`.rbz`), en attente d'approbation.
+  - *Fait le 2026-10-28* : livraison 2.1.0 (imbrication, table hiérarchique). **À faire par l'utilisateur** : créer la release `v2.1.0` (commande donnée par Claude) ; après approbation de la 2.0.5 sur SketchUcation, y passer la 2.1.0 (version, `.rbz`, note de version, « Nesting » dans Features).
   - *Fait le 2026-10-28* : vidéo « faces alignées » de l'utilisateur sur YouTube (https://youtu.be/RZWHk87HUmk), lien ajouté au README (EN + FR), aux manuels et à `docs/SKETCHUCATION.md`. **À faire par l'utilisateur** : recopier sur SketchUcation la Description, le champ Documentation et la section Video Demo.
   - **Reste à faire** : après approbation, lien de la page dans le README (EN + FR) et la description YouTube ; *Author Info* et icône plus soignée si l'utilisateur le souhaite.
   - Suivi de toutes les publications : dépôt `../sketchup-publication` (`SUIVI.md`).
   - **À vérifier dans Solid Batch** : son `docs/demo.skp` (suivi par git) garde probablement le chemin où il a été enregistré (un `.skp` garde le chemin de son dernier enregistrement, avec le nom d'utilisateur s'il est dans un dossier personnel).
 - [ ] **Fenêtre de correction interactive** (idée de l'utilisateur, 2026-10-27, PRD EF-39 « proposée ») : relever les endroits en défaut, les montrer, ajuster les chevauchements, relancer la combinaison. Base posée en 2.0.3 (EF-38 : endroit dans le message et la console Ruby). À décider : l'utilisateur la craint trop lourde.
-- [ ] **Imbrication des groupes Solid Progress** (PRD EF-25, demandée par l'utilisateur le 2026-10-28 : « ce serait très pratique ») : étudier le code et proposer un plan avec 2 ou 3 approches avant toute modification (recalcul en cascade, table, annulation, moteur de Make 2017).
+- [x] *(livrée en 2.1.0 le 2026-10-28)* **Imbrication des groupes Solid Progress** (PRD EF-25) et **table hiérarchique** (EF-41).
+- [ ] **Retours d'utilisation de l'imbrication** : l'utilisateur va s'en servir « pour bien cerner les choses à améliorer » (2026-10-28).
 
 ## Renommage en Solid Progress (2026-10-26)
 
