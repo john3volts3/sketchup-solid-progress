@@ -33,7 +33,7 @@ Créé le 2026-10-26 depuis la session Solid Batch, à la demande de l'utilisate
   - *Fait le 2026-10-28* : livraison 2.0.4 (volumes en cause, arêtes en magenta, mise en garde), sans release GitHub.
   - *Fait le 2026-10-28* : livraison 2.0.5 (tous les volumes en cause nommés), sans release GitHub ; page SketchUcation mise à jour en 2.0.5 par Claude (textes) et l'utilisateur (`.rbz`), en attente d'approbation.
   - *Fait le 2026-10-28* : livraison 2.1.0 (imbrication, table hiérarchique), sans release GitHub.
-  - *Fait le 2026-10-28* : livraison 2.1.1 (table : arbre complet, fil d'Ariane, niveaux distincts) ; page SketchUcation mise à jour en 2.1.1 (textes par Claude, `.rbz` par l'utilisateur). **À faire par l'utilisateur** : créer la release `v2.1.1` (commande donnée par Claude).
+  - *Fait le 2026-10-28* : livraison 2.1.1 (table : arbre complet, fil d'Ariane, niveaux distincts) ; page SketchUcation mise à jour en 2.1.1 (textes par Claude, `.rbz` par l'utilisateur). Release `v2.1.1` créée par l'utilisateur ; page SketchUcation en 2.1.1 (vérifiée), en attente d'approbation.
   - *Fait le 2026-10-28* : vidéo « faces alignées » de l'utilisateur sur YouTube (https://youtu.be/RZWHk87HUmk), lien ajouté au README (EN + FR), aux manuels et à `docs/SKETCHUCATION.md`. **À faire par l'utilisateur** : recopier sur SketchUcation la Description, le champ Documentation et la section Video Demo.
   - **Reste à faire** : après approbation, lien de la page dans le README (EN + FR) et la description YouTube ; *Author Info* et icône plus soignée si l'utilisateur le souhaite.
   - Suivi de toutes les publications : dépôt `../sketchup-publication` (`SUIVI.md`).

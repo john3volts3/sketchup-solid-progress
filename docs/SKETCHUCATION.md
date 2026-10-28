@@ -16,7 +16,7 @@ Text for the SketchUcation PluginStore listing: copy each section into the match
 >
 > **2026-10-28**: version **2.1.0** delivered, without a GitHub release (replaced by 2.1.1 the same day).
 >
-> **2026-10-28**: version **2.1.1** delivered (release `v2.1.1`, which replaces 2.0.2 to 2.1.0): nesting, hierarchical Progress Table with breadcrumb. PluginStore entry updated to 2.1.1 (version, release notes, "Nesting" in Features), `.rbz` replaced by the author: approval again.
+> **2026-10-28**: version **2.1.1** delivered (release `v2.1.1`, which replaces 2.0.2 to 2.1.0): nesting, hierarchical Progress Table with breadcrumb. PluginStore entry updated to 2.1.1 (version, release notes, "Nesting" in Features), `.rbz` replaced by the author (checked after reloading): approval again. GitHub release `v2.1.1` created by the author.
 
 ---
 
