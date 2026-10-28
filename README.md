@@ -40,7 +40,7 @@ With **SketchUp Pro**, the operations use SketchUp's native booleans. **SketchUp
 
 > **Always run Finalize before an STL export**: the hidden sources of a Solid Progress group would be exported too.
 
-> **Warning: volumes that only touch give unpredictable results.** When volumes only touch (faces in simple contact, edges that coincide, tangent circles or arcs), SketchUp's solid operations may fail at one try and succeed at the next, or the other way round, on the very same model. A Solid Progress group that rebuilds today may then fail at a later rebuild. Always make the volumes to add overlap a little (a tenth of a millimetre on the printed part is enough) and the holes go through.
+> **Warning: volumes that only touch give unpredictable results.** When volumes only touch (faces in simple contact, edges that coincide, tangent circles or arcs), SketchUp's solid operations may fail at one try and succeed at the next, or the other way round, on the very same model. A Solid Progress group that rebuilds today may then fail at a later rebuild. Always make the volumes to add overlap a little (a tenth of a millimetre on the printed part is enough) and the holes go through. Video: [find and fix this SketchUp error](https://youtu.be/RZWHk87HUmk) (the error comes from SketchUp itself).
 
 ## Requirements
 
@@ -129,7 +129,7 @@ Avec **SketchUp Pro**, les opérations utilisent les booléens natifs de SketchU
 
 > **Lancez toujours Finalize avant un export STL** : les sources cachées d'un groupe Solid Progress seraient exportées aussi.
 
-> **Attention : des volumes qui ne font que se toucher donnent des résultats imprévisibles.** Quand des volumes ne font que se toucher (faces en simple contact, arêtes confondues, cercles ou arcs tangents), les opérations sur les solides de SketchUp peuvent échouer à un essai et réussir au suivant, ou l'inverse, sur exactement le même modèle. Un groupe Solid Progress qui se recalcule aujourd'hui peut alors échouer à un prochain recalcul. Faites toujours chevaucher un peu les volumes à ajouter (un dixième de millimètre sur la pièce imprimée suffit) et traverser les trous.
+> **Attention : des volumes qui ne font que se toucher donnent des résultats imprévisibles.** Quand des volumes ne font que se toucher (faces en simple contact, arêtes confondues, cercles ou arcs tangents), les opérations sur les solides de SketchUp peuvent échouer à un essai et réussir au suivant, ou l'inverse, sur exactement le même modèle. Un groupe Solid Progress qui se recalcule aujourd'hui peut alors échouer à un prochain recalcul. Faites toujours chevaucher un peu les volumes à ajouter (un dixième de millimètre sur la pièce imprimée suffit) et traverser les trous. Vidéo : [trouver et corriger cette erreur de SketchUp](https://youtu.be/RZWHk87HUmk) (l'erreur vient de SketchUp lui-même).
 
 ## Prérequis
 

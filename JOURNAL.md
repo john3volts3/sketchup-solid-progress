@@ -23,6 +23,7 @@
 - **docs/USER_MANUAL_EN.md**, **docs/USER_MANUAL_FR.md** — Volumes nommés, arêtes en magenta, sélection, ligne de dépannage, version 2.0.4. **README.md** — Fonction « Where it fails » / « Où ça bloque ». **docs/FSD_EN.md**, **docs/FSD_FR.md** — EF-16, `fault_view.rb`, T20, historique, version 2.0.4. **PRD.md** — EF-40 (livrée), EF-25 (imbrication demandée par l'utilisateur, plan à proposer), EF-39, CA-34, décisions, historique (2.0.2 et 2.0.3 sans release). **TACHES.md**, **docs/SKETCHUCATION.md** (notes v2.0.4), **docs/PUBLICATION.md** — 2.0.4, vidéo « faces alignées » de l'utilisateur à publier.
 - **solid_progress/version.rb**, **solid_progress.rb** — Version 2.0.4.
 - **Tests** : SketchUp 2021 Pro 60/60 ; Make 2017 39 OK, T07 et T21 sautés. Test validé par l'utilisateur (« Teste OK, livraison »).
+- **README.md**, **docs/USER_MANUAL_EN.md**, **docs/USER_MANUAL_FR.md**, **docs/SKETCHUCATION.md**, **docs/PUBLICATION.md**, **TACHES.md** (après la livraison) — Lien vers la vidéo « faces alignées » de l'utilisateur (https://youtu.be/RZWHk87HUmk) dans la mise en garde, en précisant que l'erreur vient de SketchUp lui-même ; titre et description YouTube proposés par Claude.
 - **Release GitHub** : `v2.0.3` non créée (commande donnée, pas lancée) ; `v2.0.4` refusée au garde-fou, commande donnée à l'utilisateur.
 
 ---

@@ -40,7 +40,7 @@ Text for the SketchUcation PluginStore listing: copy each section into the match
 
 Non-destructive booleans: edit dynamically after the cut. Native booleans are destructive: once a hole is cut, moving it means undoing or remodelling. Solid Progress keeps the sources. A **Solid Progress group** holds its source volumes and their combination, the **Result**: inside the group, you edit the sources (move a hole, resize a pin, add a volume); outside, you see the Result, rebuilt automatically when you close the group. When the part is done, **Finalize** turns it into a plain solid, ready for the STL export.
 
-> **Warning: volumes that only touch give unpredictable results.** When volumes only touch (faces in simple contact, edges that coincide, tangent circles or arcs), SketchUp's solid operations may fail at one try and succeed at the next, or the other way round, on the very same model. A Solid Progress group that rebuilds today may then fail at a later rebuild. Always make the volumes to add overlap a little (a tenth of a millimetre on the printed part is enough) and the holes go through.
+> **Warning: volumes that only touch give unpredictable results.** When volumes only touch (faces in simple contact, edges that coincide, tangent circles or arcs), SketchUp's solid operations may fail at one try and succeed at the next, or the other way round, on the very same model. A Solid Progress group that rebuilds today may then fail at a later rebuild. Always make the volumes to add overlap a little (a tenth of a millimetre on the printed part is enough) and the holes go through. Video: [find and fix this SketchUp error](https://youtu.be/RZWHk87HUmk) (the error comes from SketchUp itself).
 
 ### Features
 
@@ -90,6 +90,8 @@ In SketchUp Make, Solid Progress uses the Ruby boolean engine of Solid for Maker
 
 https://youtu.be/g1BOtZyySh8
 
+Find and fix SketchUp's own boolean errors on aligned faces: https://youtu.be/RZWHk87HUmk
+
 ---
 
 ## Release Notes
@@ -129,4 +131,4 @@ User manual on GitHub: `docs/USER_MANUAL_EN.md` (English), `docs/USER_MANUAL_FR.
 
 > **Always run Finalize before an STL export**: the hidden sources of a Solid Progress group would be exported too.
 
-> **Warning: volumes that only touch give unpredictable results.** When volumes only touch (faces in simple contact, edges that coincide, tangent circles or arcs), SketchUp's solid operations may fail at one try and succeed at the next, or the other way round, on the very same model. A Solid Progress group that rebuilds today may then fail at a later rebuild. Always make the volumes to add overlap a little (a tenth of a millimetre on the printed part is enough) and the holes go through.
+> **Warning: volumes that only touch give unpredictable results.** When volumes only touch (faces in simple contact, edges that coincide, tangent circles or arcs), SketchUp's solid operations may fail at one try and succeed at the next, or the other way round, on the very same model. A Solid Progress group that rebuilds today may then fail at a later rebuild. Always make the volumes to add overlap a little (a tenth of a millimetre on the printed part is enough) and the holes go through. Video: [find and fix this SketchUp error](https://youtu.be/RZWHk87HUmk) (the error comes from SketchUp itself).
