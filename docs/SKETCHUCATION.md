@@ -22,7 +22,7 @@ Text for the SketchUcation PluginStore listing: copy each section into the match
 >
 > **2026-10-28**: version **2.2.0** delivered, without a GitHub release; the PluginStore entry stays at 2.1.1 (awaiting approval): description (warning against painting by hand), release notes and `.rbz` to update.
 >
-> **2026-10-28**: version **2.2.1** delivered, without a GitHub release; the PluginStore entry stays at 2.1.1 (awaiting approval): description, Documentation field, release notes and `.rbz` to update.
+> **2026-10-28**: version **2.2.1** delivered, GitHub release `v2.2.1` (which replaces 2.1.2 and 2.2.0); the PluginStore entry stays at 2.1.1 (awaiting approval): description, Documentation field, release notes and `.rbz` to update.
 
 ---
 

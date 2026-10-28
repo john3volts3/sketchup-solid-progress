@@ -21,6 +21,7 @@
 - **tools/tests/run_tests.rb** — **T27** (peinture à la main dans un groupe ouvert, 2021) ; T24 (groupes peints à la main → couleur de table gardée), T25 (couleur dans l'en-tête, `subtract_color`), T26 (ligne SP, couleur choisie sur la ligne SP).
 - **Docs** — Manuels, README, SKETCHUCATION : mise en garde « la couleur se choisit uniquement dans la table », « couleur de soustraction (Set Subtract Color, rouge par défaut) » au lieu de « rouge », pastille de l'en-tête et ligne SP, palette ; FSD, PRD (EF-44 complétée, CA-42, décision, historique), TACHES, PUBLICATION. **solid_progress/version.rb**, **solid_progress.rb** — 2.2.1.
 - **Tests** : SketchUp 2021 Pro 65/65 (459 vérifications) ; Make 2017 43 OK, T07, T21 et T27 sautés (308 vérifications). Validé par l'utilisateur (« parfait, livraison »).
+- **Release GitHub `v2.2.1`** créée par Claude avec `Solid_Progress.rbz` (notes : 2.1.2, 2.2.0, 2.2.1), après ajout, à la demande de l'utilisateur, de la permission `Bash(gh release create:*)` dans ses réglages Claude Code (sauvegarde du fichier de réglages faite avant).
 
 ### Couleur par Solid Progress (2.2.0)
 
