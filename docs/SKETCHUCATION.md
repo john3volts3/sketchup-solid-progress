@@ -6,16 +6,18 @@ Text for the SketchUcation PluginStore listing: copy each section into the match
 >
 > **2026-10-27**: versions SketchUp 2017 to 2027 checked in theory (see `docs/FSD_EN.md`, SketchUp version). Compatibility boxes **SU 2017 to SU 2027** ticked and saved by the author (Basic Info), as for Circle Master; saved state checked by reloading the editor.
 >
-> **2026-10-27**: version **2.0.2** delivered, without a GitHub release (replaced by 2.0.3 the next day).
+> **2026-10-27**: version **2.0.2** delivered, without a GitHub release (replaced by 2.0.4 the next day).
 >
-> **2026-10-28**: version **2.0.3** delivered (release `v2.0.3`): the author uploads the new `Solid_Progress.rbz` and adds the v2.0.2 and v2.0.3 release notes below.
+> **2026-10-28**: version **2.0.3** delivered, without a GitHub release (replaced by 2.0.4 the same day).
+>
+> **2026-10-28**: version **2.0.4** delivered (release `v2.0.4`): the author uploads the new `Solid_Progress.rbz`, adds the v2.0.2 to v2.0.4 release notes below and pastes the updated Description, Quick Start and Documentation (warning about volumes that only touch).
 
 ---
 
 ## Metadata
 
 - **Plugin name:** Solid Progress
-- **Version:** 2.0.3
+- **Version:** 2.0.4
 - **Author:** DRO
 - **Category:** Construction, Modification
 - **Compatibility:** SU 2017, 2018, 2019, 2020, 2021/22, 2023, 2024, 2025, 2026, 2027 — tested with SketchUp Make 2017 and SketchUp Pro 2021 on Windows; the other versions checked against the Ruby API release notes, not tested; macOS not tested
@@ -38,12 +40,15 @@ Text for the SketchUcation PluginStore listing: copy each section into the match
 
 Non-destructive booleans: edit dynamically after the cut. Native booleans are destructive: once a hole is cut, moving it means undoing or remodelling. Solid Progress keeps the sources. A **Solid Progress group** holds its source volumes and their combination, the **Result**: inside the group, you edit the sources (move a hole, resize a pin, add a volume); outside, you see the Result, rebuilt automatically when you close the group. When the part is done, **Finalize** turns it into a plain solid, ready for the STL export.
 
+> **Warning: volumes that only touch give unpredictable results.** When volumes only touch (faces in simple contact, edges that coincide, tangent circles or arcs), SketchUp's solid operations may fail at one try and succeed at the next, or the other way round, on the very same model. A Solid Progress group that rebuilds today may then fail at a later rebuild. Always make the volumes to add overlap a little (a tenth of a millimetre on the printed part is enough) and the holes go through.
+
 ### Features
 
 - **Create Solid Progress** — select solid groups, click once: volumes painted with the subtract color are subtracted, the others added.
 - **Automatic rebuild** — on closing the group, only when its sources changed. One Ctrl+Z undoes the edit and its Result.
 - **Progress Table** — order of the operations (drag and drop), Union / Shell / Subtract per volume, disable a volume, the formula computed, Finalize. On a closed group, every change is applied at once.
 - **Native circles** — circles and arcs broken by the booleans are rebuilt as native SketchUp circles and arcs.
+- **Where it fails** — when volumes only touch, the message names the volumes and says where, plane by plane; the edges at fault are shown in magenta until Escape.
 - **Green selection frame** — a Solid Progress group not finalized yet shows a green frame.
 - **No dependencies** — pure Ruby.
 
@@ -65,7 +70,7 @@ Other versions from 2017 on should work but are not tested. SketchUp Make is lic
 
 ### Quick Start
 
-1. Model a base and the volumes to add or remove, each as a **solid group**; paint the volumes to remove in red (the default subtract color)
+1. Model a base and the volumes to add or remove, each as a **solid group**; paint the volumes to remove in red (the default subtract color). Make the volumes to add overlap a little and the holes go through: SketchUp's solid tools handle faces in simple contact and tangent circles poorly
 2. Select them all and click **Create Solid Progress**
 3. Double-click the group to edit its sources; click outside: the Result is rebuilt
 4. Open the **Progress Table** to change the order or the operation of each volume
@@ -88,6 +93,9 @@ https://youtu.be/g1BOtZyySh8
 ---
 
 ## Release Notes
+
+**v2.0.4** (2026-10-28)
+- When a combination is not a solid, the message names the volumes at fault, plane by plane, only these volumes stay selected, and the edges at fault are shown in magenta until Escape
 
 **v2.0.3** (2026-10-28)
 - When volumes only touch, the message also says where (coordinates, plane by plane) and the Ruby Console lists the edges at fault
@@ -120,3 +128,5 @@ https://youtu.be/g1BOtZyySh8
 User manual on GitHub: `docs/USER_MANUAL_EN.md` (English), `docs/USER_MANUAL_FR.md` (French).
 
 > **Always run Finalize before an STL export**: the hidden sources of a Solid Progress group would be exported too.
+
+> **Warning: volumes that only touch give unpredictable results.** When volumes only touch (faces in simple contact, edges that coincide, tangent circles or arcs), SketchUp's solid operations may fail at one try and succeed at the next, or the other way round, on the very same model. A Solid Progress group that rebuilds today may then fail at a later rebuild. Always make the volumes to add overlap a little (a tenth of a millimetre on the printed part is enough) and the holes go through.

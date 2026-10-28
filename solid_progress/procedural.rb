@@ -59,6 +59,17 @@ module SolidProcedural
       end
     end
 
+    # A result that is not a solid: +edges+ are its edges at fault (see
+    # faulty_edges), shown in magenta after the message.
+    class NotSolidError < RebuildError
+      attr_reader :edges
+
+      def initialize(message, edges)
+        super(message)
+        @edges = edges
+      end
+    end
+
     # Procedural groups of the active path already synchronized, per model
     # (kept when the file is reloaded).
     @synced_paths ||= {}
@@ -389,7 +400,13 @@ module SolidProcedural
         # previous edit of the user).
         unless res.manifold?
           edges = faulty_edges(res, group.transformation)
-          raise RebuildError, not_solid_message("#{OP_LABELS[op]} of volume #{name}", edges)
+          # The message names, for each place, the volumes combined so far
+          # that have a face there.
+          cache = {}
+          involved = lambda do |some|
+            touching_volumes(active.first(i + 2), some, group.transformation, cache).map { |v| label(v) }
+          end
+          raise NotSolidError.new(not_solid_message("#{OP_LABELS[op]} of volume #{name}", edges, involved), edges)
         end
         acc = res
       end
@@ -413,32 +430,34 @@ module SolidProcedural
 
     # Message for a result that is not a solid: where its faulty +edges+
     # are, and what to check there. The edges are listed in the Ruby
-    # Console.
-    def self.not_solid_message(step, edges)
+    # Console. +involved+, if given, names the volumes at some edges.
+    def self.not_solid_message(step, edges, involved = nil)
       puts "#{LOG} #{step}: #{edges.length} edge(s) where the result is not a solid (start - end, faces)"
       edges.first(MAX_LISTED_EDGES).each do |a, b, faces|
         puts "#{LOG}   #{point_text(a)} - #{point_text(b)}, #{faces} face(s)"
       end
       puts "#{LOG}   ... #{edges.length - MAX_LISTED_EDGES} more" if edges.length > MAX_LISTED_EDGES
-      where = edges.empty? ? '' : ": #{edges.length} edge(s) at fault#{place_text(edges)}"
-      "#{step} gives a result that is not a solid#{where}. Check the volumes there: faces in simple " \
-        'contact, edges that coincide, tangent circles or arcs. Make them overlap (move or enlarge a ' \
-        'volume slightly), then try again. The edges are listed in the Ruby Console.'
+      return "#{step} gives a result that is not a solid." if edges.empty?
+      "#{step} gives a result that is not a solid: #{edges.length} edge(s) at fault" \
+        "#{place_text(edges, involved)}.\nCheck the volumes there: faces in simple contact, edges that " \
+        'coincide, tangent circles or arcs. Make them overlap (move or enlarge a volume slightly), then try ' \
+        'again. The edges are shown in magenta until you press Escape, and listed in the Ruby Console.'
     end
 
     # Planes at most named in the message; the other edges are counted
     # together.
     MAX_LISTED_PLANES = 3
 
-    # Where the +edges+ are: ", at z = …, between (…) and (…)" when they
-    # are on one plane, else ", by plane: 31 at z = …, between (…) and (…);
-    # 30 at z = …; 6 other(s), …" (one box over all the edges would cover
-    # the whole model).
-    def self.place_text(edges)
+    # Where the +edges+ are: ", at z = …, between (…) and (…), volumes …"
+    # when they are on one plane, else one line per plane, ", by
+    # plane:\n- 31 at z = …, between (…) and (…), volumes …\n- 30 at z =
+    # …\n- 6 other(s), …" (one box over all the edges would cover the whole
+    # model).
+    def self.place_text(edges, involved = nil)
       groups, rest = plane_groups(edges)
-      parts = groups.map { |group| "#{group.length} #{box_text(group)}" }
-      parts << "#{rest.length} other(s), #{box_text(rest)}" unless rest.empty?
-      parts.length > 1 ? ", by plane: #{parts.join('; ')}" : ", #{box_text(edges)}"
+      parts = groups.map { |group| "#{group.length} #{box_text(group, involved)}" }
+      parts << "#{rest.length} other(s), #{box_text(rest, involved)}" unless rest.empty?
+      parts.length > 1 ? ", by plane:\n- #{parts.join("\n- ")}" : ", #{box_text(edges, involved)}"
     end
 
     # The +edges+ grouped by plane of the axes (x, y or z the same at both
@@ -459,14 +478,55 @@ module SolidProcedural
       [groups, rest]
     end
 
-    # "at z = …, between (…) and (…)": the box of the +edges+, and the
-    # coordinates they all share.
-    def self.box_text(edges)
+    # "at z = …, between (…) and (…), volumes …": the box of the +edges+,
+    # the coordinates they all share and the volumes named by +involved+.
+    def self.box_text(edges, involved = nil)
       box = Geom::BoundingBox.new
       edges.each { |a, b, _faces| box.add(a, b) }
       shared = %w[x y z].each_with_index.select { |_axis, k| (box.max[k] - box.min[k]).abs < 0.001 }
       at = shared.map { |axis, k| "#{axis} = #{Sketchup.format_length(box.min[k])}" }
-      (at.empty? ? '' : "at #{at.join(', ')}, ") + "between #{point_text(box.min)} and #{point_text(box.max)}"
+      names = involved ? involved.call(edges) : []
+      (at.empty? ? '' : "at #{at.join(', ')}, ") + "between #{point_text(box.min)} and #{point_text(box.max)}" +
+        (names.empty? ? '' : ", volumes #{names.join(', ')}")
+    end
+
+    # Points at most tested, for a group of edges, to find the volumes there.
+    MAX_TESTED_POINTS = 10
+
+    ON_FACE = [Sketchup::Face::PointInside, Sketchup::Face::PointOnVertex, Sketchup::Face::PointOnEdge].freeze
+
+    # The +volumes+ (instances of the context of +transformation+) that
+    # have a face through the middle of some of the +edges+ (model
+    # coordinates). +cache+ keeps the faces of each volume between calls.
+    def self.touching_volumes(volumes, edges, transformation, cache = {})
+      step = [edges.length / MAX_TESTED_POINTS, 1].max
+      points = edges.each_slice(step).map(&:first).map { |a, b, _faces| Geom.linear_combination(0.5, a, 0.5, b) }
+      volumes.select do |v|
+        frames = cache[v] ||= face_frames(v, transformation * v.transformation)
+        frames.any? do |inverse, faces|
+          locals = points.map { |p| p.transform(inverse) }
+          faces.any? do |face, nx, ny, nz, d|
+            locals.any? do |q|
+              (nx * q.x + ny * q.y + nz * q.z + d).abs < 0.001 && ON_FACE.include?(face.classify_point(q))
+            end
+          end
+        end
+      end
+    end
+
+    # [[inverse transformation, [[face, nx, ny, nz, d], …]], …]: the faces of
+    # +instance+ and of the instances it holds, with their planes; +t+ is
+    # the transformation of +instance+ to model coordinates.
+    def self.face_frames(instance, t, frames = [])
+      entities = CircleRestore.inner_entities(instance)
+      faces = entities.grep(Sketchup::Face).map do |f|
+        n = f.normal
+        p = f.vertices.first.position
+        [f, n.x, n.y, n.z, -(n.x * p.x + n.y * p.y + n.z * p.z)]
+      end
+      frames << [t.inverse, faces] unless faces.empty?
+      entities.each { |e| face_frames(e, t * e.transformation, frames) if instance?(e) }
+      frames
     end
 
     def self.point_text(point)
@@ -607,7 +667,16 @@ module SolidProcedural
         return
       end
 
-      run_command(model, 'Create Solid Progress') do
+      # A result that is not a solid: only the volumes at fault stay
+      # selected (the operation is cancelled, the volumes are back).
+      select_at_fault = lambda do |edges|
+        touching = touching_volumes(volumes.select(&:valid?), edges, Geom::Transformation.new)
+        unless touching.empty?
+          model.selection.clear
+          model.selection.add(touching)
+        end
+      end
+      run_command(model, 'Create Solid Progress', select_at_fault) do
         group = model.active_entities.add_group(volumes)
         group.name = DEFAULT_NAME
         group.set_attribute(DICT, 'role', ROLE_PROCEDURAL)
@@ -687,7 +756,8 @@ module SolidProcedural
 
     # Runs the block in one undoable operation. The block returns a list of
     # [note, warning]; warnings are shown once the operation is committed.
-    def self.run_command(model, title)
+    # After a result that is not a solid, +on_fault+ gets its edges at fault.
+    def self.run_command(model, title, on_fault = nil)
       model.start_operation("Solid Progress — #{title}", true)
       outcomes = yield
       model.commit_operation
@@ -700,6 +770,10 @@ module SolidProcedural
       model.abort_operation
       puts "#{LOG} #{title}: #{e.message}"
       UI.messagebox("#{title} failed: #{e.message}\n\nNothing was changed.", MB_OK)
+      if e.is_a?(NotSolidError)
+        on_fault.call(e.edges) if on_fault && !e.edges.empty?
+        FaultView.show(model, e.edges)
+      end
     rescue => e
       model.abort_operation
       puts "#{LOG} #{title} error: #{e.message}"
@@ -879,6 +953,7 @@ module SolidProcedural
       model.start_operation('Solid Progress — Rebuild', true, false, transparent)
       errors = []
       notes = []
+      faults = []
       begin
         left.each do |g|
           if stale.include?(g)
@@ -886,6 +961,7 @@ module SolidProcedural
               notes << "#{group_label(g)} rebuilt — #{rebuild_in_operation(model, g)[0]}"
             rescue RebuildError => e
               errors << "#{group_label(g)}: #{e.message}"
+              faults.concat(e.edges) if e.is_a?(NotSolidError)
             end
           end
           apply_display(g, false)
@@ -904,6 +980,7 @@ module SolidProcedural
       return if errors.empty?
       errors.each { |m| puts "#{LOG} #{m}" }
       UI.messagebox("Rebuild failed — the former result is kept.\n\n#{errors.join("\n")}", MB_OK)
+      FaultView.show(model, faults)
     end
 
     # After Ctrl+Z / Ctrl+Y or when a model is opened: display of every

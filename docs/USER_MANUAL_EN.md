@@ -2,7 +2,7 @@
 
 *[Version française](USER_MANUAL_FR.md)*
 
-Version 2.0.3 — SketchUp Pro 2021 and SketchUp Make 2017
+Version 2.0.4 — SketchUp Pro 2021 and SketchUp Make 2017
 
 ## Overview
 
@@ -57,12 +57,13 @@ To try Solid Progress on a ready-made part, open the demo model `docs/demo.skp` 
 
 The solid operations of SketchUp (and the built-in engine of SketchUp Make) handle volumes that only **touch** poorly: faces in simple contact, an edge of one volume lying exactly on an edge of another, circles or arcs that are tangent or coincide. The combination may then not be a solid: Solid Progress refuses it.
 
+> **Warning: volumes that only touch give unpredictable results.** When volumes only touch (faces in simple contact, edges that coincide, tangent circles or arcs), SketchUp's solid operations may fail at one try and succeed at the next, or the other way round, on the very same model. A Solid Progress group that rebuilds today may then fail at a later rebuild. Always make the volumes to add overlap a little (a tenth of a millimetre on the printed part is enough) and the holes go through.
+
 - **Volumes to add: make them overlap.** Sink a pin slightly into the plate it stands on instead of setting it exactly on the face; make a part that fills a recess slightly larger than the recess (for example a diameter 0.1 mm larger). If SketchUp glued the pin to the face it stands on (it then only slides along that face), right-click it and choose **Unglue** before sinking it.
 - **Volumes to remove: make them go through.** A hole starts below and ends above the faces it cuts.
-- **If a contact must stay exact**, check that the volumes still combine: close the Solid Progress group and check that the Result is a solid (Entity Info: *Solid Group*).
-- **A combination that worked may fail the next time**, and the other way round, while volumes only touch: SketchUp does not always give the same result on exact contacts. Make the volumes overlap rather than trying again.
+- **If a contact must stay exact**, check that the volumes still combine: close the Solid Progress group and check that the Result is a solid (Entity Info: *Solid Group*), and again after each edit: it may still fail at a later rebuild (see the warning above).
 
-Solid Progress names the volume whose combination is not a solid and says where: *Union of volume #4 … gives a result that is not a solid: 12 edge(s) at fault, at z = …, between (…) and (…)*. When the edges lie on several planes, they are given plane by plane (*by plane: 31 at z = …; 30 at z = …*). The Ruby Console (**Window > Ruby Console**) lists each edge with its two ends (see [Troubleshooting](#troubleshooting)).
+Solid Progress names the volume whose combination is not a solid and says where, with the volumes that have a face there: *Union of volume #4 … gives a result that is not a solid: 12 edge(s) at fault, at z = …, between (…) and (…), volumes #1 Plate, #4 Pin*. When the edges lie on several planes, they are given one line per plane. After the message, the edges at fault are drawn **in magenta**, in front of the faces, until you press **Escape** or choose another tool (the model is not changed); after Create, only the volumes at fault stay selected. The Ruby Console (**Window > Ruby Console**) lists each edge with its two ends (see [Troubleshooting](#troubleshooting)).
 
 ## Commands
 
@@ -189,7 +190,7 @@ SketchUp Make has no native booleans. Solid Progress then uses its **built-in en
 | *No base volume found: all the selected objects have the subtract color* | Repaint at least one object with another color |
 | *Volume #2 … is not a solid.* | A source was damaged while editing: repair it; the former Result is kept |
 | *Subtract of volume #3 … failed.* | The boolean failed (native with SketchUp Pro, built-in engine with SketchUp Make; volumes that do not touch, coplanar faces…): move or simplify the volume |
-| *Union of volume #4 … gives a result that is not a solid: … edge(s) at fault, at z = …, between (…) and (…). …* | This volume only touches another one (faces in simple contact, edges that coincide, tangent circles or arcs) and their combination is not a solid. The message says where (plane by plane when there are several), and the Ruby Console lists the edges. Make the volumes overlap there, or enlarge or move this volume slightly (see [Drawing volumes that combine well](#drawing-volumes-that-combine-well)). Nothing is changed; when you close a Solid Progress group, your edit and the former Result are kept |
+| *Union of volume #4 … gives a result that is not a solid: … edge(s) at fault, at z = …, between (…) and (…), volumes …. …* | This volume only touches another one (faces in simple contact, edges that coincide, tangent circles or arcs) and their combination is not a solid. The message says where (one line per plane when there are several) and which volumes have a face there; the edges are shown in magenta until Escape, and the Ruby Console lists them. Make the volumes overlap there, or enlarge or move this volume slightly (see [Drawing volumes that combine well](#drawing-volumes-that-combine-well)). Nothing is changed; when you close a Solid Progress group, your edit and the former Result are kept |
 | *Double-click the Solid Progress group in the model to open it …* (table) | SketchUp 2017: the table cannot open a Solid Progress group; double-click it in the model |
 | *PRO Only vs. procedural.rb:…* | This copy of the plugin was set to SketchUp Pro only (a line uncommented in `solid_progress/procedural.rb`): nothing is changed. To use it with SketchUp Make, comment that line out again (`#` at its start) and restart SketchUp |
 | *The first volume … has the subtract color* | The Base is painted with the subtract color: repaint it, or choose *Base* on another row |
@@ -203,6 +204,7 @@ Loose edges and faces inside a Solid Progress group are not volumes: make them a
 ## Limitations
 
 - Nesting of Solid Progress groups is not supported (finalize a sub-part to reuse it).
+- Volumes that only touch: the same model may combine at one try and not at the next (see [Drawing volumes that combine well](#drawing-volumes-that-combine-well)).
 - The Result is rebuilt when you close the Solid Progress group, not while you edit it; on a closed Solid Progress group, the Progress Table applies its changes at once.
 - Faces rebuilt around a repaired circle keep their material, tag and orientation, but lose their texture position and attributes. A regular polygon of 6 sides or more cannot be told apart from a circle.
 - Tested on SketchUp Pro 2021 and SketchUp Make 2017 (Windows). Expected to work on SketchUp 2017 to 2027 (checked against the Ruby API release notes, not tested).

@@ -44,9 +44,10 @@ PNG recadrés sur l'utile, **moins de 150 Ko** chacun, dans `docs/images/` (suiv
 ## 4. Liste de contrôle de la diffusion
 
 - [x] Vidéo en ligne (2026-10-26, enregistrée par l'utilisateur sur son propre modèle, 1 min 25) : https://youtu.be/g1BOtZyySh8, titre « Solid Progress for SketchUp — non-destructive booleans (edit dynamically after the cut) » ; lien dans `README.md` (EN + FR) et `docs/SKETCHUCATION.md` (lien « Tutorial » de la PluginStore : SketchUcation n'héberge pas de vidéo).
+- [ ] Vidéo « faces alignées » (faite par l'utilisateur le 2026-10-28 : corriger un problème de faces alignées) : titre et description proposés par Claude ; à mettre sur YouTube, puis lien dans `README.md` (EN + FR), les manuels (section « Bien dessiner les volumes ») et `docs/SKETCHUCATION.md`.
 - [x] Captures de l'utilisateur dans `docs/images/` : `hero.png` (pièce finie, barre d'outils ; capture principale de SketchUcation), `table-open.png` (table d'un groupe ouvert ; manuels EN + FR, section Progress Table).
 - [x] Icône de la page SketchUcation : provisoire (54 px, recadrée dans `images/hero.png`) ; à remplacer si une icône plus soignée est faite.
-- [x] `.rbz` 2.0.1 dans la release GitHub `v2.0.1` ; 2.0.2 sans release (création refusée par le garde-fou de Claude Code, dépôt public) ; 2.0.3 dans `v2.0.3` (2026-10-28), à envoyer aussi sur SketchUcation par l'utilisateur.
+- [x] `.rbz` 2.0.1 dans la release GitHub `v2.0.1` ; 2.0.2 sans release (création refusée par le garde-fou de Claude Code, dépôt public) ; 2.0.3 sans release non plus ; 2.0.4 dans `v2.0.4` (2026-10-28, commande à lancer par l'utilisateur), à envoyer aussi sur SketchUcation par l'utilisateur.
 - [x] Dépôt rendu public le 2026-10-26, à la demande de l'utilisateur, après un dernier contrôle de tout l'historique (24 commits, aucune donnée personnelle ; `docs/demo.skp` : seul le chemin du dossier public de Windows).
 - [x] Page SketchUcation `Solid_Progress` créée et remplie (textes de `docs/SKETCHUCATION.md`, `.rbz`, icône, captures réduites à 690 px, vidéo, liens GitHub), enregistrée en brouillon.
 - [x] **Publication de la page SketchUcation** par l'utilisateur après vérification (bouton marche/arrêt), le 2026-10-26 : **en attente d'approbation** des administrateurs (environ un jour). *Author Info* : à remplir par l'utilisateur s'il le souhaite.

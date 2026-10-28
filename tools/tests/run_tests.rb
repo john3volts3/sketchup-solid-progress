@@ -1386,18 +1386,35 @@ module SolidProcedural
         at = "at x = #{Sketchup.format_length(10)}, y = #{Sketchup.format_length(270)}, between"
         c.check(message.include?('edge(s) at fault') && message.include?(at) && message.include?('Ruby Console'),
                 'message gives where the result is not a solid (the common edge)', message)
+        # The volumes there: the two boxes, not the hole (not combined yet).
+        c.check(message =~ /\), volumes #1 [^,]+, #2 [^,.]+\./ && !message.include?('#3 '),
+                'message names the volumes at the common edge (#1 and #2)', message)
+        c.check(model.selection.length == 2 && model.selection.include?(a) && model.selection.include?(b),
+                'only the volumes at fault stay selected', model.selection.map { |e| Procedural.label(e) }.join(', '))
+        tool = model.tools.active_tool_name
+        c.check(tool == 'RubyTool', 'edges at fault shown (FaultView tool active)', tool)
+        model.select_tool(nil)
         # Edges on several planes (3 at z = 0, 2 at z = 50, 1 sloped): one
-        # place per plane, not one box over them all.
+        # line per plane, not one box over them all.
         pt = ->(x, y, z) { Geom::Point3d.new(x, y, z) }
         fl = ->(v) { Sketchup.format_length(v) }
         edges = [[pt[0, 0, 0], pt[10, 0, 0], 1], [pt[10, 0, 0], pt[10, 10, 0], 1], [pt[10, 10, 0], pt[0, 10, 0], 1],
                  [pt[0, 0, 50], pt[10, 0, 50], 3], [pt[10, 0, 50], pt[10, 10, 50], 3], [pt[0, 0, 0], pt[5, 5, 50], 1]]
         place = Procedural.place_text(edges)
-        c.check(place.start_with?(", by plane: 3 at z = #{fl[0]}, between") &&
-                place.include?("; 2 at z = #{fl[50]}, between") && place.include?('; 1 other(s), between'),
-                'edges on several planes: one place per plane', place)
+        c.check(place.start_with?(", by plane:\n- 3 at z = #{fl[0]}, between") &&
+                place.include?("\n- 2 at z = #{fl[50]}, between") && place.include?("\n- 1 other(s), between"),
+                'edges on several planes: one line per plane', place)
         place = Procedural.place_text(edges.first(3))
         c.check(place.start_with?(", at z = #{fl[0]}, between"), 'edges on one plane: one place', place)
+        # FaultView draws every edge, in magenta, in screen coordinates.
+        view = Object.new
+        drawn = []
+        view.define_singleton_method(:screen_coords) { |p| p }
+        view.define_singleton_method(:line_width=) { |_w| }
+        view.define_singleton_method(:drawing_color=) { |color| drawn << color }
+        view.define_singleton_method(:draw2d) { |_mode, points| drawn << points.length }
+        FaultView.new(edges).draw(view)
+        c.check(drawn == ['magenta', 12], 'FaultView draws the 6 edges in magenta', drawn.inspect)
         c.check(tests.procedural_groups(model).length == before &&
                 [a, b, hole].all? { |v| v.valid? && v.parent == model }, 'nothing created, volumes left as they were')
         model.start_operation('Solid Procedural tests — clean up', true)

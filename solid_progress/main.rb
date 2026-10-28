@@ -4,6 +4,7 @@ require_relative 'solid_operations'
 require_relative 'procedural'
 require_relative 'procedural_table'
 require_relative 'highlight'
+require_relative 'fault_view'
 require_relative 'procedural_observer'
 
 module SolidProcedural

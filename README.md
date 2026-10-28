@@ -33,11 +33,14 @@ It derives from [Solid Batch](https://github.com/john3volts3/sketchup-solid-batc
 - **Green selection frame** — a selected Solid Progress group shows a green frame, so you know it is not finalized yet.
 - **Native circles** — circles and arcs broken by the booleans are rebuilt as native SketchUp circles and arcs on every Result (center inference), as in Solid Batch; fast even on a face with many holes (1.1.1).
 - **Explode releases the volumes** — exploding a Solid Progress group gives back the Result and all the source volumes as plain, visible objects.
+- **Where it fails** — when volumes only touch and their combination is not a solid, the message names the volumes and says where, plane by plane; the edges at fault are shown in magenta until Escape.
 - **Set Subtract Color / Set Repair Options** — as in Solid Batch; the settings of Solid Batch are taken over until you change them.
 
 With **SketchUp Pro**, the operations use SketchUp's native booleans. **SketchUp Make**, which has none, uses the built-in engine of Solid for Maker, based on [Eneroth Solid Tools](https://github.com/Eneroth3/eneroth-solid-tools); since 1.1.2 (Solid for Maker 1.0.1), it also handles a counterbore or countersink cut after its hole.
 
 > **Always run Finalize before an STL export**: the hidden sources of a Solid Progress group would be exported too.
+
+> **Warning: volumes that only touch give unpredictable results.** When volumes only touch (faces in simple contact, edges that coincide, tangent circles or arcs), SketchUp's solid operations may fail at one try and succeed at the next, or the other way round, on the very same model. A Solid Progress group that rebuilds today may then fail at a later rebuild. Always make the volumes to add overlap a little (a tenth of a millimetre on the printed part is enough) and the holes go through.
 
 ## Requirements
 
@@ -119,11 +122,14 @@ Il est issu de [Solid Batch](https://github.com/john3volts3/sketchup-solid-batch
 - **Cadre de sélection vert** — un groupe Solid Progress sélectionné a un cadre vert : vous savez qu'il n'est pas encore finalisé.
 - **Cercles natifs** — les cercles et arcs cassés par les booléens sont reconstruits en vrais cercles et arcs SketchUp sur chaque Result (inférence du centre), comme dans Solid Batch ; rapide même sur une face percée de nombreux trous (1.1.1).
 - **Explode libère les volumes** — éclater un groupe Solid Progress rend le Result et tous les volumes sources en objets ordinaires visibles.
+- **Où ça bloque** — quand des volumes ne font que se toucher et que leur combinaison n'est pas un solide, le message nomme les volumes et dit où, plan par plan ; les arêtes en défaut s'affichent en magenta jusqu'à Échap.
 - **Set Subtract Color / Set Repair Options** — comme dans Solid Batch ; les réglages de Solid Batch sont repris tant que vous ne les changez pas.
 
 Avec **SketchUp Pro**, les opérations utilisent les booléens natifs de SketchUp. **SketchUp Make**, qui n'en a pas, utilise le moteur intégré de Solid for Maker, basé sur [Eneroth Solid Tools](https://github.com/Eneroth3/eneroth-solid-tools) ; depuis la 1.1.2 (Solid for Maker 1.0.1), il traite aussi un chambrage ou un fraisurage taillé après son trou.
 
 > **Lancez toujours Finalize avant un export STL** : les sources cachées d'un groupe Solid Progress seraient exportées aussi.
+
+> **Attention : des volumes qui ne font que se toucher donnent des résultats imprévisibles.** Quand des volumes ne font que se toucher (faces en simple contact, arêtes confondues, cercles ou arcs tangents), les opérations sur les solides de SketchUp peuvent échouer à un essai et réussir au suivant, ou l'inverse, sur exactement le même modèle. Un groupe Solid Progress qui se recalcule aujourd'hui peut alors échouer à un prochain recalcul. Faites toujours chevaucher un peu les volumes à ajouter (un dixième de millimètre sur la pièce imprimée suffit) et traverser les trous.
 
 ## Prérequis
 

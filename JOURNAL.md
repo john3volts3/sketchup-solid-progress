@@ -10,6 +10,23 @@
 
 ---
 
+## Session du 2026-10-28
+
+### Volumes en cause et arêtes en magenta, mise en garde (2.0.4)
+
+- **Demandes utilisateur** : mettre les utilisateurs en garde, dans la description et le manuel, sur les combinaisons qui changent d'un essai à l'autre ; montrer les éléments en cause « dans une couleur particulière, rouge par exemple » (options 1 et 2 choisies : volumes nommés et sélectionnés, arêtes en magenta ; le rouge est la couleur de soustraction).
+- **README.md**, **docs/SKETCHUCATION.md**, **docs/USER_MANUAL_EN.md**, **docs/USER_MANUAL_FR.md** (07:20) — Encadré « volumes that only touch give unpredictable results » (README EN + FR, Description et champ Documentation de SketchUcation, en tête de « Bien dessiner les volumes »), ligne dans les limitations, phrase « faites chevaucher » ajoutée à l'étape 1 du Quick Start de SketchUcation.
+- **solid_progress/procedural.rb** (07:30) — `NotSolidError` (arêtes en défaut jointes au message), `touching_volumes` et `face_frames` (volumes qui ont une face au milieu des arêtes en défaut, 10 points au plus par endroit), `box_text` nomme ces volumes, message sur une ligne par plan et renvoi à l'affichage magenta ; `run_command` (`on_fault`) et `do_create` (seuls les volumes en cause restent sélectionnés) ; `sync_path` montre aussi les arêtes après un recalcul à la sortie refusé.
+- **solid_progress/fault_view.rb** (nouveau) — Outil qui dessine les arêtes en défaut en magenta (`view.draw2d`, devant les faces) jusqu'à Échap ; le modèle n'est pas modifié. **solid_progress/main.rb** — le charge.
+- **tools/tests/run_tests.rb** — T20 : volumes #1 et #2 nommés (pas le trou), seuls sélectionnés, outil actif, dessin des arêtes en magenta (vue simulée), format une ligne par plan.
+- **Diagnostic** (copie de `error.skp`, hors dépôt) : 1 refus sur 4 essais, « Subtract of volume #8 Group#34 » avec « volumes #4 Component#5, #8 Group#34 » sur chaque plan (dessus, dessous et une face verticale) : le volume rouge touche le corps de la prise. L'utilisateur a corrigé en agrandissant le volume rouge vers le bas.
+- **docs/USER_MANUAL_EN.md**, **docs/USER_MANUAL_FR.md** — Volumes nommés, arêtes en magenta, sélection, ligne de dépannage, version 2.0.4. **README.md** — Fonction « Where it fails » / « Où ça bloque ». **docs/FSD_EN.md**, **docs/FSD_FR.md** — EF-16, `fault_view.rb`, T20, historique, version 2.0.4. **PRD.md** — EF-40 (livrée), EF-25 (imbrication demandée par l'utilisateur, plan à proposer), EF-39, CA-34, décisions, historique (2.0.2 et 2.0.3 sans release). **TACHES.md**, **docs/SKETCHUCATION.md** (notes v2.0.4), **docs/PUBLICATION.md** — 2.0.4, vidéo « faces alignées » de l'utilisateur à publier.
+- **solid_progress/version.rb**, **solid_progress.rb** — Version 2.0.4.
+- **Tests** : SketchUp 2021 Pro 60/60 ; Make 2017 39 OK, T07 et T21 sautés. Test validé par l'utilisateur (« Teste OK, livraison »).
+- **Release GitHub** : `v2.0.3` non créée (commande donnée, pas lancée) ; `v2.0.4` refusée au garde-fou, commande donnée à l'utilisateur.
+
+---
+
 ## Session du 2026-10-27 (3) — livraison le 2026-10-28
 
 ### Endroit des arêtes en défaut dans le message et la console Ruby (2.0.3)
