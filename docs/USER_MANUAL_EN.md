@@ -2,7 +2,7 @@
 
 *[Version française](USER_MANUAL_FR.md)*
 
-Version 2.0.2 — SketchUp Pro 2021 and SketchUp Make 2017
+Version 2.0.3 — SketchUp Pro 2021 and SketchUp Make 2017
 
 ## Overview
 
@@ -57,11 +57,12 @@ To try Solid Progress on a ready-made part, open the demo model `docs/demo.skp` 
 
 The solid operations of SketchUp (and the built-in engine of SketchUp Make) handle volumes that only **touch** poorly: faces in simple contact, an edge of one volume lying exactly on an edge of another, circles or arcs that are tangent or coincide. The combination may then not be a solid: Solid Progress refuses it.
 
-- **Volumes to add: make them overlap.** Sink a pin slightly into the plate it stands on instead of setting it exactly on the face; make a part that fills a recess slightly larger than the recess (for example a diameter 0.1 mm larger).
+- **Volumes to add: make them overlap.** Sink a pin slightly into the plate it stands on instead of setting it exactly on the face; make a part that fills a recess slightly larger than the recess (for example a diameter 0.1 mm larger). If SketchUp glued the pin to the face it stands on (it then only slides along that face), right-click it and choose **Unglue** before sinking it.
 - **Volumes to remove: make them go through.** A hole starts below and ends above the faces it cuts.
 - **If a contact must stay exact**, check that the volumes still combine: close the Solid Progress group and check that the Result is a solid (Entity Info: *Solid Group*).
+- **A combination that worked may fail the next time**, and the other way round, while volumes only touch: SketchUp does not always give the same result on exact contacts. Make the volumes overlap rather than trying again.
 
-Solid Progress names the volume whose combination is not a solid: *Union of volume #4 … gives a result that is not a solid* (see [Troubleshooting](#troubleshooting)).
+Solid Progress names the volume whose combination is not a solid and says where: *Union of volume #4 … gives a result that is not a solid: 12 edge(s) at fault, at z = …, between (…) and (…)*. When the edges lie on several planes, they are given plane by plane (*by plane: 31 at z = …; 30 at z = …*). The Ruby Console (**Window > Ruby Console**) lists each edge with its two ends (see [Troubleshooting](#troubleshooting)).
 
 ## Commands
 
@@ -188,7 +189,7 @@ SketchUp Make has no native booleans. Solid Progress then uses its **built-in en
 | *No base volume found: all the selected objects have the subtract color* | Repaint at least one object with another color |
 | *Volume #2 … is not a solid.* | A source was damaged while editing: repair it; the former Result is kept |
 | *Subtract of volume #3 … failed.* | The boolean failed (native with SketchUp Pro, built-in engine with SketchUp Make; volumes that do not touch, coplanar faces…): move or simplify the volume |
-| *Union of volume #4 … gives a result that is not a solid. …* | This volume only touches another one (faces in simple contact, edges that coincide, tangent circles or arcs) and their combination is not a solid. Make the volumes overlap, or enlarge or move this volume slightly (see [Drawing volumes that combine well](#drawing-volumes-that-combine-well)). Nothing is changed; when you close a Solid Progress group, your edit and the former Result are kept |
+| *Union of volume #4 … gives a result that is not a solid: … edge(s) at fault, at z = …, between (…) and (…). …* | This volume only touches another one (faces in simple contact, edges that coincide, tangent circles or arcs) and their combination is not a solid. The message says where (plane by plane when there are several), and the Ruby Console lists the edges. Make the volumes overlap there, or enlarge or move this volume slightly (see [Drawing volumes that combine well](#drawing-volumes-that-combine-well)). Nothing is changed; when you close a Solid Progress group, your edit and the former Result are kept |
 | *Double-click the Solid Progress group in the model to open it …* (table) | SketchUp 2017: the table cannot open a Solid Progress group; double-click it in the model |
 | *PRO Only vs. procedural.rb:…* | This copy of the plugin was set to SketchUp Pro only (a line uncommented in `solid_progress/procedural.rb`): nothing is changed. To use it with SketchUp Make, comment that line out again (`#` at its start) and restart SketchUp |
 | *The first volume … has the subtract color* | The Base is painted with the subtract color: repaint it, or choose *Base* on another row |

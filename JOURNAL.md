@@ -10,6 +10,22 @@
 
 ---
 
+## Session du 2026-10-27 (3) — livraison le 2026-10-28
+
+### Endroit des arêtes en défaut dans le message et la console Ruby (2.0.3)
+
+- **Demande utilisateur** (2026-10-27, soir) : sur son modèle de travail, Create échouait puis réussissait d'un essai à l'autre ; ajouter les coordonnées des endroits en défaut dans la console Ruby, avec un message qui demande de vérifier ces points (faces adjacentes…) et de corriger. Idée d'une fenêtre de correction interactive, que l'utilisateur craint trop lourde : notée au PRD (EF-39, proposée).
+- **solid_progress/procedural.rb** (2026-10-27, vers 18:00) — `faulty_edges` (arêtes du résultat qui ne bordent pas exactement deux faces, en coordonnées du modèle), `not_solid_message` (liste des 50 premières arêtes dans la console Ruby, message « … gives a result that is not a solid: N edge(s) at fault, at …, between (…) and (…). Check the volumes there … The edges are listed in the Ruby Console. »), `place_text`, `point_text`.
+- **solid_progress/procedural.rb** (2026-10-27, vers 18:50) — Regroupement par plan (`plane_groups`, `box_text`, `MAX_LISTED_PLANES = 3`) : sur le modèle de l'utilisateur, « Subtract of volume #8 Group#34 » donnait 67 arêtes dont la boîte couvrait tout le bâtiment (z = 0 et z = 13,8 m) ; sur un seul plan, le message garde sa forme simple (demande de l'utilisateur).
+- **tools/tests/run_tests.rb** — T20 : endroit de l'arête commune (« at x = …, y = …, between »), regroupement par plan sur des arêtes fictives (3 à z = 0, 2 à z = 50, 1 en biais) et forme simple sur un plan.
+- **Diagnostic** (copie de `error.skp`, hors dépôt) : Create 4 fois → 2 réussites, 2 refus « Union of volume #5 Group#76 … at z = 13,8000 » : les booléens natifs varient d'un essai à l'autre sur des contacts exacts (PRD Q-13). Tétons collés (*Glue to*) signalés par l'utilisateur : le plugin ne touche jamais à la colle ; `Group#79` et `Group#80` avaient l'option (PRD Q-14).
+- **docs/USER_MANUAL_EN.md**, **docs/USER_MANUAL_FR.md** — Où regarder (message, console Ruby), combinaison qui peut changer d'un essai à l'autre, *Unglue* avant d'enfoncer un tenon, ligne de dépannage, version 2.0.3. **docs/FSD_EN.md**, **docs/FSD_FR.md** — EF-16 (message et endroit), T20, limitations, version 2.0.3. **PRD.md** — EF-38 (livrée), EF-39 (proposée), CA-33, Q-13, Q-14, décisions, historique (2.0.2 sans release). **TACHES.md**, **docs/SKETCHUCATION.md** (notes de version v2.0.3), **docs/PUBLICATION.md** — 2.0.3. README inchangé (le démarrage rapide invite déjà à faire chevaucher les volumes).
+- **solid_progress/version.rb**, **solid_progress.rb** — Version 2.0.3.
+- **Tests** : SketchUp 2021 Pro 60/60 ; Make 2017 39 OK, T07 et T21 sautés. Test validé par l'utilisateur (« Teste OK, livraison »).
+- **Mémoire de Claude** (hors dépôt) : le bleu de la coloration syntaxique est illisible chez l'utilisateur.
+
+---
+
 ## Session du 2026-10-27 (2)
 
 ### « Create Solid Progress error: reference to deleted Group » : résultat non solide refusé (2.0.2)

@@ -388,14 +388,89 @@ module SolidProcedural
         # cancels the whole open operation (a transparent one with the
         # previous edit of the user).
         unless res.manifold?
-          raise RebuildError, "#{OP_LABELS[op]} of volume #{name} gives a result that is not a solid. " \
-                              'Volumes that only touch (faces in contact, edges that coincide, tangent ' \
-                              'circles or arcs) are a common cause: make them overlap, or enlarge or move ' \
-                              'this volume slightly.'
+          edges = faulty_edges(res, group.transformation)
+          raise RebuildError, not_solid_message("#{OP_LABELS[op]} of volume #{name}", edges)
         end
         acc = res
       end
       acc
+    end
+
+    # Edges at most listed in the Ruby Console for a result that is not a
+    # solid.
+    MAX_LISTED_EDGES = 50
+
+    # Edges of +solid+ that do not border exactly two faces (where it is not
+    # a solid), as [start, end, face count], in the coordinates of the
+    # model: +transformation+ is the one of the context that holds +solid+
+    # (an instance of the active context reports model coordinates).
+    def self.faulty_edges(solid, transformation)
+      t = transformation * solid.transformation
+      CircleRestore.inner_entities(solid).grep(Sketchup::Edge).reject { |e| e.faces.length == 2 }.map do |e|
+        [e.start.position.transform(t), e.end.position.transform(t), e.faces.length]
+      end
+    end
+
+    # Message for a result that is not a solid: where its faulty +edges+
+    # are, and what to check there. The edges are listed in the Ruby
+    # Console.
+    def self.not_solid_message(step, edges)
+      puts "#{LOG} #{step}: #{edges.length} edge(s) where the result is not a solid (start - end, faces)"
+      edges.first(MAX_LISTED_EDGES).each do |a, b, faces|
+        puts "#{LOG}   #{point_text(a)} - #{point_text(b)}, #{faces} face(s)"
+      end
+      puts "#{LOG}   ... #{edges.length - MAX_LISTED_EDGES} more" if edges.length > MAX_LISTED_EDGES
+      where = edges.empty? ? '' : ": #{edges.length} edge(s) at fault#{place_text(edges)}"
+      "#{step} gives a result that is not a solid#{where}. Check the volumes there: faces in simple " \
+        'contact, edges that coincide, tangent circles or arcs. Make them overlap (move or enlarge a ' \
+        'volume slightly), then try again. The edges are listed in the Ruby Console.'
+    end
+
+    # Planes at most named in the message; the other edges are counted
+    # together.
+    MAX_LISTED_PLANES = 3
+
+    # Where the +edges+ are: ", at z = …, between (…) and (…)" when they
+    # are on one plane, else ", by plane: 31 at z = …, between (…) and (…);
+    # 30 at z = …; 6 other(s), …" (one box over all the edges would cover
+    # the whole model).
+    def self.place_text(edges)
+      groups, rest = plane_groups(edges)
+      parts = groups.map { |group| "#{group.length} #{box_text(group)}" }
+      parts << "#{rest.length} other(s), #{box_text(rest)}" unless rest.empty?
+      parts.length > 1 ? ", by plane: #{parts.join('; ')}" : ", #{box_text(edges)}"
+    end
+
+    # The +edges+ grouped by plane of the axes (x, y or z the same at both
+    # ends), the plane with the most edges first: at most MAX_LISTED_PLANES
+    # planes of two edges or more, and the other edges in +rest+.
+    def self.plane_groups(edges)
+      planes = ->(a, b) { (0..2).select { |k| (a[k] - b[k]).abs < 0.001 }.map { |k| [k, a[k].to_f.round(3)] } }
+      groups = []
+      rest = edges
+      while groups.length < MAX_LISTED_PLANES && rest.length > 1
+        counts = Hash.new(0)
+        rest.each { |a, b, _faces| planes.call(a, b).each { |plane| counts[plane] += 1 } }
+        plane, count = counts.max_by { |_plane, n| n }
+        break unless count && count > 1
+        group, rest = rest.partition { |a, b, _faces| planes.call(a, b).include?(plane) }
+        groups << group
+      end
+      [groups, rest]
+    end
+
+    # "at z = …, between (…) and (…)": the box of the +edges+, and the
+    # coordinates they all share.
+    def self.box_text(edges)
+      box = Geom::BoundingBox.new
+      edges.each { |a, b, _faces| box.add(a, b) }
+      shared = %w[x y z].each_with_index.select { |_axis, k| (box.max[k] - box.min[k]).abs < 0.001 }
+      at = shared.map { |axis, k| "#{axis} = #{Sketchup.format_length(box.min[k])}" }
+      (at.empty? ? '' : "at #{at.join(', ')}, ") + "between #{point_text(box.min)} and #{point_text(box.max)}"
+    end
+
+    def self.point_text(point)
+      "(#{point.to_a.map { |v| Sketchup.format_length(v) }.join(', ')})"
     end
 
     # Boolean engine: the native booleans of SketchUp Pro, else the Ruby

@@ -1,6 +1,6 @@
 # Solid Progress — Tâches (reprise de session)
 
-Créé le 2026-10-26 depuis la session Solid Batch, à la demande de l'utilisateur (le plugin s'appelait alors Solid Procedural). Version actuelle : **2.0.2**. À lire au démarrage d'une session Solid Procedural, avec `JOURNAL.md` et `PRD.md`.
+Créé le 2026-10-26 depuis la session Solid Batch, à la demande de l'utilisateur (le plugin s'appelait alors Solid Procedural). Version actuelle : **2.0.3**. À lire au démarrage d'une session Solid Procedural, avec `JOURNAL.md` et `PRD.md`.
 
 ## Décision du 2026-10-26 (les trois plugins Solid)
 
@@ -28,10 +28,12 @@ Créé le 2026-10-26 depuis la session Solid Batch, à la demande de l'utilisate
   - *Fait le 2026-10-26* : vidéo de l'utilisateur sur YouTube (https://youtu.be/g1BOtZyySh8), captures dans `docs/images/`, modèle de démo de l'utilisateur `docs/demo.skp` (format 2017, chemin public) ; liens et images dans le README, les manuels et `docs/SKETCHUCATION.md`.
   - *Fait le 2026-10-26* : livraison 2.0.1 (release `v2.0.1`) ; dépôt GitHub **public** ; page SketchUcation `Solid_Progress` créée, remplie et enregistrée en brouillon (voir `docs/SKETCHUCATION.md`).
   - *Fait le 2026-10-26* : page SketchUcation vérifiée et publiée par l'utilisateur, **en attente d'approbation** des administrateurs (environ un jour).
-  - *Fait le 2026-10-27* : livraison 2.0.2 (release `v2.0.2`, résultat non solide refusé). **À faire par l'utilisateur** : envoyer `Solid_Progress.rbz` 2.0.2 sur la page SketchUcation et ajouter les notes de version v2.0.2 (texte dans `docs/SKETCHUCATION.md`).
+  - *Fait le 2026-10-27* : livraison 2.0.2 (résultat non solide refusé), sans release GitHub.
+  - *Fait le 2026-10-28* : livraison 2.0.3 (release `v2.0.3`, endroit des arêtes en défaut). **À faire par l'utilisateur** : envoyer `Solid_Progress.rbz` 2.0.3 sur la page SketchUcation et ajouter les notes de version v2.0.2 et v2.0.3 (texte dans `docs/SKETCHUCATION.md`).
   - **Reste à faire** : après approbation, lien de la page dans le README (EN + FR) et la description YouTube ; *Author Info* et icône plus soignée si l'utilisateur le souhaite.
   - Suivi de toutes les publications : dépôt `../sketchup-publication` (`SUIVI.md`).
   - **À vérifier dans Solid Batch** : son `docs/demo.skp` (suivi par git) garde probablement le chemin où il a été enregistré (un `.skp` garde le chemin de son dernier enregistrement, avec le nom d'utilisateur s'il est dans un dossier personnel).
+- [ ] **Fenêtre de correction interactive** (idée de l'utilisateur, 2026-10-27, PRD EF-39 « proposée ») : relever les endroits en défaut, les montrer, ajuster les chevauchements, relancer la combinaison. Base posée en 2.0.3 (EF-38 : endroit dans le message et la console Ruby). À décider : l'utilisateur la craint trop lourde.
 
 ## Renommage en Solid Progress (2026-10-26)
 

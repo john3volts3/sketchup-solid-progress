@@ -6,14 +6,16 @@ Text for the SketchUcation PluginStore listing: copy each section into the match
 >
 > **2026-10-27**: versions SketchUp 2017 to 2027 checked in theory (see `docs/FSD_EN.md`, SketchUp version). Compatibility boxes **SU 2017 to SU 2027** ticked and saved by the author (Basic Info), as for Circle Master; saved state checked by reloading the editor.
 >
-> **2026-10-27**: version **2.0.2** delivered (release `v2.0.2`): the author uploads the new `Solid_Progress.rbz` and adds the v2.0.2 release note below.
+> **2026-10-27**: version **2.0.2** delivered, without a GitHub release (replaced by 2.0.3 the next day).
+>
+> **2026-10-28**: version **2.0.3** delivered (release `v2.0.3`): the author uploads the new `Solid_Progress.rbz` and adds the v2.0.2 and v2.0.3 release notes below.
 
 ---
 
 ## Metadata
 
 - **Plugin name:** Solid Progress
-- **Version:** 2.0.2
+- **Version:** 2.0.3
 - **Author:** DRO
 - **Category:** Construction, Modification
 - **Compatibility:** SU 2017, 2018, 2019, 2020, 2021/22, 2023, 2024, 2025, 2026, 2027 — tested with SketchUp Make 2017 and SketchUp Pro 2021 on Windows; the other versions checked against the Ruby API release notes, not tested; macOS not tested
@@ -86,6 +88,9 @@ https://youtu.be/g1BOtZyySh8
 ---
 
 ## Release Notes
+
+**v2.0.3** (2026-10-28)
+- When volumes only touch, the message also says where (coordinates, plane by plane) and the Ruby Console lists the edges at fault
 
 **v2.0.2** (2026-10-27)
 - Volumes that only touch (along an edge, tangent cylinders) now give a clear message naming the volume, instead of "reference to deleted Group"; the last edit is never lost when a Solid Progress group is closed

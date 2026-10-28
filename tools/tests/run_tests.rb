@@ -1382,6 +1382,22 @@ module SolidProcedural
                 message.include?('volume #2 ') && message.include?('Nothing was changed'),
                 'message names the union that is not a solid (volume #2)', message)
         c.check(!message.include?('deleted'), 'no "reference to deleted" error', message)
+        # The boxes touch along the vertical edge at x = 10, y = 270.
+        at = "at x = #{Sketchup.format_length(10)}, y = #{Sketchup.format_length(270)}, between"
+        c.check(message.include?('edge(s) at fault') && message.include?(at) && message.include?('Ruby Console'),
+                'message gives where the result is not a solid (the common edge)', message)
+        # Edges on several planes (3 at z = 0, 2 at z = 50, 1 sloped): one
+        # place per plane, not one box over them all.
+        pt = ->(x, y, z) { Geom::Point3d.new(x, y, z) }
+        fl = ->(v) { Sketchup.format_length(v) }
+        edges = [[pt[0, 0, 0], pt[10, 0, 0], 1], [pt[10, 0, 0], pt[10, 10, 0], 1], [pt[10, 10, 0], pt[0, 10, 0], 1],
+                 [pt[0, 0, 50], pt[10, 0, 50], 3], [pt[10, 0, 50], pt[10, 10, 50], 3], [pt[0, 0, 0], pt[5, 5, 50], 1]]
+        place = Procedural.place_text(edges)
+        c.check(place.start_with?(", by plane: 3 at z = #{fl[0]}, between") &&
+                place.include?("; 2 at z = #{fl[50]}, between") && place.include?('; 1 other(s), between'),
+                'edges on several planes: one place per plane', place)
+        place = Procedural.place_text(edges.first(3))
+        c.check(place.start_with?(", at z = #{fl[0]}, between"), 'edges on one plane: one place', place)
         c.check(tests.procedural_groups(model).length == before &&
                 [a, b, hole].all? { |v| v.valid? && v.parent == model }, 'nothing created, volumes left as they were')
         model.start_operation('Solid Procedural tests — clean up', true)
