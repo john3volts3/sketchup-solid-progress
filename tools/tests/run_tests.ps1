@@ -106,6 +106,10 @@ foreach ($version in $Versions) {
     $welcomeOn = '("WelcomeDialog":\s*\{\s*"ShowOnStartup":\s*)true'
     $welcomeOff = '("WelcomeDialog":\s*\{\s*"ShowOnStartup":\s*)false'
     $welcomeSwitched = $false
+    # Note left while the welcome screen is switched off by this script: a
+    # run stopped before the end (closed window, interrupted command) left it
+    # off; the next run finds the note and switches it back on at its end.
+    $welcomeNote = Join-Path $results ("welcome-off-{0}.txt" -f $majors[$version])
     if ((Test-Path $prefs) -and (Get-Item $prefs).Length -gt 20MB) {
         Write-Host "  $prefs is over 20 MB: not touched (welcome screen left as it is)."
     } elseif (Test-Path $prefs) {
@@ -113,10 +117,14 @@ foreach ($version in $Versions) {
         if ($text -match $welcomeOn) {
             if (Backup-Preferences $prefs) {
                 [IO.File]::WriteAllText($prefs, ($text -replace $welcomeOn, '${1}false'), $utf8)
+                Set-Content -Path $welcomeNote -Value "Welcome screen of SketchUp $version switched off by run_tests.ps1 on $(Get-Date -Format s)"
                 $welcomeSwitched = $true
             } else {
                 Write-Host "  $prefs could not be backed up: not touched (welcome screen left as it is)."
             }
+        } elseif ((Test-Path $welcomeNote) -and $text -match $welcomeOff) {
+            Write-Host "  The welcome screen was left off by a run stopped before its end: switched back on after this run."
+            $welcomeSwitched = $true
         }
     }
 
@@ -145,6 +153,7 @@ foreach ($version in $Versions) {
         try {
             $text = [IO.File]::ReadAllText($prefs, $utf8)
             [IO.File]::WriteAllText($prefs, ($text -replace $welcomeOff, '${1}true'), $utf8)
+            Remove-Item $welcomeNote -ErrorAction SilentlyContinue
         } catch {
             Write-Host "  Could not switch the welcome screen of SketchUp $version back on: $($_.Exception.Message)"
         }

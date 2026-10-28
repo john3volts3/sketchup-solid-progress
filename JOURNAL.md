@@ -12,6 +12,12 @@
 
 ## Session du 2026-10-28
 
+### Lanceur de tests : écran d'accueil rétabli après un test interrompu
+
+- **Constat de l'utilisateur** : l'écran d'accueil de SketchUp 2021 ne s'affichait plus. Cause : une batterie interrompue à 18 h 38 (commande arrêtée par l'utilisateur) avait coupé l'écran d'accueil sans le rétablir ; les sauvegardes des préférences le montrent (`ShowOnStartup` vrai jusqu'à 18 h 38, faux ensuite). Rétabli à la main par Claude, préférences sauvegardées avant (`%USERPROFILE%\claude-backups\2026-10-28_185815`).
+- **tools/tests/run_tests.ps1** — note `results/welcome-off-<version>.txt` écrite quand le lanceur coupe l'écran d'accueil, effacée quand il le rétablit ; au lancement suivant, une note présente avec l'écran coupé signifie un test interrompu : l'écran est rétabli à la fin de ce test (message « left off by a run stopped before its end »). Vérifié par deux essais (test normal ; test interrompu simulé), préférences sauvegardées avant chaque écriture.
+- **TACHES.md** — repère du lanceur complété.
+
 ### Plantage au Ctrl+Z de Finalize corrigé, tests Ctrl+Z (2.2.2)
 
 - **Retour de l'utilisateur** : deux plantages de SketchUp 2021, après un Ctrl+Z puis en annulant Finalize ; « le plantage se produit quand je fais un ctrl+z sur une version du fichier d'avant la dernière version du plugin » ; « dans ta batterie de tests tu devrais ajouter des ctrl+Z ».

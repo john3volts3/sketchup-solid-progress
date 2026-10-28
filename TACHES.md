@@ -59,5 +59,5 @@ Créé le 2026-10-26 depuis la session Solid Batch, à la demande de l'utilisate
 
 ## Repères
 
-- Lanceur de tests : `tools/tests/run_tests.ps1`, en ASCII depuis le 2026-10-26 : `powershell` (5.1) et `pwsh` (7) marchent. Make 2017 : cliquer sur le bouton de son écran d'accueil ; si personne n'est devant l'écran, `-Timeout 600`.
+- Lanceur de tests : `tools/tests/run_tests.ps1`, en ASCII depuis le 2026-10-26 : `powershell` (5.1) et `pwsh` (7) marchent. Make 2017 : cliquer sur le bouton de son écran d'accueil ; si personne n'est devant l'écran, `-Timeout 600`. SketchUp 2021 : l'écran d'accueil est coupé le temps du test puis rétabli ; un test interrompu laisse la note `results/welcome-off-21.txt`, et le test suivant rétablit l'écran d'accueil (depuis le 2026-10-28).
 - Solid Batch 2.5.0 et Solid for Maker 1.0.1 : voir leurs `TACHES.md`.
