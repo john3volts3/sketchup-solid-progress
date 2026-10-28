@@ -8,7 +8,7 @@ module SolidProcedural
   ext = SketchupExtension.new(PLUGIN_NAME, File.join('solid_progress', 'main'))
   ext.description = 'Non-destructive boolean solids, editable until you finalize them: native booleans with SketchUp Pro, ' \
                     'built-in engine with SketchUp Make'
-  ext.version = '2.1.2'
+  ext.version = '2.2.0'
   ext.creator = 'DRO'
   ext.copyright = '2026'
 

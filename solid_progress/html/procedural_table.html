@@ -126,6 +126,67 @@
   .swatch.none {
     background: repeating-linear-gradient(45deg, #ffffff 0, #ffffff 3px, #d0d7de 3px, #d0d7de 6px);
   }
+  /* The base row: the color of its Solid Progress group, to choose. */
+  button.swatch {
+    padding: 0;
+    cursor: pointer;
+    box-shadow: 0 0 0 1px var(--bg), 0 0 0 2px var(--selected-bar);
+  }
+  #palette {
+    position: fixed;
+    z-index: 10;
+    min-width: 160px;
+    max-height: 380px;
+    overflow-y: auto;
+    padding: 3px 0;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+  }
+  #palette .choice {
+    display: flex;
+    align-items: center;
+    padding: 3px 8px;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  #palette .choice:hover { background: var(--hover); }
+  #palette .choice.chosen { font-weight: 600; }
+  #palette .choice .swatch { flex: none; margin-right: 6px; }
+  #palette .caption {
+    padding: 4px 8px 2px;
+    color: var(--muted);
+    font-size: 11px;
+  }
+  #palette .grid {
+    display: flex;
+    flex-wrap: wrap;
+    width: 216px;
+    padding: 2px 8px;
+  }
+  #palette .grid .swatch {
+    width: 14px;
+    height: 14px;
+    margin: 1px;
+    border-radius: 2px;
+    cursor: pointer;
+  }
+  #palette .grid .swatch:hover { box-shadow: 0 0 0 2px var(--selected-bar); }
+  #palette .custom {
+    display: flex;
+    align-items: center;
+    padding: 4px 8px;
+  }
+  #palette .custom input {
+    width: 80px;
+    margin-right: 4px;
+    font: inherit;
+    padding: 1px 4px;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+  }
+  #palette .custom input.wrong { border-color: var(--error); }
   td.name { width: 100%; }
   .name-cell {
     display: flex;
@@ -303,6 +364,7 @@
     </table>
   </div>
   <div id="notice" class="hidden"></div>
+  <div id="palette" class="hidden"></div>
   <footer id="footer" class="hidden">
     <span id="formula" title="Operations computed, in order"></span>
     <span class="actions">
@@ -344,8 +406,117 @@
 
   function busy() {
     var a = document.activeElement;
+    if (!document.getElementById('palette').classList.contains('hidden')) return true;
     return !!a && (a.tagName === 'SELECT' || (a.classList && a.classList.contains('name')));
   }
+
+  // Preset colors: 12 hues in 5 shades, then greys (the subtract color is
+  // refused by SketchUp side).
+  function hex2(n) {
+    var h = Math.round(n).toString(16);
+    return h.length < 2 ? '0' + h : h;
+  }
+
+  function hslHex(h, s, l) {
+    var c = (1 - Math.abs(2 * l - 1)) * s;
+    var x = c * (1 - Math.abs((h / 60) % 2 - 1));
+    var m = l - c / 2;
+    var rgb = h < 60 ? [c, x, 0] : h < 120 ? [x, c, 0] : h < 180 ? [0, c, x] :
+              h < 240 ? [0, x, c] : h < 300 ? [x, 0, c] : [c, 0, x];
+    return '#' + hex2((rgb[0] + m) * 255) + hex2((rgb[1] + m) * 255) + hex2((rgb[2] + m) * 255);
+  }
+
+  var PRESETS = (function () {
+    var colors = [];
+    [0.85, 0.7, 0.55, 0.4, 0.25].forEach(function (l) {
+      [0, 25, 45, 60, 90, 140, 175, 200, 220, 260, 290, 330].forEach(function (h) {
+        colors.push(hslHex(h, 0.7, l));
+      });
+    });
+    ['#ffffff', '#e6e6e6', '#cccccc', '#b3b3b3', '#999999', '#808080',
+     '#666666', '#4d4d4d', '#333333', '#1a1a1a', '#0d0d0d', '#000000'].forEach(function (g) { colors.push(g); });
+    return colors;
+  })();
+
+  function chooseColor(row, message) {
+    closePalette();
+    message.type = 'color';
+    message.group = row.group;
+    send(message);
+    releaseSoon(0);
+  }
+
+  // Colors of a Solid Progress group under the swatch clicked: the
+  // default material, preset colors, a color typed as #RRGGBB, and the
+  // materials of the model (but the subtract color).
+  function openPalette(row, anchor) {
+    var palette = document.getElementById('palette');
+    palette.innerHTML = '';
+    palette.appendChild(element('div', 'caption', 'Colors'));
+    var grid = element('div', 'grid');
+    PRESETS.forEach(function (hex) {
+      var cell = element('span', 'swatch');
+      cell.style.background = hex;
+      cell.title = hex.toUpperCase();
+      cell.addEventListener('click', function () { chooseColor(row, { rgb: hex }); });
+      grid.appendChild(cell);
+    });
+    palette.appendChild(grid);
+    var custom = element('div', 'custom');
+    var input = element('input');
+    input.type = 'text';
+    input.placeholder = '#RRGGBB';
+    input.title = 'Any color, as #RRGGBB (Enter to apply)';
+    var apply = element('button', 'arrow', 'OK');
+    apply.type = 'button';
+    var typed = function () {
+      var value = input.value.trim();
+      if (/^#?[0-9a-fA-F]{6}$/.test(value)) {
+        chooseColor(row, { rgb: value.charAt(0) === '#' ? value : '#' + value });
+      } else {
+        input.classList.add('wrong');
+      }
+    };
+    input.addEventListener('keydown', function (event) {
+      input.classList.remove('wrong');
+      if (event.key === 'Enter' || event.keyCode === 13) typed();
+    });
+    apply.addEventListener('click', typed);
+    custom.appendChild(input);
+    custom.appendChild(apply);
+    palette.appendChild(custom);
+    palette.appendChild(element('div', 'caption', 'In this model'));
+    var choices = [{ name: null, label: 'Default', color: null }].concat(data.materials || []);
+    choices.forEach(function (m) {
+      var choice = element('div', 'choice');
+      if (m.label === row.color_name && (m.name === null) === (row.color === null)) {
+        choice.classList.add('chosen');
+      }
+      var swatch = element('span', m.color ? 'swatch' : 'swatch none');
+      if (m.color) swatch.style.background = m.color;
+      choice.appendChild(swatch);
+      choice.appendChild(element('span', null, m.label));
+      choice.addEventListener('click', function () { chooseColor(row, { material: m.name }); });
+      palette.appendChild(choice);
+    });
+    palette.classList.remove('hidden');
+    var box = anchor.getBoundingClientRect();
+    var top = box.bottom + 2;
+    if (top + palette.offsetHeight > window.innerHeight) top = Math.max(0, box.top - palette.offsetHeight - 2);
+    palette.style.top = top + 'px';
+    palette.style.left = Math.max(0, Math.min(box.left, window.innerWidth - palette.offsetWidth)) + 'px';
+  }
+
+  function closePalette() {
+    document.getElementById('palette').classList.add('hidden');
+  }
+
+  document.addEventListener('mousedown', function (event) {
+    if (!event.target.closest('#palette, button.swatch')) closePalette();
+  }, true);
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape' || event.keyCode === 27) closePalette();
+  });
 
   function releaseSoon(delay, reason) {
     clearTimeout(releaseTimer);
@@ -510,9 +681,19 @@
 
     // Color
     var color = element('td');
-    var swatch = element('span', row.color ? 'swatch' : 'swatch none');
+    var swatch = element(row.base ? 'button' : 'span', row.color ? 'swatch' : 'swatch none');
     if (row.color) swatch.style.background = row.color;
-    swatch.title = row.color ? row.color : 'Default material';
+    if (row.base) {
+      swatch.type = 'button';
+      swatch.title = 'Color of this Solid Progress group: ' + row.color_name + ' — click to change';
+      swatch.addEventListener('click', function () {
+        var palette = document.getElementById('palette');
+        if (palette.classList.contains('hidden')) openPalette(row, swatch);
+        else closePalette();
+      });
+    } else {
+      swatch.title = row.op === 'subtract' ? 'Subtracted' : (row.color ? row.color : 'Default material');
+    }
     color.appendChild(swatch);
     tr.appendChild(color);
 

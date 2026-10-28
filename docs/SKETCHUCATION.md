@@ -19,6 +19,8 @@ Text for the SketchUcation PluginStore listing: copy each section into the match
 > **2026-10-28**: version **2.1.1** delivered (release `v2.1.1`, which replaces 2.0.2 to 2.1.0): nesting, hierarchical Progress Table with breadcrumb. PluginStore entry updated to 2.1.1 (version, release notes, "Nesting" in Features), `.rbz` replaced by the author (checked after reloading): approval again. GitHub release `v2.1.1` created by the author.
 >
 > **2026-10-28**: version **2.1.2** delivered, without a GitHub release; the PluginStore entry stays at 2.1.1 (awaiting approval).
+>
+> **2026-10-28**: version **2.2.0** delivered, without a GitHub release; the PluginStore entry stays at 2.1.1 (awaiting approval): description (warning against painting by hand), release notes and `.rbz` to update.
 
 ---
 
@@ -50,11 +52,13 @@ Non-destructive booleans: edit dynamically after the cut. Native booleans are de
 
 > **Warning: volumes that only touch give unpredictable results.** When volumes only touch (faces in simple contact, edges that coincide, tangent circles or arcs), SketchUp's solid operations may fail at one try and succeed at the next, or the other way round, on the very same model. A Solid Progress group that rebuilds today may then fail at a later rebuild. Always make the volumes to add overlap a little (a tenth of a millimetre on the printed part is enough) and the holes go through. Video: [find and fix this SketchUp error](https://youtu.be/RZWHk87HUmk) (the error comes from SketchUp itself).
 
+> **Do not paint the volumes by hand inside a Solid Progress group**, except with the subtract color (red) to remove a volume. Another color changes nothing in the computation, and the volume turns neutral again when you leave the group. The color of the part is chosen in the **Progress Table**, Color box of the Base row: it is the color of the Solid Progress group.
+
 ### Features
 
 - **Create Solid Progress** — select solid groups, click once: volumes painted with the subtract color are subtracted, the others added.
 - **Automatic rebuild** — on closing the group, only when its sources changed. One Ctrl+Z undoes the edit and its Result.
-- **Progress Table** — order of the operations (drag and drop), Union / Shell / Subtract per volume, disable a volume, the formula computed, Finalize. On a closed group, every change is applied at once.
+- **Progress Table** — order of the operations (drag and drop), Union / Shell / Subtract per volume, disable a volume, the color of the part, the formula computed, Finalize. On a closed group, every change is applied at once.
 - **Native circles** — circles and arcs broken by the booleans are rebuilt as native SketchUp circles and arcs.
 - **Nesting** — a Solid Progress group can be a volume of another one (its Result, as Union, Shell or Subtract); the Progress Table shows the levels as a tree.
 - **Where it fails** — when volumes only touch, the message names the volumes and says where, plane by plane; the edges at fault are shown in magenta until Escape.
@@ -104,6 +108,11 @@ Find and fix SketchUp's own boolean errors on aligned faces: https://youtu.be/RZ
 ---
 
 ## Release Notes
+
+**v2.2.0** (2026-10-28)
+- A color for each Solid Progress group, chosen on the Base row of the Progress Table: a palette, any #RRGGBB, or a material of the model; the Result shows it and Finalize keeps it
+- Nested groups keep their color, on their faces too, in the Result of the groups that hold them: multicolored parts
+- Inside a group, plain volumes are neutral (added) or red (subtracted); painting by hand is discouraged
 
 **v2.1.2** (2026-10-28)
 - Progress Table: Close goes back one level; the selected row is clearly marked, both ways (click in the table or in the model); every element of the window explained in the manual
@@ -155,3 +164,5 @@ User manual on GitHub: `docs/USER_MANUAL_EN.md` (English), `docs/USER_MANUAL_FR.
 > **Always run Finalize before an STL export**: the hidden sources of a Solid Progress group would be exported too.
 
 > **Warning: volumes that only touch give unpredictable results.** When volumes only touch (faces in simple contact, edges that coincide, tangent circles or arcs), SketchUp's solid operations may fail at one try and succeed at the next, or the other way round, on the very same model. A Solid Progress group that rebuilds today may then fail at a later rebuild. Always make the volumes to add overlap a little (a tenth of a millimetre on the printed part is enough) and the holes go through. Video: [find and fix this SketchUp error](https://youtu.be/RZWHk87HUmk) (the error comes from SketchUp itself).
+
+> **Do not paint the volumes by hand inside a Solid Progress group**, except with the subtract color (red) to remove a volume. Another color changes nothing in the computation, and the volume turns neutral again when you leave the group. The color of the part is chosen in the **Progress Table**, Color box of the Base row: it is the color of the Solid Progress group.

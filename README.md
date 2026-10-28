@@ -27,13 +27,14 @@ It derives from [Solid Batch](https://github.com/john3volts3/sketchup-solid-batc
 
 - **Create Solid Progress** — groups the selected solids into a Solid Progress group and computes its Result. Volumes painted with the *subtract color* are subtracted, the others added.
 - **Automatic rebuild** — when you close a Solid Progress group whose sources changed (signature of the sources), its Result is rebuilt. Nothing is recomputed when nothing changed.
-- **Progress Table** — the operation list of a Solid Progress group: order (▲▼, drag and drop, *Unions first*), **On** to disable a volume, color, editable name, operation per row (**Base / Union / Shell / Subtract**), state, and the formula actually computed, e.g. `(((1 ∪ 2) shell 3) − 4) ∪ 6`. Row 1 is the **Base**, always first. Selection works both ways between the rows and the volumes. On a closed solid, every change is applied at once, and **Finalize** turns it into a plain solid.
+- **Progress Table** — the operation list of a Solid Progress group: order (▲▼, drag and drop, *Unions first*), **On** to disable a volume, the color of the part (Base row), editable name, operation per row (**Base / Union / Shell / Subtract**), state, and the formula actually computed, e.g. `(((1 ∪ 2) shell 3) − 4) ∪ 6`. Row 1 is the **Base**, always first. Selection works both ways between the rows and the volumes. On a closed solid, every change is applied at once, and **Finalize** turns it into a plain solid.
 - **Rebuild / Finalize** — force a rebuild, or replace a Solid Progress group by a plain solid (sources removed) before exporting.
 - **Consistent undo** — the automatic rebuild is merged with your last edit: one Ctrl+Z undoes the edit and its Result.
 - **Green selection frame** — a selected Solid Progress group shows a green frame, so you know it is not finalized yet.
 - **Native circles** — circles and arcs broken by the booleans are rebuilt as native SketchUp circles and arcs on every Result (center inference), as in Solid Batch; fast even on a face with many holes (1.1.1).
 - **Explode releases the volumes** — exploding a Solid Progress group gives back the Result and all the source volumes as plain, visible objects.
 - **Nesting** — a Solid Progress group can be a volume of another one (its Result is used, as Union, Shell or Subtract); the Progress Table shows the levels as a tree, with a breadcrumb and a Close button that goes back one level, and changes are rebuilt from the inside out. Levels stack without limit.
+- **Colors** — each Solid Progress group has its color, chosen on the Base row of the Progress Table (a palette, any #RRGGBB, or a material of the model), shown by its Result and kept by Finalize; a nested group keeps its color on its faces in the Result of the groups that hold it. Inside a group, the plain volumes are neutral (added) or red (subtracted).
 - **Where it fails** — when volumes only touch and their combination is not a solid, the message names the volumes and says where, plane by plane; the edges at fault are shown in magenta until Escape.
 - **Set Subtract Color / Set Repair Options** — as in Solid Batch; the settings of Solid Batch are taken over until you change them.
 
@@ -42,6 +43,8 @@ With **SketchUp Pro**, the operations use SketchUp's native booleans. **SketchUp
 > **Always run Finalize before an STL export**: the hidden sources of a Solid Progress group would be exported too.
 
 > **Warning: volumes that only touch give unpredictable results.** When volumes only touch (faces in simple contact, edges that coincide, tangent circles or arcs), SketchUp's solid operations may fail at one try and succeed at the next, or the other way round, on the very same model. A Solid Progress group that rebuilds today may then fail at a later rebuild. Always make the volumes to add overlap a little (a tenth of a millimetre on the printed part is enough) and the holes go through. Video: [find and fix this SketchUp error](https://youtu.be/RZWHk87HUmk) (the error comes from SketchUp itself).
+
+> **Do not paint the volumes by hand inside a Solid Progress group**, except with the subtract color (red) to remove a volume. Another color changes nothing in the computation, and the volume turns neutral again when you leave the group. The color of the part is chosen in the **Progress Table**, Color box of the Base row: it is the color of the Solid Progress group.
 
 ## Requirements
 
@@ -117,13 +120,14 @@ Il est issu de [Solid Batch](https://github.com/john3volts3/sketchup-solid-batch
 
 - **Create Solid Progress** — regroupe les solides sélectionnés dans un groupe Solid Progress et calcule son Result. Les volumes peints de la *couleur de soustraction* sont soustraits, les autres ajoutés.
 - **Recalcul automatique** — quand vous fermez un groupe Solid Progress dont les sources ont changé (empreinte des sources), son Result est recalculé. Rien n'est recalculé si rien n'a changé.
-- **Progress Table** — la liste des opérations d'un groupe Solid Progress : ordre (▲▼, glisser-déposer, *Unions first*), **On** pour désactiver un volume, couleur, nom modifiable, opération par ligne (**Base / Union / Shell / Subtract**), état, et la formule réellement calculée, par ex. `(((1 ∪ 2) shell 3) − 4) ∪ 6`. La ligne 1 est la **Base**, toujours en tête. La sélection marche dans les deux sens entre les lignes et les volumes. Sur un solide fermé, chaque changement est appliqué tout de suite, et **Finalize** le transforme en solide simple.
+- **Progress Table** — la liste des opérations d'un groupe Solid Progress : ordre (▲▼, glisser-déposer, *Unions first*), **On** pour désactiver un volume, la couleur de la pièce (ligne Base), nom modifiable, opération par ligne (**Base / Union / Shell / Subtract**), état, et la formule réellement calculée, par ex. `(((1 ∪ 2) shell 3) − 4) ∪ 6`. La ligne 1 est la **Base**, toujours en tête. La sélection marche dans les deux sens entre les lignes et les volumes. Sur un solide fermé, chaque changement est appliqué tout de suite, et **Finalize** le transforme en solide simple.
 - **Rebuild / Finalize** — forcer un recalcul, ou remplacer un groupe Solid Progress par un solide simple (sources supprimées) avant l'export.
 - **Annulation cohérente** — le recalcul automatique est fusionné avec votre dernière modification : un seul Ctrl+Z annule la modification et son Result.
 - **Cadre de sélection vert** — un groupe Solid Progress sélectionné a un cadre vert : vous savez qu'il n'est pas encore finalisé.
 - **Cercles natifs** — les cercles et arcs cassés par les booléens sont reconstruits en vrais cercles et arcs SketchUp sur chaque Result (inférence du centre), comme dans Solid Batch ; rapide même sur une face percée de nombreux trous (1.1.1).
 - **Explode libère les volumes** — éclater un groupe Solid Progress rend le Result et tous les volumes sources en objets ordinaires visibles.
 - **Imbrication** — un groupe Solid Progress peut être le volume d'un autre (son Result est utilisé, en Union, Shell ou Subtract) ; la Progress Table montre les niveaux en arbre, avec un fil d'Ariane et un bouton Close qui revient d'un niveau, et les changements sont recalculés de l'intérieur vers l'extérieur. Les niveaux s'empilent sans limite.
+- **Couleurs** — chaque groupe Solid Progress a sa couleur, choisie sur la ligne Base de la Progress Table (un nuancier, n'importe quel #RRGGBB ou une matière du modèle), montrée par son Result et gardée par Finalize ; un groupe imbriqué garde sa couleur sur ses faces dans le Result des groupes qui le contiennent. Dans un groupe, les volumes simples sont neutres (ajoutés) ou rouges (soustraits).
 - **Où ça bloque** — quand des volumes ne font que se toucher et que leur combinaison n'est pas un solide, le message nomme les volumes et dit où, plan par plan ; les arêtes en défaut s'affichent en magenta jusqu'à Échap.
 - **Set Subtract Color / Set Repair Options** — comme dans Solid Batch ; les réglages de Solid Batch sont repris tant que vous ne les changez pas.
 
@@ -132,6 +136,8 @@ Avec **SketchUp Pro**, les opérations utilisent les booléens natifs de SketchU
 > **Lancez toujours Finalize avant un export STL** : les sources cachées d'un groupe Solid Progress seraient exportées aussi.
 
 > **Attention : des volumes qui ne font que se toucher donnent des résultats imprévisibles.** Quand des volumes ne font que se toucher (faces en simple contact, arêtes confondues, cercles ou arcs tangents), les opérations sur les solides de SketchUp peuvent échouer à un essai et réussir au suivant, ou l'inverse, sur exactement le même modèle. Un groupe Solid Progress qui se recalcule aujourd'hui peut alors échouer à un prochain recalcul. Faites toujours chevaucher un peu les volumes à ajouter (un dixième de millimètre sur la pièce imprimée suffit) et traverser les trous. Vidéo : [trouver et corriger cette erreur de SketchUp](https://youtu.be/RZWHk87HUmk) (l'erreur vient de SketchUp lui-même).
+
+> **Ne peignez pas les volumes à la main dans un groupe Solid Progress**, sauf avec la couleur de soustraction (rouge) pour retirer un volume. Une autre couleur ne change rien au calcul, et le volume redevient neutre à la sortie du groupe. La couleur de la pièce se choisit dans la **Progress Table**, case Color de la ligne Base : c'est la couleur du Solid Progress.
 
 ## Prérequis
 

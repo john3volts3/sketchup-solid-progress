@@ -20,9 +20,16 @@ module SolidProcedural
   #                operation only when the material changed, so changing the
   #                subtract color never flips existing volumes
   #   prev_material  material name ('none' = default) restored when the
-  #                volume leaves Subtract in the Procedural Table
+  #                volume left Subtract in the Procedural Table (before 2.2.0)
+  #   orig_material  material name taken off the volume to show it neutral,
+  #                given back when the volume leaves the group
   #   uid          key of the volume in the Procedural Table, kept by copies
-  # The group stores the signature (MD5) of its sources at the last rebuild:
+  # Two colors only for the plain volumes inside a group: the subtract
+  # color for a subtracted volume, the default material for an added one
+  # (neutralize). The group stores its color (attribute color: a material
+  # name, 'none' = default), shown by its Result, kept on its faces in the
+  # Result of a group that holds it (bake_color) and by Finalize, and
+  # the signature (MD5) of its sources at the last rebuild:
   # a rebuild runs only when it differs, and Ctrl+Z restores it together
   # with the former Result.
   #
@@ -113,7 +120,7 @@ module SolidProcedural
 
     # Attributes of a volume in its Solid Progress group. A nested Solid
     # Progress group keeps its own attributes (role, signature) next to them.
-    SOURCE_KEYS = %w[rank op uid enabled seen_color last_add_op prev_material].freeze
+    SOURCE_KEYS = %w[rank op uid enabled seen_color last_add_op prev_material orig_material].freeze
 
     def self.clear_source_keys(entity)
       SOURCE_KEYS.each { |k| entity.delete_attribute(DICT, k) }
@@ -182,6 +189,9 @@ module SolidProcedural
           md5 << "f#{e.vertices.length}"
         when Sketchup::Group, Sketchup::ComponentInstance
           md5 << rounded(e.transformation.to_a).inspect
+          # The color of a nested Result stays on its faces in the Result
+          # of the groups that hold it: a new color rebuilds them.
+          md5 << material_key(e.material)
           md5 << geometry_digest(e.definition.entities)
         end
       end
@@ -237,6 +247,12 @@ module SolidProcedural
     # differs.
     def self.normalize_sources(group)
       sources = sources_of(group)
+      # Its color, before the volumes turn neutral: groups made before 2.2.0
+      # take it from the painted group, else from the base.
+      unless group.get_attribute(DICT, 'color')
+        color = initial_color(group)
+        group.set_attribute(DICT, 'color', color ? color.name : 'none')
+      end
       used = {}
       sources.each_with_index do |s, i|
         set_attribute(s, 'role', ROLE_SOURCE) if role(s).nil?
@@ -251,8 +267,30 @@ module SolidProcedural
         # The base (first row) is always enabled.
         set_attribute(s, 'enabled', true) if i.zero? || s.get_attribute(DICT, 'enabled').nil?
         sync_op_with_color(s)
+        neutralize(group.model, s)
+        # A nested group shows the color of its row: neutral or subtract.
+        apply_result_color(s) if procedural?(s)
       end
       sources
+    end
+
+    # Two colors in a Solid Progress group: the subtract color for a
+    # subtracted volume, the default material for an added one. A material
+    # taken off is kept in orig_material, given back when the volume leaves
+    # the group (release_orphans).
+    def self.neutralize(model, source)
+      if op_of(source) == 'subtract'
+        source.material = subtract_material(model) unless subtract_material?(source.material)
+      elsif source.material
+        if procedural?(source)
+          # A nested group painted by hand: the paint becomes its color.
+          source.set_attribute(DICT, 'color', source.material.name)
+        else
+          set_attribute(source, 'orig_material', source.material.name)
+        end
+        source.material = nil
+      end
+      set_attribute(source, 'seen_color', material_key(source.material))
     end
 
     def self.set_attribute(entity, key, value)
@@ -597,8 +635,13 @@ module SolidProcedural
       copy = duplicate(source, entities, created)
       if procedural?(source)
         copy = result_copy(copy, created)
-        # Its Result keeps its color, unless the group is painted (subtract).
-        copy.material = source.material if source.material
+        if source.material
+          # Painted with the subtract color: a tool, like any red volume.
+          copy.material = source.material
+        else
+          # Its color stays on its faces in the Result of this group.
+          bake_color(copy)
+        end
       else
         copy.material = source.material
       end
@@ -619,6 +662,16 @@ module SolidProcedural
       solid.make_unique
       created << solid.definition if solid.is_a?(Sketchup::ComponentInstance)
       solid
+    end
+
+    # The material of +instance+ on its faces of the default material, so
+    # that the booleans keep it on these faces.
+    def self.bake_color(instance)
+      material = instance.material
+      return unless material
+      CircleRestore.inner_entities(instance).grep(Sketchup::Face).each do |f|
+        f.material = material if f.material.nil?
+      end
     end
 
     # Unique copy of a group or component instance in +entities+; the
@@ -942,6 +995,18 @@ module SolidProcedural
       end
     end
 
+    # Color of +group+ (+name+: a material of the model, nil = default; or
+    # +rgb+, '#RRGGBB': a material of that color, made if needed): shown by
+    # its Result, no rebuild needed.
+    def self.table_color(model, group, name, rgb = nil)
+      change_table(model, group, 'Set Color') do |_sources, _lookup|
+        material = rgb ? rgb_material(model, rgb) : name && model.materials[name]
+        group.set_attribute(DICT, 'color', material ? material.name : 'none')
+        apply_result_color(group)
+        nil
+      end
+    end
+
     def self.table_rename(model, group, key, name)
       change_table(model, group, 'Rename Volume') do |_sources, lookup|
         table_source(lookup, key).name = name
@@ -970,26 +1035,37 @@ module SolidProcedural
     end
 
     # Sets the operation of +source+ and keeps its color in line: Subtract
-    # paints it with the subtract color and keeps its former material, which
-    # comes back when it leaves Subtract.
+    # paints it with the subtract color; leaving Subtract, it is neutral
+    # (default material) again.
     def self.set_operation(model, source, op)
       current = op_of(source)
       return if current == op
       if op == 'subtract'
-        set_attribute(source, 'prev_material', source.material ? source.material.name : 'none')
         set_attribute(source, 'last_add_op', current)
         source.material = subtract_material(model)
       else
-        if current == 'subtract'
-          prev = source.get_attribute(DICT, 'prev_material')
-          material = prev && prev != 'none' ? model.materials[prev] : nil
-          source.material = subtract_material?(material) ? nil : material
-        end
+        source.material = nil if current == 'subtract'
         set_attribute(source, 'last_add_op', op)
       end
       set_attribute(source, 'op', op)
       # The color now matches the operation: no flip at the next rebuild.
       set_attribute(source, 'seen_color', material_key(source.material))
+    end
+
+    # A material of the color +rgb+ ('#RRGGBB') without texture, or a new
+    # one; never the subtract color.
+    def self.rgb_material(model, rgb)
+      hex = rgb.to_s.sub(/\A#/, '').upcase
+      raise RebuildError, "Not a color: #{rgb}." unless hex =~ /\A[0-9A-F]{6}\z/
+      color = Sketchup::Color.new(*hex.scan(/../).map(&:hex))
+      if SolidProcedural.color_match?(color, SolidProcedural.subtract_color)
+        raise RebuildError, 'That is the subtract color: choose another one.'
+      end
+      existing = model.materials.find { |m| m.texture.nil? && SolidProcedural.color_match?(m.color, color) }
+      return existing if existing
+      material = model.materials.add("Solid Progress ##{hex}")
+      material.color = color
+      material
     end
 
     # A material of the subtract color without texture, or a new one.
@@ -1077,26 +1153,61 @@ module SolidProcedural
                              'open and close them, or use Rebuild'
     end
 
-    # Material of the Result: the one of the group when it is painted (the
-    # Result hides its group), else the one of the base.
-    def self.result_material(group)
+    # Color chosen for +group+ (attribute color, see normalize_sources); a
+    # material removed from the model since: the default material.
+    def self.chosen_color(group)
+      name = group.get_attribute(DICT, 'color')
+      return initial_color(group) if name.nil?
+      name == 'none' ? nil : group.model.materials[name]
+    end
+
+    # Color of a group that has none yet: its paint (at the top level, not
+    # the subtract color), else the color of its base.
+    def self.initial_color(group)
+      return group.material if adoptable?(group)
       base = sources_of(group).first
-      group.material || (base && base.material)
+      return nil unless base
+      procedural?(base) ? chosen_color(base) : base.material
+    end
+
+    # Material of the Result: the color of the group, nested or not.
+    # Painted with the subtract color (a tool), none: the Result shows the
+    # subtract color of its group, as any subtracted volume.
+    def self.result_material(group)
+      return nil if subtract_material?(group.material)
+      chosen_color(group)
+    end
+
+    def self.apply_result_color(group)
+      result = result_of(group)
+      return unless result && result.material != result_material(group)
+      # A copied group shares its definition: the copy must not change too.
+      group.make_unique
+      result_of(group).material = result_material(group)
+    end
+
+    # A Solid Progress group painted by hand: the paint becomes its color
+    # (the subtract color stays a paint: a tool).
+    def self.adoptable?(group)
+      !group.material.nil? && !subtract_material?(group.material)
     end
 
     # After an operation: a Solid Progress group of the active context just
-    # painted shows its new color on its Result, in a transparent operation
-    # appended to the paint.
+    # painted shows the right color on its Result, in a transparent
+    # operation appended to the operation.
     def self.sync_colors(model)
       groups = model.active_entities.select do |g|
-        procedural?(g) && (result = result_of(g)) && result.material != result_material(g)
+        procedural?(g) && (result = result_of(g)) &&
+          (adoptable?(g) || result.material != result_material(g))
       end
       return if groups.empty?
       model.start_operation('Solid Progress — Color', true, false, true)
       groups.each do |g|
-        # A copied group shares its definition: the copy must not change too.
-        g.make_unique
-        result_of(g).material = result_material(g)
+        if adoptable?(g)
+          g.set_attribute(DICT, 'color', g.material.name)
+          g.material = nil
+        end
+        apply_result_color(g)
       end
       model.commit_operation
     end
@@ -1115,6 +1226,11 @@ module SolidProcedural
       return if orphans.empty?
       model.start_operation('Solid Progress — Release', true, false, true)
       orphans.each do |e|
+        # A volume shown neutral gets its own material back.
+        orig = e.get_attribute(DICT, 'orig_material')
+        if orig && e.material.nil? && role(e) == ROLE_SOURCE && op_of(e) != 'subtract'
+          e.material = model.materials[orig]
+        end
         procedural?(e) ? clear_source_keys(e) : e.delete_attribute(DICT)
         e.hidden = false
       end

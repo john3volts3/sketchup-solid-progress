@@ -1,6 +1,6 @@
 # Solid Progress — Tâches (reprise de session)
 
-Créé le 2026-10-26 depuis la session Solid Batch, à la demande de l'utilisateur (le plugin s'appelait alors Solid Procedural). Version actuelle : **2.1.2**. À lire au démarrage d'une session Solid Procedural, avec `JOURNAL.md` et `PRD.md`.
+Créé le 2026-10-26 depuis la session Solid Batch, à la demande de l'utilisateur (le plugin s'appelait alors Solid Procedural). Version actuelle : **2.2.0**. À lire au démarrage d'une session Solid Procedural, avec `JOURNAL.md` et `PRD.md`.
 
 ## Décision du 2026-10-26 (les trois plugins Solid)
 
@@ -34,6 +34,7 @@ Créé le 2026-10-26 depuis la session Solid Batch, à la demande de l'utilisate
   - *Fait le 2026-10-28* : livraison 2.0.5 (tous les volumes en cause nommés), sans release GitHub ; page SketchUcation mise à jour en 2.0.5 par Claude (textes) et l'utilisateur (`.rbz`), en attente d'approbation.
   - *Fait le 2026-10-28* : livraison 2.1.0 (imbrication, table hiérarchique), sans release GitHub.
   - *Fait le 2026-10-28* : livraison 2.1.1 (table : arbre complet, fil d'Ariane, niveaux distincts) ; page SketchUcation mise à jour en 2.1.1 (textes par Claude, `.rbz` par l'utilisateur). Release `v2.1.1` créée par l'utilisateur ; page SketchUcation en 2.1.1 (vérifiée), en attente d'approbation.
+  - *Fait le 2026-10-28* : livraison 2.2.0 (couleur par Solid Progress), sans release GitHub ; SketchUcation encore en 2.1.1 (en attente d'approbation) : à mettre à jour avec la description (mise en garde contre la peinture à la main) et le `.rbz`.
   - *Fait le 2026-10-28* : livraison 2.1.2 (Close d'un niveau, peinture d'un groupe visible, sélection marquée, explication de la table), sans release GitHub ; SketchUcation encore en 2.1.1 (en attente d'approbation).
   - *Fait le 2026-10-28* : vidéo « faces alignées » de l'utilisateur sur YouTube (https://youtu.be/RZWHk87HUmk), lien ajouté au README (EN + FR), aux manuels et à `docs/SKETCHUCATION.md`. **À faire par l'utilisateur** : recopier sur SketchUcation la Description, le champ Documentation et la section Video Demo.
   - **Reste à faire** : après approbation, lien de la page dans le README (EN + FR) et la description YouTube ; *Author Info* et icône plus soignée si l'utilisateur le souhaite.
@@ -43,7 +44,8 @@ Créé le 2026-10-26 depuis la session Solid Batch, à la demande de l'utilisate
 - [x] *(livrée en 2.1.0 le 2026-10-28)* **Imbrication des groupes Solid Progress** (PRD EF-25) et **table hiérarchique** (EF-41).
 - [ ] **Retours d'utilisation de l'imbrication** : l'utilisateur va s'en servir « pour bien cerner les choses à améliorer » (2026-10-28).
   - *Fait le 2026-10-28* (2.1.2) : Close d'un niveau, trois niveaux testés (T24), peinture d'un groupe imbriqué visible, ligne sélectionnée nettement marquée.
-  - [ ] **Couleur par Solid Progress** (PRD EF-44, 2.2.0) : case Color de la Base = couleur du niveau (matières du modèle) ; en édition, neutre / rouge seulement ; peinture à la main déconseillée (manuel, README, SketchUcation).
+  - [x] *(livrée en 2.2.0 le 2026-10-28)* **Couleur par Solid Progress** (PRD EF-44) : case Color de la Base (palette, `#RRGGBB`, matières du modèle) ; volumes simples neutres ou rouges ; couleurs des groupes imbriqués gardées à tous les niveaux ; peinture à la main déconseillée.
+  - [ ] **Impression multicolore** (PRD Q-15) : un Finalize qui garde un solide par couleur ? Question posée à l'utilisateur, sans réponse.
   - *Fait le 2026-10-28* (2.1.1) : premiers retours traités — arbre complet dans un groupe imbriqué, fil d'Ariane et « ⏏ Close », niveaux distincts (traits et repli dans la colonne #, teintes, badge SP).
 
 ## Renommage en Solid Progress (2026-10-26)

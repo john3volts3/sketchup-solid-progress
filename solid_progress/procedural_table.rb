@@ -148,7 +148,15 @@ module SolidProcedural
       at_top = path.include?(group) && here_of(path).nil?
       { group: group.entityID, name: Procedural.group_label(group), open: path.include?(group), rows: rows, at_top: at_top,
         notice: notice, path: opened.map { |g| { group: g.entityID, name: Procedural.group_label(g) } },
-        current: current && Procedural.group_label(current) }
+        current: current && Procedural.group_label(current), materials: material_list(model) }
+    end
+
+    # Colors offered for a Solid Progress group: the materials of the model,
+    # but the subtract color.
+    def self.material_list(model)
+      model.materials.reject { |m| Procedural.subtract_material?(m) }
+           .map { |m| { name: m.name, label: m.display_name, color: color_hex(m) } }
+           .sort_by { |m| m[:label].downcase }
     end
 
     # Rows of +group+; under the row of a nested Solid Progress group, the
@@ -180,7 +188,10 @@ module SolidProcedural
           enabled: Procedural.enabled?(s),
           op: Procedural.op_of(s),
           base: s == base,
-          color: color_hex(s.material),
+          # The base row shows the color of its group, a nested group its
+          # own color (the plain volumes are neutral or subtract).
+          color: color_hex(row_color(group, s, s == base)),
+          color_name: s == base ? color_label(Procedural.chosen_color(group)) : nil,
           state: state,
           level: level,
           # Only the volume selected in the model: the open groups are in_path.
@@ -209,6 +220,16 @@ module SolidProcedural
         return [group] + chain if chain
       end
       nil
+    end
+
+    def self.row_color(group, source, base)
+      return Procedural.chosen_color(group) if base
+      return Procedural.result_material(source) if Procedural.procedural?(source) && Procedural.op_of(source) != 'subtract'
+      source.material
+    end
+
+    def self.color_label(material)
+      material ? material.display_name : 'Default'
     end
 
     def self.color_hex(material)
@@ -256,6 +277,9 @@ module SolidProcedural
         Procedural.table_set_base(model, group, data['key'])
       when 'rename'
         Procedural.table_rename(model, group, data['key'], data['name'].to_s.strip)
+      when 'color'
+        Procedural.table_color(model, group, data['material'].is_a?(String) ? data['material'] : nil,
+                               data['rgb'].is_a?(String) ? data['rgb'] : nil)
       when 'order'
         Procedural.table_order(model, group, Array(data['keys']))
       when 'unions_first'
