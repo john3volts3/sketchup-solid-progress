@@ -1645,22 +1645,37 @@ module SolidProcedural
         end
 
         # Rebuild on exit (2021): hole back to 4 x 4 from inside the inner
-        # group, then both groups left at once.
+        # group; the table keeps the whole tree; its breadcrumb goes back to
+        # the outer group (inner rebuilt), then closes it (outer rebuilt).
         if tests.path_settable?(model)
           c.later do
             model.active_path = [outer, inner]
           end
           # Next step: the plugin syncs the open path once SketchUp is idle.
           c.later do
+            payload = ProceduralTable.payload(model)
+            current = (payload[:rows] || []).select { |r| r[:current] }
+            c.check(payload[:group] == outer.entityID && (payload[:path] || []).length == 2 &&
+                    current.length == 2 && current.all? { |r| r[:group] == inner.entityID } &&
+                    (payload[:rows] || []).any? { |r| r[:in_path] },
+                    'table: the whole tree from the outer group, inner rows marked as edited',
+                    "group=#{payload[:group] == outer.entityID} path=#{(payload[:path] || []).length} " \
+                    "current=#{current.length}")
             model.start_operation('Solid Procedural tests — narrower hole', true)
             hole.transform!(Geom::Transformation.scaling(hole.bounds.min, 0.5, 1, 1))
             model.commit_operation
             tests.messages.clear
-            tests.close_all(model)
+            ProceduralTable.on_action(JSON.generate(type: 'close_to', group: outer.entityID))
           end
           c.later do
-            c.check(tests.messages.empty? && near[Procedural.result_of(inner).volume, 3840] &&
-                    near[Procedural.result_of(outer).volume, 17856], 'rebuilt on exit, inside out (3840, 17856)',
+            c.check(model.active_path == [outer] && near[Procedural.result_of(inner).volume, 3840] &&
+                    tests.messages.empty?, 'breadcrumb: back to the outer group, inner rebuilt (3840)',
+                    "path=#{(model.active_path || []).length} #{tests.messages.join(' / ')}")
+            ProceduralTable.on_action(JSON.generate(type: 'close_all', group: outer.entityID))
+          end
+          c.later do
+            c.check((model.active_path || []).empty? && tests.messages.empty? &&
+                    near[Procedural.result_of(outer).volume, 17856], 'Close: outer rebuilt on exit (17856)',
                     "#{tests.messages.join(' / ')} #{Procedural.result_of(outer).volume.round(3)}")
           end
         else

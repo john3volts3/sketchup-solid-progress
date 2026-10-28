@@ -14,14 +14,16 @@ Text for the SketchUcation PluginStore listing: copy each section into the match
 >
 > **2026-10-28**: version **2.0.5** delivered, without a GitHub release (replaced by 2.1.0 the same day).
 >
-> **2026-10-28**: version **2.1.0** delivered (release `v2.1.0`, which replaces 2.0.2 to 2.0.5): nesting and hierarchical Progress Table. To do on the PluginStore once 2.0.5 is approved: version, new `.rbz` (approval again), release note v2.1.0, "Nesting" in Features.
+> **2026-10-28**: version **2.1.0** delivered, without a GitHub release (replaced by 2.1.1 the same day).
+>
+> **2026-10-28**: version **2.1.1** delivered (release `v2.1.1`, which replaces 2.0.2 to 2.1.0): nesting, hierarchical Progress Table with breadcrumb. PluginStore entry updated to 2.1.1 (version, release notes, "Nesting" in Features), `.rbz` replaced by the author: approval again.
 
 ---
 
 ## Metadata
 
 - **Plugin name:** Solid Progress
-- **Version:** 2.1.0
+- **Version:** 2.1.1
 - **Author:** DRO
 - **Category:** Construction, Modification
 - **Compatibility:** SU 2017, 2018, 2019, 2020, 2021/22, 2023, 2024, 2025, 2026, 2027 — tested with SketchUp Make 2017 and SketchUp Pro 2021 on Windows; the other versions checked against the Ruby API release notes, not tested; macOS not tested
@@ -100,6 +102,9 @@ Find and fix SketchUp's own boolean errors on aligned faces: https://youtu.be/RZ
 ---
 
 ## Release Notes
+
+**v2.1.1** (2026-10-28)
+- Progress Table: the whole tree stays in view inside a nested group, a breadcrumb takes you back to an outer level, and the levels are easier to tell apart
 
 **v2.1.0** (2026-10-28)
 - Nesting: a Solid Progress group can be a volume of another one; its Result is used, as Union, Shell or Subtract, and changes are rebuilt from the inside out

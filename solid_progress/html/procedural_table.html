@@ -142,6 +142,60 @@
   }
   .toggle.leaf { visibility: hidden; }
   tbody tr.nested td { font-weight: 600; }
+  /* Levels: tree guides, a tint per depth, the rows being edited. */
+  .tree {
+    display: inline-flex;
+    align-items: center;
+    vertical-align: middle;
+  }
+  .guide {
+    flex: none;
+    font-family: Consolas, "Courier New", monospace;
+    color: #8c959f;
+    white-space: pre;
+  }
+  tbody tr.d1 td { background: #f8fafc; }
+  tbody tr.d2 td { background: #f1f5f9; }
+  tbody tr.d3 td { background: #e9eef4; }
+  tbody tr.current td { background: var(--open-bg); }
+  tbody tr.current:hover td { background: #ffecb3; }
+  .badge {
+    flex: none;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 0 4px;
+    margin-right: 4px;
+    border-radius: 3px;
+    background: #2563eb;
+    color: #ffffff;
+  }
+  #crumbs {
+    padding: 4px 10px;
+    border-bottom: 1px solid var(--line);
+    background: var(--open-bg);
+    color: var(--open-fg);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  #crumbs .trail {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  #crumbs a {
+    color: var(--drop);
+    cursor: pointer;
+    text-decoration: underline;
+  }
+  #crumbs .here { font-weight: 600; }
+  #close-all {
+    flex: none;
+    font: inherit;
+    padding: 2px 8px;
+    margin-left: 8px;
+    cursor: pointer;
+  }
   input.name {
     width: 100%;
     box-sizing: border-box;
@@ -208,6 +262,10 @@
     <span id="title">Progress Table</span>
     <span id="mode" class="mode hidden"></span>
   </header>
+  <div id="crumbs" class="hidden">
+    <span class="trail" id="trail"></span>
+    <button id="close-all" type="button" title="Close every open Solid Progress group (they are rebuilt, from the inside out)">⏏ Close</button>
+  </div>
   <div id="list">
     <div id="empty">Select or open a Solid Progress group.</div>
     <table id="table" class="hidden">
@@ -327,6 +385,17 @@
     return expr;
   }
 
+  // ├ └ │ before the name: one column per level above the row.
+  function guides(row, byId, counts) {
+    if (!row.depth) return '';
+    var last = function (r) { return r.position === counts[r.group]; };
+    var text = last(row) ? '└─ ' : '├─ ';
+    for (var p = byId[row.parent]; p && p.depth > 0; p = byId[p.parent]) {
+      text = (last(p) ? '    ' : '│   ') + text;
+    }
+    return text;
+  }
+
   // A row is hidden when a nested row above it is folded.
   function folded(row, byId) {
     for (var p = row.parent; p; p = byId[p].parent) {
@@ -347,11 +416,13 @@
     return event.clientY > box.top + box.height / 2;
   }
 
-  function buildRow(row, index, count, inputs) {
+  function buildRow(row, index, count, inputs, guide) {
     var tr = element('tr');
     if (row.selected) tr.classList.add('selected');
     if (!row.enabled) tr.classList.add('off');
     if (row.nested) tr.classList.add('nested');
+    if (row.depth) tr.classList.add('d' + Math.min(row.depth, 3));
+    if (row.current) tr.classList.add('current');
 
     // # : drag handle, position, up / down; the base row is fixed.
     var order = element('td', 'order');
@@ -363,7 +434,22 @@
       handle.addEventListener('mousedown', function () { tr.draggable = true; });
     }
     order.appendChild(handle);
-    order.appendChild(element('span', 'position', row.label));
+    // The tree: guides of the levels above, fold toggle, number.
+    var tree = element('span', 'tree');
+    if (guide) tree.appendChild(element('span', 'guide', guide));
+    var toggle = element('span', row.nested ? 'toggle' : 'toggle leaf', collapsed[row.id] ? '▸' : '▾');
+    if (row.nested) {
+      toggle.title = collapsed[row.id] ? 'Show the volumes of this Solid Progress group'
+                                       : 'Hide the volumes of this Solid Progress group';
+      toggle.addEventListener('click', function (event) {
+        event.stopPropagation();
+        collapsed[row.id] = !collapsed[row.id];
+        render();
+      });
+    }
+    tree.appendChild(toggle);
+    tree.appendChild(element('span', 'position', row.label));
+    order.appendChild(tree);
     var up = element('button', 'arrow', '▲');
     up.type = 'button';
     up.title = 'Move up';
@@ -409,18 +495,11 @@
     // Name
     var name = element('td', 'name');
     var cell = element('div', 'name-cell');
-    cell.style.paddingLeft = (row.depth * 16) + 'px';
-    var toggle = element('span', row.nested ? 'toggle' : 'toggle leaf', collapsed[row.id] ? '▸' : '▾');
     if (row.nested) {
-      toggle.title = collapsed[row.id] ? 'Show the volumes of this Solid Progress group'
-                                       : 'Hide the volumes of this Solid Progress group';
-      toggle.addEventListener('click', function (event) {
-        event.stopPropagation();
-        collapsed[row.id] = !collapsed[row.id];
-        render();
-      });
+      var badge = element('span', 'badge', 'SP');
+      badge.title = 'Solid Progress group: its Result is used here';
+      cell.appendChild(badge);
     }
-    cell.appendChild(toggle);
     var input = element('input', 'name');
     input.type = 'text';
     input.value = row.name;
@@ -551,6 +630,7 @@
     if (!data || !data.group) {
       title.textContent = 'Progress Table';
       mode.classList.add('hidden');
+      document.getElementById('crumbs').classList.add('hidden');
       table.classList.add('hidden');
       footer.classList.add('hidden');
       empty.textContent = data ? data.message : 'Select or open a Solid Progress group.';
@@ -567,7 +647,8 @@
     }
 
     title.textContent = data.name;
-    mode.textContent = data.open ? 'Open — applied on exit' : 'Closed — applied now';
+    mode.textContent = data.open ? 'Open: ' + data.current + ' — applied on exit' : 'Closed — applied now';
+    renderCrumbs();
     mode.className = 'mode ' + (data.open ? 'open' : 'closed');
     empty.classList.add('hidden');
     table.classList.remove('hidden');
@@ -583,8 +664,11 @@
       counts[row.group] = (counts[row.group] || 0) + 1;
     });
     data.rows.forEach(function (row) {
+      if (row.in_path) delete collapsed[row.id];
+    });
+    data.rows.forEach(function (row) {
       if (folded(row, byId)) return;
-      fragment.appendChild(buildRow(row, row.position - 1, counts[row.group], inputs));
+      fragment.appendChild(buildRow(row, row.position - 1, counts[row.group], inputs, guides(row, byId, counts)));
     });
     Object.keys(inputs).forEach(function (key) { inputs[key].dataset.key = key; });
     rendering = true;
@@ -610,6 +694,35 @@
     }
     rendering = false;
   }
+
+  // Open Solid Progress groups, outermost first: a click on one closes the
+  // groups opened inside it.
+  function renderCrumbs() {
+    var crumbs = document.getElementById('crumbs');
+    var trail = document.getElementById('trail');
+    var path = (data && data.path) || [];
+    crumbs.classList.toggle('hidden', !path.length);
+    trail.innerHTML = '';
+    path.forEach(function (step, i) {
+      if (i) trail.appendChild(document.createTextNode(' › '));
+      if (i === path.length - 1) {
+        trail.appendChild(element('span', 'here', step.name));
+      } else {
+        var link = element('a', null, step.name);
+        link.title = 'Go back to this level (the groups inside it are closed and rebuilt)';
+        link.addEventListener('click', function () {
+          send({ type: 'close_to', group: step.group });
+          releaseSoon(0);
+        });
+        trail.appendChild(link);
+      }
+    });
+  }
+
+  document.getElementById('close-all').addEventListener('click', function () {
+    if (data && data.group) send({ type: 'close_all', group: data.group });
+    releaseSoon(0);
+  });
 
   window.SolidProcedural = {
     update: function (payload) {

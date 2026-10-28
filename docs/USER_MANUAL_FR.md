@@ -2,7 +2,7 @@
 
 *[English version](USER_MANUAL_EN.md)*
 
-Version 2.1.0 — SketchUp Pro 2021 et SketchUp Make 2017
+Version 2.1.1 — SketchUp Pro 2021 et SketchUp Make 2017
 
 ## Présentation
 
@@ -82,7 +82,7 @@ Sélectionnez un ou plusieurs groupes ou composants solides, puis cliquez sur **
 Un groupe Solid Progress peut être le volume d'un autre : sélectionnez-le avec les autres volumes et cliquez sur **Create Solid Progress**, ou déplacez-le dans un groupe Solid Progress ouvert. C'est son **Result** qui est utilisé, avec l'opération de sa ligne : Union, Shell ou Subtract. Peint de la couleur de soustraction, il est retiré : un outil de perçage fait de plusieurs volumes, par exemple.
 
 - Les changements sont recalculés de l'intérieur vers l'extérieur : fermer le groupe intérieur le recalcule, fermer l'extérieur recalcule le Result extérieur. **Rebuild**, **Finalize** et la table recalculent d'abord un groupe intérieur périmé.
-- La **Progress Table** du groupe extérieur montre les volumes de chaque groupe imbriqué sous sa ligne, numérotés 2.1, 2.2… ; ▾ / ▸ replie un niveau. Chaque ligne agit sur son propre groupe (opération, On, nom, ordre dans son niveau), et les groupes fermés qui le contiennent sont recalculés tout de suite. La formule montre les niveaux entre parenthèses, par exemple `1 ∪ (2.1 − 2.2)`. Double-cliquez une ligne imbriquée pour ouvrir les groupes jusqu'à ce volume (SketchUp 2020 et suivants).
+- La **Progress Table** du groupe extérieur montre les volumes de chaque groupe imbriqué sous sa ligne, en arbre dans la colonne # (├─ └─ │, numéros 2.1, 2.2…) ; ▾ / ▸ replie un niveau ; chaque niveau a sa teinte et un groupe imbriqué est marqué **SP**. Dans un groupe imbriqué, la table montre toujours tout l'arbre : les lignes en cours de modification sont surlignées, et le **fil d'Ariane** en haut (par exemple *Assemblage › Prise*) ramène d'un clic à un niveau extérieur ; **⏏ Close** referme tous les groupes Solid Progress ouverts (ils sont recalculés comme à toute sortie ; SketchUp 2020 et suivants). Chaque ligne agit sur son propre groupe (opération, On, nom, ordre dans son niveau), et les groupes fermés qui le contiennent sont recalculés tout de suite. La formule montre les niveaux entre parenthèses, par exemple `1 ∪ (2.1 − 2.2)`. Double-cliquez une ligne imbriquée pour ouvrir les groupes jusqu'à ce volume (SketchUp 2020 et suivants).
 - Pour faire passer un volume dans un autre niveau, déplacez-le dans SketchUp (en ouvrant le groupe), pas dans la table.
 - **Explode** du groupe extérieur rend le groupe intérieur, toujours Solid Progress ; **Finalize** du groupe extérieur donne un seul solide ordinaire.
 
@@ -92,7 +92,7 @@ Ouverte par le menu, le bouton de la barre d'outils (après *Create*) ou un clic
 
 ![Progress Table d'un groupe Solid Progress ouvert](images/table-open.png)
 
-La table montre le groupe Solid Progress **ouvert**, sinon le groupe Solid Progress **sélectionné**. Son en-tête affiche le nom et le mode :
+La table montre le groupe Solid Progress **ouvert** (le plus extérieur quand plusieurs sont ouverts), sinon le groupe Solid Progress **sélectionné**. Son en-tête affiche le nom et le mode :
 
 - **Closed — applied now** (vert) : le groupe Solid Progress est fermé ; chaque changement recalcule le Result tout de suite et le garde sélectionné.
 - **Open — applied on exit** (jaune) : vous modifiez le groupe Solid Progress ; les changements sont appliqués quand vous le fermez.

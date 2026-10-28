@@ -12,6 +12,15 @@
 
 ## Session du 2026-10-28
 
+### Progress Table : arbre complet, fil d'Ariane, niveaux distincts (2.1.1)
+
+- **Retours utilisateur** après une première utilisation de l'imbrication : après un double-clic sur un groupe imbriqué, « il n'y a pas de bouton pour remonter au niveau supérieur » ; « la hiérarchisation n'est pas claire ». Choix de l'utilisateur : la table garde l'arbre complet, niveaux mieux distingués, fil d'Ariane ; puis « les signes ├ └ │ devraient être au niveau de la première colonne avec une vraie indentation ».
+- **solid_progress/procedural_table.rb** — `target_group` : le groupe Solid Progress ouvert le plus extérieur ; données `path` (fil d'Ariane), `current` (lignes du groupe ouvert le plus intérieur), `in_path` ; actions `close_to` / `close_all` (`close_to`, SketchUp 2020+, message sous 2017).
+- **solid_progress/html/procedural_table.html** — Bandeau du fil d'Ariane et bouton « ⏏ Close », traits ├─ └─ │, repli ▾ / ▸ et numéro dans la colonne # avec retrait, teinte par profondeur, badge SP, lignes en cours surlignées, mode « Open: <groupe> ».
+- **tools/tests/run_tests.rb** — T23 : 17 vérifications sous 2021 (arbre complet avec le groupe intérieur ouvert, fil d'Ariane, Close).
+- **Docs** — Manuels (table, fil d'Ariane, version 2.1.1), FSD (imbrication, T23, historique), PRD (EF-41 complétée, CA-37, décision, historique), SKETCHUCATION, PUBLICATION, TACHES. **solid_progress/version.rb**, **solid_progress.rb** — 2.1.1.
+- **Tests** : SketchUp 2021 Pro 61/61 (434 s : PC ralenti, `-Timeout 600`, redémarrage de Windows ensuite) ; Make 2017 40 OK, T07 et T21 sautés. Validé par l'utilisateur (« test ok, livraison »).
+
 ### Imbrication des groupes Solid Progress et table hiérarchique (2.1.0)
 
 - **Demandes utilisateur** : « coder la possibilité d'imbrication des solid progress » ; plan proposé (trois approches), approche 1 « le Result comme volume » choisie ; « chaque niveau peut être le résultat d'addition et de soustraction » (opération de la ligne imbriquée dans la table) ; « la table devrait présenter une structure hiérarchique » (option A : une seule livraison).

@@ -2,7 +2,7 @@
 
 *[Version française](USER_MANUAL_FR.md)*
 
-Version 2.1.0 — SketchUp Pro 2021 and SketchUp Make 2017
+Version 2.1.1 — SketchUp Pro 2021 and SketchUp Make 2017
 
 ## Overview
 
@@ -82,7 +82,7 @@ Select one or more solid groups or components, then click **Create Solid Progres
 A Solid Progress group can be a volume of another one: select it with the other volumes and click **Create Solid Progress**, or move it into an open Solid Progress group. Its **Result** is used, with the operation of its row: Union, Shell or Subtract. Painted with the subtract color, it is subtracted: a drilling tool made of several volumes, for example.
 
 - Changes are rebuilt from the inside out: closing the inner group rebuilds it, closing the outer one rebuilds the outer Result. **Rebuild**, **Finalize** and the table rebuild an out-of-date inner group first.
-- The **Progress Table** of the outer group shows the volumes of each nested group under its row, numbered 2.1, 2.2…; ▾ / ▸ folds a level. Each row acts on its own group (operation, On, name, order within its level), and the closed groups that hold it are rebuilt at once. The formula shows the levels in parentheses, for example `1 ∪ (2.1 − 2.2)`. Double-click a nested row to open the groups down to that volume (SketchUp 2020 and later).
+- The **Progress Table** of the outer group shows the volumes of each nested group under its row, as a tree in the # column (├─ └─ │, numbers 2.1, 2.2…); ▾ / ▸ folds a level; each level has its own tint and a nested group is marked **SP**. Inside a nested group, the table still shows the whole tree: the rows being edited are highlighted, and the **breadcrumb** at the top (for example *Assembly › Socket*) takes you back to an outer level with a click; **⏏ Close** closes every open Solid Progress group (they are rebuilt as on any exit; SketchUp 2020 and later). Each row acts on its own group (operation, On, name, order within its level), and the closed groups that hold it are rebuilt at once. The formula shows the levels in parentheses, for example `1 ∪ (2.1 − 2.2)`. Double-click a nested row to open the groups down to that volume (SketchUp 2020 and later).
 - To move a volume to another level, move it in SketchUp (open the group), not in the table.
 - **Explode** of the outer group gives back the inner group, still a Solid Progress group; **Finalize** of the outer group gives one plain solid.
 
@@ -92,7 +92,7 @@ Opened by the menu, the toolbar button (after *Create*) or a right-click on a So
 
 ![Progress Table of an open Solid Progress group](images/table-open.png)
 
-The table shows the **open** Solid Progress group, or else the **selected** one. Its header shows the name and the mode:
+The table shows the **open** Solid Progress group (the outermost one when several are open), or else the **selected** one. Its header shows the name and the mode:
 
 - **Closed — applied now** (green): the Solid Progress group is closed; every change rebuilds the Result at once and keeps it selected.
 - **Open — applied on exit** (yellow): you are editing the Solid Progress group; changes are applied when you close it.

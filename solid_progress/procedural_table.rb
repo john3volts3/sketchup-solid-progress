@@ -91,11 +91,11 @@ module SolidProcedural
       @dialog.show
     end
 
-    # Procedural solid shown: the innermost open one, else the only one
-    # selected.
+    # Procedural solid shown: the outermost open one (the whole tree stays in
+    # view while a nested one is edited), else the only one selected.
     def self.target_group(model)
       return nil unless model
-      open = Procedural.open_groups(model).last
+      open = Procedural.open_groups(model).first
       return open if open
       selected = model.selection.select { |e| Procedural.procedural?(e) }
       selected.length == 1 ? selected.first : nil
@@ -138,8 +138,14 @@ module SolidProcedural
       path = model.active_path || []
       rows = table_rows(model, group, path, 0, '', nil)
       notice = @notice && @notice[0] == group ? @notice[1] : nil
+      # Breadcrumb: the open Solid Progress groups, outermost first; the rows
+      # of the innermost one are the ones being edited.
+      opened = Procedural.open_groups(model)
+      current = opened.last
+      rows.each { |r| r[:current] = !current.nil? && r[:group] == current.entityID }
       { group: group.entityID, name: Procedural.group_label(group), open: path.include?(group), rows: rows,
-        notice: notice }
+        notice: notice, path: opened.map { |g| { group: g.entityID, name: Procedural.group_label(g) } },
+        current: current && Procedural.group_label(current) }
     end
 
     # Rows of +group+; under the row of a nested Solid Progress group, the
@@ -162,6 +168,8 @@ module SolidProcedural
           parent: parent,
           depth: depth,
           nested: nested,
+          # A nested group being edited: its rows are never folded.
+          in_path: nested && path.include?(s),
           position: i + 1,
           label: label,
           name: s.name.to_s,
@@ -241,6 +249,10 @@ module SolidProcedural
         Procedural.table_unions_first(model, group)
       when 'finalize'
         finalize_group(model, group)
+      when 'close_to'
+        close_to(model, chain.first, group)
+      when 'close_all'
+        close_to(model, chain.first, nil)
       end
       refresh_later
     rescue => e
@@ -288,6 +300,20 @@ module SolidProcedural
         return
       end
       Procedural.do_finalize
+    end
+
+    # Breadcrumb: closes the Solid Progress groups opened inside +group+
+    # (it stays open), or every one of them when +group+ is nil. The groups
+    # left are rebuilt as on any exit (Procedural.sync_path).
+    def self.close_to(model, table, group)
+      path = model.active_path || []
+      first = path.index { |e| Procedural.procedural?(e) }
+      return unless first && (group.nil? || path.include?(group))
+      return status_no_active_path(table, 'Click outside the Solid Progress group to close it') unless active_path_settable?(model)
+      keep = group ? path[0..path.index(group)] : path[0...first]
+      model.active_path = keep.empty? ? nil : keep
+    rescue ArgumentError, TypeError
+      model.active_path = []
     end
 
     # Model#active_path= exists from SketchUp 2020.
