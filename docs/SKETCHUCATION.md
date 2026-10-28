@@ -22,14 +22,14 @@ Text for the SketchUcation PluginStore listing: copy each section into the match
 >
 > **2026-10-28**: version **2.2.0** delivered, without a GitHub release; the PluginStore entry stays at 2.1.1 (awaiting approval): description (warning against painting by hand), release notes and `.rbz` to update.
 >
-> **2026-10-28**: version **2.2.1** delivered, GitHub release `v2.2.1` (which replaces 2.1.2 and 2.2.0); the PluginStore entry stays at 2.1.1 (awaiting approval): description, Documentation field, release notes and `.rbz` to update.
+> **2026-10-28**: version **2.2.1** delivered, GitHub release `v2.2.1` (which replaces 2.1.2 and 2.2.0). PluginStore entry updated to 2.2.1 by Claude (version, colors warning in the description and the Documentation field, "Colors" in Features, release notes v2.1.2 to v2.2.1; checked after reloading), `.rbz` replaced by the author: approval again.
 
 ---
 
 ## Metadata
 
 - **Plugin name:** Solid Progress
-- **Version:** 2.1.1
+- **Version:** 2.2.1
 - **Author:** DRO
 - **Category:** Construction, Modification
 - **Compatibility:** SU 2017, 2018, 2019, 2020, 2021/22, 2023, 2024, 2025, 2026, 2027 — tested with SketchUp Make 2017 and SketchUp Pro 2021 on Windows; the other versions checked against the Ruby API release notes, not tested; macOS not tested
@@ -63,6 +63,7 @@ Non-destructive booleans: edit dynamically after the cut. Native booleans are de
 - **Progress Table** — order of the operations (drag and drop), Union / Shell / Subtract per volume, disable a volume, the color of the part, the formula computed, Finalize. On a closed group, every change is applied at once.
 - **Native circles** — circles and arcs broken by the booleans are rebuilt as native SketchUp circles and arcs.
 - **Nesting** — a Solid Progress group can be a volume of another one (its Result, as Union, Shell or Subtract); the Progress Table shows the levels as a tree.
+- **Colors** — a color for each Solid Progress group, chosen in the Progress Table (a palette, any #RRGGBB, or a material of the model); nested groups keep theirs on their faces: multicolored parts.
 - **Where it fails** — when volumes only touch, the message names the volumes and says where, plane by plane; the edges at fault are shown in magenta until Escape.
 - **Green selection frame** — a Solid Progress group not finalized yet shows a green frame.
 - **No dependencies** — pure Ruby.
