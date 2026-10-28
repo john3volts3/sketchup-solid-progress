@@ -114,7 +114,12 @@ module SolidProcedural
     end
 
     def self.test(name, &block)
-      @tests << [name, block]
+      @tests << [name, block] if only.empty? || only.include?(name.split(' ').first)
+    end
+
+    # run_tests.ps1 -Only T20,T22: only these tests ("T08" is not "T08b").
+    def self.only
+      ENV['SOLID_PROGRESS_TESTS_ONLY'].to_s.split(',').map(&:strip).reject(&:empty?)
     end
 
     def self.next_test
@@ -1415,6 +1420,19 @@ module SolidProcedural
         view.define_singleton_method(:draw2d) { |_mode, points| drawn << points.length }
         FaultView.new(edges).draw(view)
         c.check(drawn == ['magenta', 12], 'FaultView draws the 6 edges in magenta', drawn.inspect)
+        # A volume at only one edge out of 24 is named too (a frame flush
+        # with a cylinder: 4 straight edges among the arcs). Two boxes flush
+        # at z = 10, side by side at x = 20: 23 edges on the top of the first
+        # one only, the second edge on the common line.
+        p1 = tests.box(model.entities, 0, 400, 0, 20, 20, 10)
+        p2 = tests.box(model.entities, 20, 400, 0, 10, 20, 10)
+        edges = (0...23).map { |k| [pt[2, 401 + k * 0.5, 10], pt[3, 401 + k * 0.5, 10], 1] }
+        edges.insert(1, [pt[20, 405, 10], pt[20, 406, 10], 3])
+        found = Procedural.touching_volumes([p1, p2], edges, Geom::Transformation.new)
+        c.check(found == [p1, p2], 'a volume at 1 edge out of 24 is named', found.map { |v| Procedural.label(v) }.join(', '))
+        model.start_operation('Solid Procedural tests — clean up', true)
+        model.entities.erase_entities([p1, p2])
+        model.commit_operation
         c.check(tests.procedural_groups(model).length == before &&
                 [a, b, hole].all? { |v| v.valid? && v.parent == model }, 'nothing created, volumes left as they were')
         model.start_operation('Solid Procedural tests — clean up', true)
@@ -1646,7 +1664,8 @@ module SolidProcedural
     def self.report_lines
       edition = Sketchup.is_pro? ? 'Pro' : 'Make'
       lines = ["Solid Procedural tests — SketchUp #{Sketchup.version} #{edition} — Ruby #{RUBY_VERSION} — " \
-               "plugin #{SolidProcedural::VERSION} — #{@started.strftime('%Y-%m-%d %H:%M:%S')}"]
+               "plugin #{SolidProcedural::VERSION} — #{@started.strftime('%Y-%m-%d %H:%M:%S')}" +
+               (only.empty? ? '' : " — only #{only.join(', ')}")]
       passed = failed = skipped = checks = bad = 0
       (@cases || []).each do |c|
         checks += c.checks.length

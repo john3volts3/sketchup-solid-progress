@@ -2,7 +2,7 @@
 
 *[English version](USER_MANUAL_EN.md)*
 
-Version 2.0.4 — SketchUp Pro 2021 et SketchUp Make 2017
+Version 2.0.5 — SketchUp Pro 2021 et SketchUp Make 2017
 
 ## Présentation
 

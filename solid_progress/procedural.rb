@@ -490,8 +490,10 @@ module SolidProcedural
         (names.empty? ? '' : ", volumes #{names.join(', ')}")
     end
 
-    # Points at most tested, for a group of edges, to find the volumes there.
-    MAX_TESTED_POINTS = 10
+    # Points at most tested, for a group of edges, to find the volumes there:
+    # every edge, a volume may touch only a few of them (a frame flush with
+    # a cylinder: 4 straight edges out of 24).
+    MAX_TESTED_POINTS = 200
 
     ON_FACE = [Sketchup::Face::PointInside, Sketchup::Face::PointOnVertex, Sketchup::Face::PointOnEdge].freeze
 
@@ -499,9 +501,16 @@ module SolidProcedural
     # have a face through the middle of some of the +edges+ (model
     # coordinates). +cache+ keeps the faces of each volume between calls.
     def self.touching_volumes(volumes, edges, transformation, cache = {})
-      step = [edges.length / MAX_TESTED_POINTS, 1].max
-      points = edges.each_slice(step).map(&:first).map { |a, b, _faces| Geom.linear_combination(0.5, a, 0.5, b) }
+      step = [(edges.length + MAX_TESTED_POINTS - 1) / MAX_TESTED_POINTS, 1].max
+      all = edges.each_slice(step).map(&:first).map { |a, b, _faces| Geom.linear_combination(0.5, a, 0.5, b) }
+      inverse = transformation.inverse
+      in_context = all.map { |p| p.transform(inverse) }
       volumes.select do |v|
+        # Only the points in the box of the volume: the faces of a volume
+        # far from the edges are not looked at.
+        box = v.bounds
+        points = all.select.with_index { |_p, k| near_box?(box, in_context[k]) }
+        next false if points.empty?
         frames = cache[v] ||= face_frames(v, transformation * v.transformation)
         frames.any? do |inverse, faces|
           locals = points.map { |p| p.transform(inverse) }
@@ -512,6 +521,12 @@ module SolidProcedural
           end
         end
       end
+    end
+
+    # Floats: two Lengths closer than the tolerance of SketchUp compare as
+    # equal (a point on the box would be outside).
+    def self.near_box?(box, point)
+      (0..2).all? { |k| point[k].to_f > box.min[k].to_f - 0.001 && point[k].to_f < box.max[k].to_f + 0.001 }
     end
 
     # [[inverse transformation, [[face, nx, ny, nz, d], …]], …]: the faces of

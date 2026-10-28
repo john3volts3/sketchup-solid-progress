@@ -12,6 +12,14 @@
 
 ## Session du 2026-10-28
 
+### Tous les volumes en cause nommés, lanceur -Only (2.0.5)
+
+- **Constat** (vidéo « faces alignées » de l'utilisateur) : un cadre affleurant un cylindre n'était pas nommé aux plans z = 0 et z = 6,8795 ; seules 10 arêtes sur 24 étaient testées, et seules les 4 arêtes droites touchent le cadre. L'utilisateur a confirmé que le haut et le bas affleuraient.
+- **solid_progress/procedural.rb** (08:30) — `touching_volumes` : milieu de chaque arête testé (`MAX_TESTED_POINTS` 10 → 200) ; un volume n'est comparé qu'aux points de sa boîte englobante (`near_box?`, en nombres décimaux : deux Length plus proches que la tolérance de SketchUp sont égales, ce qui écartait tous les points au premier essai, vu par T20 et une sonde).
+- **tools/tests/run_tests.rb**, **tools/tests/run_tests.ps1** — T20 : un volume présent sur 1 arête sur 24 est nommé ; option `-Only T20,T22` (variable d'environnement lue par `run_tests.rb`, notée dans l'en-tête du rapport) pour la mise au point, demande de l'utilisateur ; la batterie complète reste la règle avant une livraison.
+- **docs/FSD_EN.md**, **docs/FSD_FR.md**, **PRD.md** (EF-40, CA-35, release), **docs/SKETCHUCATION.md** (notes v2.0.5), **docs/PUBLICATION.md**, **TACHES.md**, manuels — Version 2.0.5. **solid_progress/version.rb**, **solid_progress.rb** — 2.0.5.
+- **Tests** : SketchUp 2021 Pro 60/60 ; Make 2017 39 OK, T07 et T21 sautés ; `-Only T20,T22` : 14 s. Test validé par l'utilisateur (« Teste OK, livraison »). Release `v2.0.4` non créée : `v2.0.5` la remplace.
+
 ### Volumes en cause et arêtes en magenta, mise en garde (2.0.4)
 
 - **Demandes utilisateur** : mettre les utilisateurs en garde, dans la description et le manuel, sur les combinaisons qui changent d'un essai à l'autre ; montrer les éléments en cause « dans une couleur particulière, rouge par exemple » (options 1 et 2 choisies : volumes nommés et sélectionnés, arêtes en magenta ; le rouge est la couleur de soustraction).

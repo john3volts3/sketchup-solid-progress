@@ -1,6 +1,6 @@
 # Solid Progress — Tâches (reprise de session)
 
-Créé le 2026-10-26 depuis la session Solid Batch, à la demande de l'utilisateur (le plugin s'appelait alors Solid Procedural). Version actuelle : **2.0.4**. À lire au démarrage d'une session Solid Procedural, avec `JOURNAL.md` et `PRD.md`.
+Créé le 2026-10-26 depuis la session Solid Batch, à la demande de l'utilisateur (le plugin s'appelait alors Solid Procedural). Version actuelle : **2.0.5**. À lire au démarrage d'une session Solid Procedural, avec `JOURNAL.md` et `PRD.md`.
 
 ## Décision du 2026-10-26 (les trois plugins Solid)
 
@@ -30,7 +30,8 @@ Créé le 2026-10-26 depuis la session Solid Batch, à la demande de l'utilisate
   - *Fait le 2026-10-26* : page SketchUcation vérifiée et publiée par l'utilisateur, **en attente d'approbation** des administrateurs (environ un jour).
   - *Fait le 2026-10-27* : livraison 2.0.2 (résultat non solide refusé), sans release GitHub.
   - *Fait le 2026-10-28* : livraison 2.0.3 (endroit des arêtes en défaut), sans release GitHub.
-  - *Fait le 2026-10-28* : livraison 2.0.4 (volumes en cause, arêtes en magenta, mise en garde). **À faire par l'utilisateur** : créer la release `v2.0.4` (commande donnée par Claude), envoyer `Solid_Progress.rbz` 2.0.4 sur la page SketchUcation, ajouter les notes de version v2.0.2 à v2.0.4 et recopier la Description, le Quick Start et le champ Documentation mis à jour (texte dans `docs/SKETCHUCATION.md`).
+  - *Fait le 2026-10-28* : livraison 2.0.4 (volumes en cause, arêtes en magenta, mise en garde), sans release GitHub.
+  - *Fait le 2026-10-28* : livraison 2.0.5 (tous les volumes en cause nommés). **À faire par l'utilisateur** : créer la release `v2.0.5` (commande donnée par Claude), envoyer `Solid_Progress.rbz` 2.0.5 sur la page SketchUcation, ajouter les notes de version v2.0.2 à v2.0.5 et recopier la Description, le Quick Start et le champ Documentation mis à jour (texte dans `docs/SKETCHUCATION.md`).
   - *Fait le 2026-10-28* : vidéo « faces alignées » de l'utilisateur sur YouTube (https://youtu.be/RZWHk87HUmk), lien ajouté au README (EN + FR), aux manuels et à `docs/SKETCHUCATION.md`. **À faire par l'utilisateur** : recopier sur SketchUcation la Description, le champ Documentation et la section Video Demo.
   - **Reste à faire** : après approbation, lien de la page dans le README (EN + FR) et la description YouTube ; *Author Info* et icône plus soignée si l'utilisateur le souhaite.
   - Suivi de toutes les publications : dépôt `../sketchup-publication` (`SUIVI.md`).

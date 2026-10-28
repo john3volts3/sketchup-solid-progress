@@ -8,6 +8,8 @@
 #   powershell -File tools\tests\run_tests.ps1                  # 2021 then 2017
 #   powershell -File tools\tests\run_tests.ps1 -Versions 2017
 #   powershell -File tools\tests\run_tests.ps1 -NoDeploy        # test what is installed
+#   powershell -File tools\tests\run_tests.ps1 -Only T20,T22    # only these tests
+#       (while developing; the whole battery before a delivery)
 #   powershell -File tools\tests\run_tests.ps1 -Versions 2017 -Manual
 #       manual test of onActivePathChanged: double-click "SP Test - open me",
 #       then exit it (results/manual-<major>.txt)
@@ -27,7 +29,8 @@ param(
     [int]$Timeout = 300,
     [switch]$NoDeploy,
     [switch]$Manual,
-    [switch]$Demo
+    [switch]$Demo,
+    [string[]]$Only = @()
 )
 
 $ErrorActionPreference = 'Stop'
@@ -41,6 +44,9 @@ $Versions = @($Versions | ForEach-Object { $_ -split ',' } | ForEach-Object { $_
 foreach ($version in $Versions) {
     if (-not $majors.ContainsKey($version)) { Write-Host "Unknown SketchUp version: $version (2017 or 2021)"; exit 2 }
 }
+# Read by run_tests.rb in the SketchUp started here (inherited environment).
+$Only = @($Only | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+$env:SOLID_PROGRESS_TESTS_ONLY = $Only -join ','
 
 # Copy of $path in %USERPROFILE%\claude-backups\<date>\LOCALAPPDATA\<path>
 # before it is written; only the 5 latest copies of that file are kept.

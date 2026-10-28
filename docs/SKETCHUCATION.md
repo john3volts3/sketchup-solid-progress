@@ -10,14 +10,14 @@ Text for the SketchUcation PluginStore listing: copy each section into the match
 >
 > **2026-10-28**: version **2.0.3** delivered, without a GitHub release (replaced by 2.0.4 the same day).
 >
-> **2026-10-28**: version **2.0.4** delivered (release `v2.0.4`): the author uploads the new `Solid_Progress.rbz`, adds the v2.0.2 to v2.0.4 release notes below and pastes the updated Description, Quick Start and Documentation (warning about volumes that only touch).
+> **2026-10-28**: version **2.0.5** delivered (release `v2.0.5`, which replaces 2.0.2 to 2.0.4, never released on GitHub): the author uploads the new `Solid_Progress.rbz`, adds the v2.0.2 to v2.0.5 release notes below and pastes the updated Description, Quick Start and Documentation (warning about volumes that only touch).
 
 ---
 
 ## Metadata
 
 - **Plugin name:** Solid Progress
-- **Version:** 2.0.4
+- **Version:** 2.0.5
 - **Author:** DRO
 - **Category:** Construction, Modification
 - **Compatibility:** SU 2017, 2018, 2019, 2020, 2021/22, 2023, 2024, 2025, 2026, 2027 — tested with SketchUp Make 2017 and SketchUp Pro 2021 on Windows; the other versions checked against the Ruby API release notes, not tested; macOS not tested
@@ -95,6 +95,9 @@ Find and fix SketchUp's own boolean errors on aligned faces: https://youtu.be/RZ
 ---
 
 ## Release Notes
+
+**v2.0.5** (2026-10-28)
+- The message names every volume at fault, even one that touches only a few edges (a frame flush with a cylinder)
 
 **v2.0.4** (2026-10-28)
 - When a combination is not a solid, the message names the volumes at fault, plane by plane, only these volumes stay selected, and the edges at fault are shown in magenta until Escape
