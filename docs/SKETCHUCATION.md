@@ -23,6 +23,8 @@ Text for the SketchUcation PluginStore listing: copy each section into the match
 > **2026-10-28**: version **2.2.0** delivered, without a GitHub release; the PluginStore entry stays at 2.1.1 (awaiting approval): description (warning against painting by hand), release notes and `.rbz` to update.
 >
 > **2026-10-28**: version **2.2.1** delivered, GitHub release `v2.2.1` (which replaces 2.1.2 and 2.2.0). PluginStore entry updated to 2.2.1 by Claude (version, colors warning in the description and the Documentation field, "Colors" in Features, release notes v2.1.2 to v2.2.1; checked after reloading), `.rbz` replaced by the author: approval again.
+>
+> **2026-10-28**: version **2.2.2** delivered (crash on Ctrl+Z after Finalize fixed), GitHub release `v2.2.2` (created by the author). PluginStore entry updated to 2.2.2 by Claude (version, release notes; checked after reloading), `.rbz` replaced by the author: approval again.
 
 ---
 
