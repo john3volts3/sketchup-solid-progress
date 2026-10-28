@@ -148,7 +148,13 @@ module SolidProcedural
       at_top = path.include?(group) && here_of(path).nil?
       { group: group.entityID, name: Procedural.group_label(group), open: path.include?(group), rows: rows, at_top: at_top,
         notice: notice, path: opened.map { |g| { group: g.entityID, name: Procedural.group_label(g) } },
-        current: current && Procedural.group_label(current), materials: material_list(model) }
+        current: current && Procedural.group_label(current), materials: material_list(model),
+        # The color of the group shown, chosen in the header (a nested group:
+        # on its row).
+        group_color: color_hex(Procedural.chosen_color(group)),
+        group_color_name: color_label(Procedural.chosen_color(group)),
+        # Never offered as a color: it means subtract.
+        subtract_color: rgb_hex(SolidProcedural.subtract_color) }
     end
 
     # Colors offered for a Solid Progress group: the materials of the model,
@@ -188,10 +194,14 @@ module SolidProcedural
           enabled: Procedural.enabled?(s),
           op: Procedural.op_of(s),
           base: s == base,
-          # The base row shows the color of its group, a nested group its
-          # own color (the plain volumes are neutral or subtract).
-          color: color_hex(row_color(group, s, s == base)),
-          color_name: s == base ? color_label(Procedural.chosen_color(group)) : nil,
+          # A nested group shows its own color, chosen on its row (the
+          # plain volumes are neutral or subtract).
+          color: color_hex(row_color(s)),
+          color_name: nested ? color_label(Procedural.chosen_color(s)) : nil,
+          # Its own color, framed in the palette (the row may show the
+          # subtract color).
+          chosen_color: nested ? color_hex(Procedural.chosen_color(s)) : nil,
+          color_group: nested ? s.entityID : nil,
           state: state,
           level: level,
           # Only the volume selected in the model: the open groups are in_path.
@@ -222,8 +232,7 @@ module SolidProcedural
       nil
     end
 
-    def self.row_color(group, source, base)
-      return Procedural.chosen_color(group) if base
+    def self.row_color(source)
       return Procedural.result_material(source) if Procedural.procedural?(source) && Procedural.op_of(source) != 'subtract'
       source.material
     end
@@ -233,9 +242,11 @@ module SolidProcedural
     end
 
     def self.color_hex(material)
-      return nil unless material
-      c = material.color
-      format('#%02x%02x%02x', c.red, c.green, c.blue)
+      material ? rgb_hex(material.color) : nil
+    end
+
+    def self.rgb_hex(color)
+      format('#%02x%02x%02x', color.red, color.green, color.blue)
     end
 
     # -------------------------------------------------------------------

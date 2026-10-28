@@ -2,7 +2,7 @@
 
 *[English version](USER_MANUAL_EN.md)*
 
-Version 2.2.0 — SketchUp Pro 2021 et SketchUp Make 2017
+Version 2.2.1 — SketchUp Pro 2021 et SketchUp Make 2017
 
 ## Présentation
 
@@ -32,18 +32,18 @@ Solid Progress s'installe à côté de **Solid Batch**, qui garde son Combine Al
 | **Base** | Ligne 1 de la liste : le volume auquel les autres sont ajoutés ou soustraits. Toujours en tête et toujours active |
 | **Opération** | Pour chaque autre ligne : **Union** (ajouter), **Shell** (ajouter avec *Outer Shell* : faces intérieures supprimées), **Subtract** (retirer) |
 | **Couleur de soustraction** | Peindre un volume de cette couleur (rouge par défaut) en fait un volume Subtract ; le repeindre d'une autre couleur en refait un volume ajouté |
-| **Couleur du Solid Progress** | La couleur de la pièce : le Result la montre et le solide finalisé la garde. Elle se choisit dans la Progress Table (case Color de la ligne Base) ; à la création, c'est la couleur qu'avait la Base |
+| **Couleur du Solid Progress** | La couleur de la pièce : le Result la montre et le solide finalisé la garde. Elle se choisit dans la Progress Table (pastille de l'en-tête, ou case Color de la ligne SP d'un groupe imbriqué) ; à la création, c'est la couleur qu'avait la Base |
 
-Dans un groupe Solid Progress, **deux couleurs seulement pour les volumes simples** : la matière par défaut (neutre) pour les volumes ajoutés, la couleur de soustraction pour les volumes retirés. Un groupe Solid Progress imbriqué garde sa propre couleur (rouge s'il est soustrait), et ses faces la gardent dans le Result du groupe qui le contient : la pièce consolidée, puis finalisée, est multicolore. Chaque volume garde en mémoire sa propre matière et la retrouve s'il sort du groupe (Explode). Les faces taillées par un volume soustrait ne gardent pas la couleur de soustraction. Un groupe créé avant la 2.2.0 prend la couleur de sa Base au premier recalcul.
+Dans un groupe Solid Progress, **deux couleurs seulement pour les volumes simples** : la matière par défaut (neutre) pour les volumes ajoutés, la couleur de soustraction pour les volumes retirés. Un groupe Solid Progress imbriqué garde sa propre couleur (la couleur de soustraction s'il est soustrait), et ses faces la gardent dans le Result du groupe qui le contient : la pièce consolidée, puis finalisée, est multicolore. Une autre peinture appliquée à la main est retirée aussitôt. Chaque volume garde en mémoire sa propre matière et la retrouve s'il sort du groupe (Explode). Les faces taillées par un volume soustrait ne gardent pas la couleur de soustraction. Un groupe créé avant la 2.2.0 prend la couleur de sa Base au premier recalcul.
 
-> **Ne peignez pas les volumes à la main dans un groupe Solid Progress**, sauf avec la couleur de soustraction (rouge) pour retirer un volume. Une autre couleur ne change rien au calcul, et le volume redevient neutre à la sortie du groupe. La couleur de la pièce se choisit dans la **Progress Table**, case Color de la ligne Base : c'est la couleur du Solid Progress.
+> **La couleur se choisit uniquement dans la table : n'appliquez pas de couleurs à la main dans un Solid Progress.** Une peinture appliquée à la main, sur un volume comme sur un groupe Solid Progress, est retirée aussitôt (la barre d'état le rappelle), et la couleur définie dans la table reste. **Seule exception : la couleur de soustraction** (choisie avec *Set Subtract Color*, rouge par défaut), qui sert à retirer un volume ou un groupe. La couleur de la pièce se choisit dans la **Progress Table** : pastille à côté du nom dans l'en-tête, ou case Color de la ligne SP d'un groupe imbriqué.
 
 ## Flux de travail
 
 1. **Modélisez les volumes** — une base, les volumes à ajouter, les volumes à retirer (trous, rainures), chacun en groupe solide. Les volumes à ajouter se chevauchent un peu, les trous traversent (voir [Bien dessiner les volumes](#bien-dessiner-les-volumes)).
 2. **Peignez les volumes à retirer** de la couleur de soustraction (rouge par défaut).
-3. **Sélectionnez-les tous** et cliquez sur **Create Solid Progress**. L'ordre est : tous les volumes ajoutés, puis tous les volumes soustraits. Le Result apparaît, les sources sont cachées. Les volumes passent en neutre (ajoutés) ou en rouge (soustraits), et la couleur de la Base devient celle du Solid Progress. Vérifiez dans la Progress Table quel volume est la Base ; choisissez *Base* sur une autre ligne pour en changer.
-4. **Modifiez** — double-cliquez sur le groupe Solid Progress : les sources apparaissent, le Result est caché. Déplacez un trou, agrandissez un tenon, peignez un volume en rouge pour le soustraire, ajoutez un nouveau groupe solide (il va en fin de liste).
+3. **Sélectionnez-les tous** et cliquez sur **Create Solid Progress**. L'ordre est : tous les volumes ajoutés, puis tous les volumes soustraits. Le Result apparaît, les sources sont cachées. Les volumes passent en neutre (ajoutés) ou à la couleur de soustraction (soustraits), et la couleur de la Base devient celle du Solid Progress. Vérifiez dans la Progress Table quel volume est la Base ; choisissez *Base* sur une autre ligne pour en changer.
+4. **Modifiez** — double-cliquez sur le groupe Solid Progress : les sources apparaissent, le Result est caché. Déplacez un trou, agrandissez un tenon, peignez un volume de la couleur de soustraction pour le soustraire, ajoutez un nouveau groupe solide (il va en fin de liste).
 5. **Fermez** le groupe Solid Progress (clic à l'extérieur ou Échap) : si les sources ont changé, le Result est recalculé. La console Ruby affiche `[Solid Progress] Rebuild '…'` ; rien n'est recalculé si rien n'a changé.
 6. **Ajustez** l'ordre, les opérations et la couleur de la pièce dans la **Progress Table**.
 7. **Finalisez** avant l'export STL.
@@ -82,7 +82,7 @@ Sélectionnez un ou plusieurs groupes ou composants solides, puis cliquez sur **
 
 ### Groupes Solid Progress imbriqués
 
-Un groupe Solid Progress peut être le volume d'un autre : sélectionnez-le avec les autres volumes et cliquez sur **Create Solid Progress**, ou déplacez-le dans un groupe Solid Progress ouvert. C'est son **Result** qui est utilisé, avec l'opération de sa ligne : Union, Shell ou Subtract. Peint de la couleur de soustraction, il est retiré : un outil de perçage fait de plusieurs volumes, par exemple. Il montre sa propre couleur (case Color de sa ligne Base, 2.1 par exemple) dès que vous en sortez, dans son parent ouvert ; ses faces la gardent dans le Result du parent et dans le solide finalisé. Soustrait, il est rouge. Peint à la main, il prend cette peinture comme couleur. Les niveaux s'empilent sans limite.
+Un groupe Solid Progress peut être le volume d'un autre : sélectionnez-le avec les autres volumes et cliquez sur **Create Solid Progress**, ou déplacez-le dans un groupe Solid Progress ouvert. C'est son **Result** qui est utilisé, avec l'opération de sa ligne : Union, Shell ou Subtract. Peint de la couleur de soustraction, il est retiré : un outil de perçage fait de plusieurs volumes, par exemple. Il montre sa propre couleur (case Color de sa ligne **SP**) dès que vous en sortez, dans son parent ouvert ; ses faces la gardent dans le Result du parent et dans le solide finalisé. Soustrait, il prend la couleur de soustraction. Peint à la main, il garde la couleur de sa table (sauf avec la couleur de soustraction : il est alors soustrait). Les niveaux s'empilent sans limite.
 
 - Les changements sont recalculés de l'intérieur vers l'extérieur : fermer le groupe intérieur le recalcule, fermer l'extérieur recalcule le Result extérieur. **Rebuild**, **Finalize** et la table recalculent d'abord un groupe intérieur périmé.
 - La **Progress Table** du groupe extérieur montre les volumes de chaque groupe imbriqué sous sa ligne, en arbre dans la colonne # (├─ └─ │, numéros 2.1, 2.2…) ; ▾ / ▸ replie un niveau ; chaque niveau a sa teinte et un groupe imbriqué est marqué **SP**. Dans un groupe imbriqué, la table montre toujours tout l'arbre : les lignes en cours de modification sont surlignées, et le **fil d'Ariane** en haut (par exemple *Assemblage › Prise*) ramène d'un clic à un niveau extérieur ; **⏏ Close** revient d'un niveau, et referme le groupe au niveau le plus haut (les groupes refermés sont recalculés comme à toute sortie ; SketchUp 2020 et suivants). Chaque ligne agit sur son propre groupe (opération, On, nom, ordre dans son niveau), et les groupes fermés qui le contiennent sont recalculés tout de suite. La formule montre les niveaux entre parenthèses, par exemple `1 ∪ (2.1 − 2.2)`. Double-cliquez une ligne imbriquée pour ouvrir les groupes jusqu'à ce volume (SketchUp 2020 et suivants).
@@ -129,6 +129,7 @@ La **formule** en bas de la table écrit exactement ce calcul (voir plus bas).
 
 #### (1) L'en-tête
 
+- **La pastille de couleur**, à gauche du nom (cerclée de bleu) : la couleur du groupe affiché. Cliquez pour la choisir (voir la colonne Color).
 - **Le nom** du groupe Solid Progress affiché : le groupe **ouvert** (le plus extérieur quand plusieurs sont ouverts), sinon le groupe **sélectionné**.
 - **Le mode**, à droite :
   - **Closed — applied now** (vert) : le groupe est fermé ; chaque changement dans la table recalcule le Result tout de suite ;
@@ -152,7 +153,7 @@ Visible seulement quand un groupe Solid Progress est ouvert. Il montre le chemin
 | | **1, 2, 2.1…** | Le numéro de la ligne, celui de la formule. **2.1** = le 1er volume du groupe de la ligne 2 |
 | | **▲ ▼** | Monter ou descendre la ligne d'un cran dans son niveau (même effet que le glisser). Grisés quand ce n'est pas possible ; absents sur la Base |
 | **On** | case à cocher | Décochée : le volume est ignoré par le calcul (il reste dans le groupe, la ligne passe en gris). La Base est toujours cochée |
-| **Color** | carré de couleur | Sur la ligne **Base** (carré cerclé de bleu) : la **couleur du Solid Progress** de ce niveau. Cliquez pour la choisir : un **nuancier** de 72 couleurs, un champ **#RRGGBB** pour une couleur précise (Entrée pour appliquer), ou une **matière du modèle** (textures comprises) ; *Default* : la matière par défaut (dans un groupe imbriqué, la couleur du niveau au-dessus). Le Result la prend tout de suite, sans recalcul. Une couleur du nuancier ou du champ crée la matière « Solid Progress #RRGGBB » si le modèle n'a pas déjà cette couleur. La couleur de soustraction est refusée. Sur les autres lignes : hachuré (neutre) pour un volume ajouté, rouge pour un volume soustrait, la couleur du groupe imbriqué sur sa ligne **SP** |
+| **Color** | carré de couleur | Sur la ligne **SP** d'un groupe imbriqué (carré cerclé de bleu) : la **couleur de ce Solid Progress** (la couleur de soustraction s'il est soustrait). Cliquez pour la choisir ; la couleur du groupe affiché se choisit de même avec la pastille de l'en-tête : un **nuancier** de 72 couleurs, un champ **#RRGGBB** pour une couleur précise (Entrée pour appliquer), ou une **matière du modèle** (textures comprises) ; *Default* : la matière par défaut (dans un groupe imbriqué, la couleur du niveau au-dessus). La couleur appliquée est encadrée dans le nuancier (en pointillé, la plus proche quand elle n'y figure pas exactement) et déjà écrite dans le champ #RRGGBB : on voit tout de suite la couleur actuelle et on choisit facilement une couleur voisine. Un clic en dehors de la palette, ou dans le modèle, la referme. Le Result prend la couleur choisie tout de suite, sans recalcul. Une couleur du nuancier ou du champ crée la matière « Solid Progress #RRGGBB » si le modèle n'a pas déjà cette couleur. La couleur de soustraction n'est jamais proposée, ni dans le nuancier ni parmi les matières, et le champ #RRGGBB la refuse. Sur les autres lignes, Base comprise : hachuré (neutre) pour un volume ajouté, couleur de soustraction pour un volume soustrait |
 | **Name** | **SP** (badge bleu) | Marque un groupe Solid Progress imbriqué : c'est son Result qui est utilisé ici |
 | | nom | Cliquez pour renommer le volume ; Entrée valide, Échap annule. Vide, le nom de sa définition s'affiche en gris |
 | **Operation** | liste | *Base* sur la ligne 1. Ailleurs : **Union**, **Shell**, **Subtract**, ou **Base** pour faire de cette ligne la nouvelle Base (l'ancienne passe en 2). **Subtract** peint le volume de la couleur de soustraction ; il retrouve sa matière s'il quitte Subtract |
@@ -236,7 +237,7 @@ Un bilan s'affiche dans la barre d'état et, avec la raison de chaque soudure, d
 
 ## Explode
 
-Éclater un groupe Solid Progress rend le Result **et** tous les volumes sources en groupes ordinaires visibles ; chaque volume ajouté retrouve sa propre matière, les volumes soustraits restent rouges. Un Ctrl+Z remet le groupe Solid Progress. Pour ne garder que le Result, utilisez plutôt **Finalize**.
+Éclater un groupe Solid Progress rend le Result **et** tous les volumes sources en groupes ordinaires visibles ; chaque volume ajouté retrouve sa propre matière, les volumes soustraits gardent la couleur de soustraction. Un Ctrl+Z remet le groupe Solid Progress. Pour ne garder que le Result, utilisez plutôt **Finalize**.
 
 ## Cadre de sélection vert
 

@@ -2,7 +2,7 @@
 
 *[Version française](USER_MANUAL_FR.md)*
 
-Version 2.2.0 — SketchUp Pro 2021 and SketchUp Make 2017
+Version 2.2.1 — SketchUp Pro 2021 and SketchUp Make 2017
 
 ## Overview
 
@@ -32,18 +32,18 @@ Solid Progress installs next to **Solid Batch**, which keeps its one-click, dest
 | **Base** | Row 1 of the list: the volume the others are added to or subtracted from. Always first and always enabled |
 | **Operation** | For every other row: **Union** (add), **Shell** (add with *Outer Shell*: internal faces removed), **Subtract** (remove) |
 | **Subtract color** | Painting a volume with this color (red by default) makes it a Subtract volume; repainting it with another color makes it an added volume again |
-| **Color of the Solid Progress group** | The color of the part: the Result shows it and the finalized solid keeps it. It is chosen in the Progress Table (Color box of the Base row); at creation, it is the color the Base had |
+| **Color of the Solid Progress group** | The color of the part: the Result shows it and the finalized solid keeps it. It is chosen in the Progress Table (swatch in the header, or Color box of the SP row of a nested group); at creation, it is the color the Base had |
 
-Inside a Solid Progress group, **two colors only for the plain volumes**: the default material (neutral) for the added volumes, the subtract color for the subtracted ones. A nested Solid Progress group keeps its own color (red when subtracted), and its faces keep it in the Result of the group that holds it: the combined part, then the finalized one, is multicolored. Each volume remembers its own material and gets it back when it leaves the group (Explode). The faces cut by a subtracted volume do not keep the subtract color. A group made before 2.2.0 takes the color of its Base at its first rebuild.
+Inside a Solid Progress group, **two colors only for the plain volumes**: the default material (neutral) for the added volumes, the subtract color for the subtracted ones. A nested Solid Progress group keeps its own color (the subtract color when subtracted), and its faces keep it in the Result of the group that holds it: the combined part, then the finalized one, is multicolored. Any other paint applied by hand is taken off at once. Each volume remembers its own material and gets it back when it leaves the group (Explode). The faces cut by a subtracted volume do not keep the subtract color. A group made before 2.2.0 takes the color of its Base at its first rebuild.
 
-> **Do not paint the volumes by hand inside a Solid Progress group**, except with the subtract color (red) to remove a volume. Another color changes nothing in the computation, and the volume turns neutral again when you leave the group. The color of the part is chosen in the **Progress Table**, Color box of the Base row: it is the color of the Solid Progress group.
+> **Colors are set in the table only: do not apply colors by hand in a Solid Progress group.** A paint applied by hand, to a volume or to a Solid Progress group, is taken off at once (the status bar says so), and the color set in the table stays. **The only exception is the subtract color** (set with *Set Subtract Color*, red by default), used to remove a volume or a group. The color of the part is chosen in the **Progress Table**: the swatch next to the name in the header, or the Color box of the SP row of a nested group.
 
 ## Basic workflow
 
 1. **Model the volumes** — a base, the volumes to add, the volumes to remove (holes, slots), each as a solid group. Volumes to add overlap a little, holes go through (see [Drawing volumes that combine well](#drawing-volumes-that-combine-well)).
 2. **Paint the volumes to remove** with the subtract color (red by default).
-3. **Select them all** and click **Create Solid Progress**. The order is: every added volume, then every subtracted one. The Result appears, the sources are hidden. The volumes turn neutral (added) or red (subtracted), and the color of the Base becomes the color of the Solid Progress group. Check in the Progress Table which volume is the Base; choose *Base* on another row to change it.
-4. **Edit** — double-click the Solid Progress group: the sources appear, the Result is hidden. Move a hole, resize a pin, paint a volume red to subtract it, add a new solid group (it goes last in the list).
+3. **Select them all** and click **Create Solid Progress**. The order is: every added volume, then every subtracted one. The Result appears, the sources are hidden. The volumes turn neutral (added) or take the subtract color (subtracted), and the color of the Base becomes the color of the Solid Progress group. Check in the Progress Table which volume is the Base; choose *Base* on another row to change it.
+4. **Edit** — double-click the Solid Progress group: the sources appear, the Result is hidden. Move a hole, resize a pin, paint a volume with the subtract color to subtract it, add a new solid group (it goes last in the list).
 5. **Close** the Solid Progress group (click outside or Escape): if the sources changed, the Result is rebuilt. The Ruby Console shows `[Solid Progress] Rebuild '…'`; nothing is rebuilt when nothing changed.
 6. **Adjust** the order, the operations and the color of the part in the **Progress Table**.
 7. **Finalize** before exporting to STL.
@@ -82,7 +82,7 @@ Select one or more solid groups or components, then click **Create Solid Progres
 
 ### Nested Solid Progress groups
 
-A Solid Progress group can be a volume of another one: select it with the other volumes and click **Create Solid Progress**, or move it into an open Solid Progress group. Its **Result** is used, with the operation of its row: Union, Shell or Subtract. Painted with the subtract color, it is subtracted: a drilling tool made of several volumes, for example. It shows its own color (Color box of its Base row, 2.1 for example) as soon as you leave it, in its open parent; its faces keep it in the Result of the parent and in the finalized solid. Subtracted, it is red. Painted by hand, it takes that paint as its color. Levels stack without limit.
+A Solid Progress group can be a volume of another one: select it with the other volumes and click **Create Solid Progress**, or move it into an open Solid Progress group. Its **Result** is used, with the operation of its row: Union, Shell or Subtract. Painted with the subtract color, it is subtracted: a drilling tool made of several volumes, for example. It shows its own color (Color box of its **SP** row) as soon as you leave it, in its open parent; its faces keep it in the Result of the parent and in the finalized solid. Subtracted, it takes the subtract color. Painted by hand, it keeps the color of its table (except with the subtract color: it is then subtracted). Levels stack without limit.
 
 - Changes are rebuilt from the inside out: closing the inner group rebuilds it, closing the outer one rebuilds the outer Result. **Rebuild**, **Finalize** and the table rebuild an out-of-date inner group first.
 - The **Progress Table** of the outer group shows the volumes of each nested group under its row, as a tree in the # column (├─ └─ │, numbers 2.1, 2.2…); ▾ / ▸ folds a level; each level has its own tint and a nested group is marked **SP**. Inside a nested group, the table still shows the whole tree: the rows being edited are highlighted, and the **breadcrumb** at the top (for example *Assembly › Socket*) takes you back to an outer level with a click; **⏏ Close** goes back one level, and closes the group at the top level (the groups closed are rebuilt as on any exit; SketchUp 2020 and later). Each row acts on its own group (operation, On, name, order within its level), and the closed groups that hold it are rebuilt at once. The formula shows the levels in parentheses, for example `1 ∪ (2.1 − 2.2)`. Double-click a nested row to open the groups down to that volume (SketchUp 2020 and later).
@@ -129,6 +129,7 @@ The **formula** at the bottom of the table writes exactly this computation (see 
 
 #### (1) Header
 
+- **The color swatch**, left of the name (ringed in blue): the color of the group shown. Click to choose it (see the Color column).
 - **The name** of the Solid Progress group shown: the **open** one (the outermost one when several are open), or else the **selected** one.
 - **The mode**, on the right:
   - **Closed — applied now** (green): the group is closed; every change in the table rebuilds the Result at once;
@@ -152,7 +153,7 @@ Shown only while a Solid Progress group is open. It shows the path of the open g
 | | **1, 2, 2.1…** | The number of the row, the one used in the formula. **2.1** = the 1st volume of the group of row 2 |
 | | **▲ ▼** | Move the row one step up or down within its level (same as dragging). Greyed when not possible; not on the Base |
 | **On** | check box | Unchecked: the volume is ignored by the computation (it stays in the group, the row turns grey). The Base is always checked |
-| **Color** | color square | On the **Base** row (square ringed in blue): the **color of the Solid Progress group** of this level. Click to choose it: a **palette** of 72 colors, a **#RRGGBB** field for an exact color (Enter to apply), or a **material of the model** (textures included); *Default*: the default material (in a nested group, the color of the level above). The Result takes it at once, without a rebuild. A color of the palette or the field makes the material "Solid Progress #RRGGBB" unless the model already has that color. The subtract color is refused. On the other rows: hatched (neutral) for an added volume, red for a subtracted one, the color of the nested group on its **SP** row |
+| **Color** | color square | On the **SP** row of a nested group (square ringed in blue): the **color of that Solid Progress group** (the subtract color when it is subtracted). Click to choose it; the color of the group shown is chosen the same way with the swatch of the header: a **palette** of 72 colors, a **#RRGGBB** field for an exact color (Enter to apply), or a **material of the model** (textures included); *Default*: the default material (in a nested group, the color of the level above). The color applied is framed in the palette (dashed: the closest one when it is not exactly there) and already written in the #RRGGBB field: you see the current color at once and easily pick a color close to it. A click outside the palette, or in the model, closes it. The Result takes the color chosen at once, without a rebuild. A color of the palette or the field makes the material "Solid Progress #RRGGBB" unless the model already has that color. The subtract color is never offered, neither in the palette nor among the materials, and the #RRGGBB field refuses it. On the other rows, the Base included: hatched (neutral) for an added volume, the subtract color for a subtracted one |
 | **Name** | **SP** (blue badge) | Marks a nested Solid Progress group: its Result is used here |
 | | name | Click to rename the volume; Enter validates, Escape cancels. When empty, the name of its definition shows in grey |
 | **Operation** | list | *Base* on row 1. Elsewhere: **Union**, **Shell**, **Subtract**, or **Base** to make this row the new Base (the former one goes to row 2). **Subtract** paints the volume with the subtract color; its material comes back when it leaves Subtract |
@@ -236,7 +237,7 @@ A summary is shown in the status bar and, with the reason of each weld, in the R
 
 ## Explode
 
-Exploding a Solid Progress group gives back the Result **and** all the source volumes as plain, visible groups; each added volume gets its own material back, the subtracted volumes stay red. One Ctrl+Z brings the Solid Progress group back. To keep only the Result, use **Finalize** instead.
+Exploding a Solid Progress group gives back the Result **and** all the source volumes as plain, visible groups; each added volume gets its own material back, the subtracted volumes keep the subtract color. One Ctrl+Z brings the Solid Progress group back. To keep only the Result, use **Finalize** instead.
 
 ## Green selection frame
 

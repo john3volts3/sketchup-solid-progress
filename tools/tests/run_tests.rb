@@ -1798,22 +1798,25 @@ module SolidProcedural
                 'a color chosen for the core: mid and top rebuilt, its faces in its color up to the top',
                 "mid=#{colored[mid, violet]} top=#{colored[top, violet]} #{tests.messages.join(' / ')}")
 
-        # The top group painted by hand: the paint becomes its color, shown
-        # by its Result at once and after a Rebuild.
+        # The top group green from the table, then painted by hand: the
+        # paint is taken off, the color of the table stays, after a Rebuild
+        # too.
         green = model.materials['Solid Progress tests green'] || model.materials.add('Solid Progress tests green')
         green.color = Sketchup::Color.new(0, 160, 0)
         yellow = tests.material(model, 'SP Test Yellow', [230, 200, 40])
+        tests.select(model, top)
+        ProceduralTable.on_action(JSON.generate(type: 'color', group: top.entityID, material: green.name))
         model.start_operation('Solid Procedural tests — paint top', true)
-        top.material = green
+        top.material = yellow
         model.commit_operation
         c.later do
-          adopted = top.material.nil? && top.get_attribute(Procedural::DICT, 'color') == green.name &&
-                    Procedural.result_of(top).material == green
+          kept = top.material.nil? && top.get_attribute(Procedural::DICT, 'color') == green.name &&
+                 Procedural.result_of(top).material == green
           tests.select(model, top)
           Procedural.do_rebuild
-          c.check(adopted && Procedural.result_of(top).material == green,
-                  'a group painted by hand: the paint becomes its color, shown by its Result, kept by Rebuild',
-                  "adopted=#{adopted}")
+          c.check(kept && Procedural.result_of(top).material == green,
+                  'a group painted by hand: the paint taken off, the color of the table kept, after a Rebuild too',
+                  "kept=#{kept}")
         end
 
 
@@ -1874,23 +1877,23 @@ module SolidProcedural
             selected = (ProceduralTable.payload(model)[:rows] || []).select { |r| r[:selected] }
             c.check(selected.length == 1 && selected.first[:nested] && selected.first[:group] == mid.entityID,
                     'table: the nested group selected whole, its row only', selected.map { |r| r[:label] }.join(','))
-            # Painted by hand from mid: the paint becomes the color of the
-            # core, shown at once, then on the faces of the core in the
-            # Result of mid.
+            # Painted by hand from mid: the paint is taken off, the core
+            # keeps the color of its table (violet), on its faces in the
+            # Result of mid too.
             model.start_operation('Solid Procedural tests — paint core', true)
             core.material = yellow
             model.commit_operation
           end
           c.later do
-            c.check(core.material.nil? && core.get_attribute(Procedural::DICT, 'color') == yellow.name &&
-                    Procedural.result_of(core).material == yellow,
-                    'a nested group painted by hand: the paint becomes its color, shown at once')
+            c.check(core.material.nil? && core.get_attribute(Procedural::DICT, 'color') == violet.name &&
+                    Procedural.result_of(core).material == violet,
+                    'a nested group painted by hand: the paint taken off, the color of its table kept')
             ProceduralTable.on_action(JSON.generate(type: 'close', group: top.entityID))
           end
           c.later do
             c.check(model.active_path == [top] && near[Procedural.result_of(mid).volume, 2208] &&
                     tests.messages.empty? &&
-                    tests.inner(Procedural.result_of(mid)).grep(Sketchup::Face).any? { |f| f.material == yellow },
+                    colored[mid, violet],
                     'Close: back to top, mid rebuilt (2208), the faces of the core in its color',
                     "path=#{(model.active_path || []).length} #{tests.messages.join(' / ')}")
             model.active_path = [top, mid, core]
@@ -1906,8 +1909,8 @@ module SolidProcedural
           end
           c.later do
             c.check((model.active_path || []).empty? && tests.messages.empty? &&
-                    near[Procedural.result_of(top).volume, 6672] && colored[top, yellow],
-                    'Close at the top level: top rebuilt (6672), the faces of the core in its new color',
+                    near[Procedural.result_of(top).volume, 6672] && colored[top, violet],
+                    'Close at the top level: top rebuilt (6672), the faces of the core in its color',
                     "#{tests.messages.join(' / ')} #{Procedural.result_of(top).volume.round(3)}")
           end
         else
@@ -1960,16 +1963,19 @@ module SolidProcedural
         c.check(inside[0].material.nil? && inside[1].material.nil? && Procedural.subtract_material?(inside[2].material),
                 'inside, two colors only: the added volumes neutral, the hole red', names.call(g))
 
-        # Table: the base row shows the color of the group; the colors
-        # offered are the materials of the model, not the subtract color.
+        # Table: the color of the group in the header, the base row neutral;
+        # the colors offered are the materials of the model, not the
+        # subtract color.
         tests.select(model, g)
         payload = ProceduralTable.payload(model)
         first = (payload[:rows] || []).first || {}
         offered = (payload[:materials] || []).map { |m| m[:name] }
-        c.check(own && first[:color] == ProceduralTable.color_hex(own) && first[:color_name] == own.display_name &&
-                offered.include?(blue.name) && offered.none? { |n| Procedural.subtract_material?(model.materials[n]) },
-                'table: the base row shows the color of the group; offered: the materials but the subtract color',
-                "#{first[:color]} #{first[:color_name]} #{offered.length}")
+        c.check(own && payload[:group_color] == ProceduralTable.color_hex(own) &&
+                payload[:group_color_name] == own.display_name && first[:color].nil? && first[:color_group].nil? &&
+                offered.include?(blue.name) && offered.none? { |n| Procedural.subtract_material?(model.materials[n]) } &&
+                payload[:subtract_color] == ProceduralTable.rgb_hex(SolidProcedural.subtract_color),
+                'table: the color of the group in the header, the base row neutral; offered: the materials but the subtract color',
+                "#{payload[:group_color]} #{payload[:group_color_name]} #{first[:color]} #{offered.length}")
         signature = g.get_attribute(Procedural::DICT, 'signature')
         tests.messages.clear
         ProceduralTable.on_action(JSON.generate(type: 'color', group: g.entityID, material: blue.name))
@@ -2073,9 +2079,21 @@ module SolidProcedural
         tests.select(model, outer)
         rows = ProceduralTable.payload(model)[:rows] || []
         nested_row = rows.find { |r| r[:nested] }
-        # On the base row, the color of the level (the one chosen there).
-        c.check(nested_row && nested_row[:color] == ProceduralTable.color_hex(nested_row[:base] ? green : blue),
-                'table: the nested row shows its color (the base row: the color of its level)')
+        c.check(nested_row && nested_row[:color] == ProceduralTable.color_hex(blue) &&
+                nested_row[:color_group] == inner.entityID && nested_row[:color_name] == blue.display_name &&
+                nested_row[:chosen_color] == ProceduralTable.color_hex(blue) &&
+                ProceduralTable.payload(model)[:group_color] == ProceduralTable.color_hex(green),
+                'table: the nested row shows its color, the header the color of the outer group')
+        # Chosen on the nested row, from the table of the outer group: the
+        # outer Result rebuilt with the faces of the nested group in it.
+        yellow = tests.material(model, 'SP Test Yellow', [230, 200, 40])
+        tests.messages.clear
+        ProceduralTable.on_action(JSON.generate(type: 'color', group: nested_row[:color_group], material: yellow.name))
+        changed = Procedural.result_of(inner).material == yellow &&
+                  faces.call(Procedural.result_of(outer)).any? { |f| f.material == yellow }
+        ProceduralTable.on_action(JSON.generate(type: 'color', group: nested_row[:color_group], material: blue.name))
+        c.check(changed && Procedural.result_of(inner).material == blue && tests.messages.empty?,
+                'table: a color chosen on the nested row, the outer Result rebuilt with it', tests.messages.join(' / '))
 
         # Subtracted, the nested group is red like any subtracted volume.
         key = Procedural.row_keys(Procedural.sources_of(outer))[Procedural.sources_of(outer).index(inner)]
@@ -2097,6 +2115,55 @@ module SolidProcedural
         model.start_operation('Solid Procedural tests — clean up', true)
         model.entities.erase_entities([solid].compact.select(&:valid?))
         model.commit_operation
+      end
+
+      # Paint by hand inside an open Solid Progress group (2.2.1): colors
+      # are set in the table only; a paint other than the subtract color is
+      # taken off at once, the subtract color subtracts the volume.
+      test 'T27 Paint by hand inside a Solid Progress group' do |c, model|
+        next c.skip('needs Model#active_path= (SketchUp 2020+)') unless tests.path_settable?(model)
+        blue = tests.material(model, 'SP Test Blue', [40, 90, 200])
+        green = tests.material(model, 'SP Test Green', [40, 160, 40])
+        base = tests.box(model.entities, 0, 1100, 0, 10, 10, 10, tests.base_material(model))
+        pin = tests.box(model.entities, 2, 1102, 9, 4, 4, 4, blue)
+        tests.select(model, base, pin)
+        tests.messages.clear
+        Procedural.do_create
+        g = model.selection.find { |e| Procedural.procedural?(e) }
+        next c.phases.clear unless c.check(g && tests.messages.empty?, 'Create', tests.messages.join(' / '))
+        color = Procedural.chosen_color(g)
+        volume = Procedural.result_of(g).volume
+        # The second row (not the base, which cannot be subtracted).
+        painted = Procedural.sources_of(g)[1]
+        own = painted.get_attribute(Procedural::DICT, 'orig_material')
+        red = nil
+        model.active_path = [g]
+        c.later do
+          model.start_operation('Solid Procedural tests — paint a volume', true)
+          painted.material = green
+          model.commit_operation
+        end
+        c.later do
+          c.check(painted.material.nil? && painted.get_attribute(Procedural::DICT, 'orig_material') == own,
+                  'a volume painted by hand: the paint taken off at once, its own material still kept', own.inspect)
+          model.start_operation('Solid Procedural tests — paint a volume red', true)
+          painted.material = tests.red(model)
+          model.commit_operation
+        end
+        c.later do
+          red = Procedural.subtract_material?(painted.material)
+          tests.messages.clear
+          tests.close_all(model)
+        end
+        c.later do
+          c.check(red && Procedural.op_of(painted) == 'subtract' && Procedural.result_of(g).volume < volume - 1 &&
+                  Procedural.result_of(g).material == color && tests.messages.empty?,
+                  'painted red: kept, the volume subtracted at the exit; the Result in the color of the table',
+                  "red=#{red} #{tests.messages.join(' / ')}")
+          model.start_operation('Solid Procedural tests — clean up', true)
+          g.erase! if g.valid?
+          model.commit_operation
+        end
       end
 
       test 'T11 No unused definition left' do |c, model|

@@ -41,13 +41,19 @@
   }
   header { border-bottom: 1px solid var(--line); }
   footer { border-top: 1px solid var(--line); }
+  #heading {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    margin-right: 10px;
+  }
+  #group-color { flex: none; margin-right: 7px; }
   #title {
     font-weight: 600;
     font-size: 13px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    margin-right: 10px;
   }
   .mode {
     flex: none;
@@ -126,7 +132,8 @@
   .swatch.none {
     background: repeating-linear-gradient(45deg, #ffffff 0, #ffffff 3px, #d0d7de 3px, #d0d7de 6px);
   }
-  /* The base row: the color of its Solid Progress group, to choose. */
+  /* The color of a Solid Progress group, to choose: in the header for the
+     group shown, on its row for a nested one. */
   button.swatch {
     padding: 0;
     cursor: pointer;
@@ -173,6 +180,17 @@
     cursor: pointer;
   }
   #palette .grid .swatch:hover { box-shadow: 0 0 0 2px var(--selected-bar); }
+  /* The color applied now: framed; dashed when no preset is that exact
+     color (the closest one). */
+  #palette .grid .swatch.current,
+  #palette .grid .swatch.near,
+  #palette .choice.chosen .swatch {
+    position: relative;
+    z-index: 1;
+    outline: 2px solid var(--selected-bar);
+    outline-offset: 1px;
+  }
+  #palette .grid .swatch.near { outline-style: dashed; }
   #palette .custom {
     display: flex;
     align-items: center;
@@ -340,7 +358,7 @@
 </head>
 <body>
   <header>
-    <span id="title">Progress Table</span>
+    <span id="heading"><button id="group-color" class="swatch hidden" type="button"></button><span id="title">Progress Table</span></span>
     <span id="mode" class="mode hidden"></span>
   </header>
   <div id="crumbs" class="hidden">
@@ -438,10 +456,29 @@
     return colors;
   })();
 
-  function chooseColor(row, message) {
+  // +target+: { group, color, color_name } of the Solid Progress group
+  // whose color is chosen.
+  // Group whose color the open palette chooses, or null.
+  var paletteTarget = null;
+
+  // Preset closest to +hex+ (RGB distance).
+  function closest(presets, hex) {
+    var rgb = function (h) { return [1, 3, 5].map(function (i) { return parseInt(h.substr(i, 2), 16); }); };
+    var want = rgb(hex);
+    var best = null;
+    var bestDistance = Infinity;
+    presets.forEach(function (p) {
+      var c = rgb(p);
+      var d = Math.pow(c[0] - want[0], 2) + Math.pow(c[1] - want[1], 2) + Math.pow(c[2] - want[2], 2);
+      if (d < bestDistance) { bestDistance = d; best = p; }
+    });
+    return best;
+  }
+
+  function chooseColor(target, message) {
     closePalette();
     message.type = 'color';
-    message.group = row.group;
+    message.group = target.group;
     send(message);
     releaseSoon(0);
   }
@@ -449,16 +486,29 @@
   // Colors of a Solid Progress group under the swatch clicked: the
   // default material, preset colors, a color typed as #RRGGBB, and the
   // materials of the model (but the subtract color).
-  function openPalette(row, anchor) {
+  function openPalette(target, anchor) {
     var palette = document.getElementById('palette');
     palette.innerHTML = '';
     palette.appendChild(element('div', 'caption', 'Colors'));
     var grid = element('div', 'grid');
-    PRESETS.forEach(function (hex) {
+    // The subtract color is never offered: it means subtract.
+    var presets = PRESETS.filter(function (hex) { return hex !== data.subtract_color; });
+    // The color applied now framed, else the closest preset (dashed).
+    var current = target.color;
+    var exact = current && presets.indexOf(current) >= 0 ? current : null;
+    var near = current && !exact ? closest(presets, current) : null;
+    presets.forEach(function (hex) {
       var cell = element('span', 'swatch');
       cell.style.background = hex;
       cell.title = hex.toUpperCase();
-      cell.addEventListener('click', function () { chooseColor(row, { rgb: hex }); });
+      if (hex === exact) {
+        cell.classList.add('current');
+        cell.title += ' — current color';
+      } else if (hex === near) {
+        cell.classList.add('near');
+        cell.title += ' — closest to the current color (' + current.toUpperCase() + ')';
+      }
+      cell.addEventListener('click', function () { chooseColor(target, { rgb: hex }); });
       grid.appendChild(cell);
     });
     palette.appendChild(grid);
@@ -466,15 +516,22 @@
     var input = element('input');
     input.type = 'text';
     input.placeholder = '#RRGGBB';
+    // The color applied now, ready to adjust.
+    if (current) input.value = current.toUpperCase();
     input.title = 'Any color, as #RRGGBB (Enter to apply)';
     var apply = element('button', 'arrow', 'OK');
     apply.type = 'button';
     var typed = function () {
       var value = input.value.trim();
-      if (/^#?[0-9a-fA-F]{6}$/.test(value)) {
-        chooseColor(row, { rgb: value.charAt(0) === '#' ? value : '#' + value });
-      } else {
+      var hex = (value.charAt(0) === '#' ? value : '#' + value).toLowerCase();
+      if (!/^#[0-9a-f]{6}$/.test(hex)) {
         input.classList.add('wrong');
+        input.title = 'Not a color: type #RRGGBB';
+      } else if (hex === data.subtract_color) {
+        input.classList.add('wrong');
+        input.title = 'That is the subtract color: choose another one';
+      } else {
+        chooseColor(target, { rgb: hex });
       }
     };
     input.addEventListener('keydown', function (event) {
@@ -489,17 +546,18 @@
     var choices = [{ name: null, label: 'Default', color: null }].concat(data.materials || []);
     choices.forEach(function (m) {
       var choice = element('div', 'choice');
-      if (m.label === row.color_name && (m.name === null) === (row.color === null)) {
+      if (m.label === target.color_name && (m.name === null) === (target.color === null)) {
         choice.classList.add('chosen');
       }
       var swatch = element('span', m.color ? 'swatch' : 'swatch none');
       if (m.color) swatch.style.background = m.color;
       choice.appendChild(swatch);
       choice.appendChild(element('span', null, m.label));
-      choice.addEventListener('click', function () { chooseColor(row, { material: m.name }); });
+      choice.addEventListener('click', function () { chooseColor(target, { material: m.name }); });
       palette.appendChild(choice);
     });
     palette.classList.remove('hidden');
+    paletteTarget = target;
     var box = anchor.getBoundingClientRect();
     var top = box.bottom + 2;
     if (top + palette.offsetHeight > window.innerHeight) top = Math.max(0, box.top - palette.offsetHeight - 2);
@@ -507,9 +565,18 @@
     palette.style.left = Math.max(0, Math.min(box.left, window.innerWidth - palette.offsetWidth)) + 'px';
   }
 
+  function togglePalette(target, anchor) {
+    if (document.getElementById('palette').classList.contains('hidden')) openPalette(target, anchor);
+    else closePalette();
+  }
+
   function closePalette() {
     document.getElementById('palette').classList.add('hidden');
+    paletteTarget = null;
   }
+
+  // A click outside the window (in the model) closes the palette.
+  window.addEventListener('blur', closePalette);
 
   document.addEventListener('mousedown', function (event) {
     if (!event.target.closest('#palette, button.swatch')) closePalette();
@@ -681,15 +748,14 @@
 
     // Color
     var color = element('td');
-    var swatch = element(row.base ? 'button' : 'span', row.color ? 'swatch' : 'swatch none');
+    var swatch = element(row.color_group ? 'button' : 'span', row.color ? 'swatch' : 'swatch none');
     if (row.color) swatch.style.background = row.color;
-    if (row.base) {
+    if (row.color_group) {
       swatch.type = 'button';
-      swatch.title = 'Color of this Solid Progress group: ' + row.color_name + ' — click to change';
+      swatch.title = 'Color of this Solid Progress group: ' + row.color_name +
+                     (row.op === 'subtract' ? ' (shown when it is added)' : '') + ' — click to change';
       swatch.addEventListener('click', function () {
-        var palette = document.getElementById('palette');
-        if (palette.classList.contains('hidden')) openPalette(row, swatch);
-        else closePalette();
+        togglePalette({ group: row.color_group, color: row.chosen_color, color_name: row.color_name }, swatch);
       });
     } else {
       swatch.title = row.op === 'subtract' ? 'Subtracted' : (row.color ? row.color : 'Default material');
@@ -832,9 +898,16 @@
     notice.textContent = (data && data.notice) || '';
     notice.classList.toggle('hidden', !(data && data.notice));
 
+    // The group of the open palette no longer in the table: closed.
+    if (paletteTarget && !(data && data.group && (paletteTarget.group === data.group ||
+        data.rows.some(function (r) { return r.color_group === paletteTarget.group; })))) {
+      closePalette();
+    }
+
     if (!data || !data.group) {
       title.textContent = 'Progress Table';
       title.classList.remove('here');
+      document.getElementById('group-color').classList.add('hidden');
       mode.classList.add('hidden');
       document.getElementById('crumbs').classList.add('hidden');
       table.classList.add('hidden');
@@ -854,6 +927,10 @@
 
     title.textContent = data.name;
     title.classList.toggle('here', !!data.at_top);
+    var groupColor = document.getElementById('group-color');
+    groupColor.className = data.group_color ? 'swatch' : 'swatch none';
+    groupColor.style.background = data.group_color || '';
+    groupColor.title = 'Color of ' + data.name + ': ' + data.group_color_name + ' — click to change';
     mode.textContent = data.open ? 'Open: ' + data.current + ' — applied on exit' : 'Closed — applied now';
     renderCrumbs();
     mode.className = 'mode ' + (data.open ? 'open' : 'closed');
@@ -937,6 +1014,11 @@
       }
     });
   }
+
+  document.getElementById('group-color').addEventListener('click', function (event) {
+    if (!data || !data.group) return;
+    togglePalette({ group: data.group, color: data.group_color, color_name: data.group_color_name }, event.currentTarget);
+  });
 
   document.getElementById('close-all').addEventListener('click', function () {
     if (data && data.group) send({ type: 'close', group: data.group });

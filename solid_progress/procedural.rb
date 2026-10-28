@@ -283,8 +283,9 @@ module SolidProcedural
         source.material = subtract_material(model) unless subtract_material?(source.material)
       elsif source.material
         if procedural?(source)
-          # A nested group painted by hand: the paint becomes its color.
-          source.set_attribute(DICT, 'color', source.material.name)
+          # A nested group painted by hand keeps the color of its table (a
+          # group made before 2.2.0 takes the paint as its color).
+          source.set_attribute(DICT, 'color', source.material.name) unless source.get_attribute(DICT, 'color')
         else
           set_attribute(source, 'orig_material', source.material.name)
         end
@@ -1161,10 +1162,10 @@ module SolidProcedural
       name == 'none' ? nil : group.model.materials[name]
     end
 
-    # Color of a group that has none yet: its paint (at the top level, not
-    # the subtract color), else the color of its base.
+    # Color of a group that has none yet (made before 2.2.0): its paint
+    # (not the subtract color), else the color of its base.
     def self.initial_color(group)
-      return group.material if adoptable?(group)
+      return group.material if painted?(group)
       base = sources_of(group).first
       return nil unless base
       procedural?(base) ? chosen_color(base) : base.material
@@ -1186,30 +1187,46 @@ module SolidProcedural
       result_of(group).material = result_material(group)
     end
 
-    # A Solid Progress group painted by hand: the paint becomes its color
-    # (the subtract color stays a paint: a tool).
-    def self.adoptable?(group)
-      !group.material.nil? && !subtract_material?(group.material)
+    # Painted by hand, not with the subtract color (the only paint that
+    # means something: subtract).
+    def self.painted?(entity)
+      !entity.material.nil? && !subtract_material?(entity.material)
     end
 
-    # After an operation: a Solid Progress group of the active context just
-    # painted shows the right color on its Result, in a transparent
+    # After an operation: colors are set in the Progress Table only. A paint
+    # other than the subtract color is taken off at once: from a Solid
+    # Progress group of the active context (it keeps the color of its
+    # table; a group made before 2.2.0 takes the paint as its color), and
+    # from a plain volume of an open Solid Progress group (neutral; its own
+    # material, if it had none kept yet, given back when it leaves the
+    # group). Results show the color of their group. In a transparent
     # operation appended to the operation.
     def self.sync_colors(model)
+      path = model.active_path || []
+      inside = !path.empty? && procedural?(path.last)
       groups = model.active_entities.select do |g|
         procedural?(g) && (result = result_of(g)) &&
-          (adoptable?(g) || result.material != result_material(g))
+          (painted?(g) || result.material != result_material(g))
       end
-      return if groups.empty?
+      volumes = model.active_entities.select do |e|
+        inside && instance?(e) && !procedural?(e) && role(e) != ROLE_RESULT && painted?(e)
+      end
+      return if groups.empty? && volumes.empty?
+      painted = groups.select { |g| painted?(g) } + volumes
       model.start_operation('Solid Progress — Color', true, false, true)
-      groups.each do |g|
-        if adoptable?(g)
-          g.set_attribute(DICT, 'color', g.material.name)
-          g.material = nil
+      painted.each do |e|
+        if procedural?(e)
+          e.set_attribute(DICT, 'color', e.material.name) unless e.get_attribute(DICT, 'color')
+        elsif e.get_attribute(DICT, 'orig_material').nil?
+          e.set_attribute(DICT, 'orig_material', e.material.name)
         end
-        apply_result_color(g)
+        e.material = nil
       end
+      groups.each { |g| apply_result_color(g) }
       model.commit_operation
+      return if painted.empty?
+      Sketchup.status_text = 'Solid Progress — colors are set in the Progress Table (header, or SP row); ' \
+                             'paint with the subtract color to subtract'
     end
 
     # After an operation: the volumes left by an Explode of a procedural

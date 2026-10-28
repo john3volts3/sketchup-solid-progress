@@ -12,6 +12,16 @@
 
 ## Session du 2026-10-28
 
+### Couleur choisie uniquement dans la table, pastille de l'en-tête et ligne SP, palette (2.2.1)
+
+- **Retours de l'utilisateur** sur la 2.2.0 : préciser que les couleurs appliquées à la main sont écrasées par la table ; puis « je ne sais plus ce qui est le mieux et le plus clair pour l'utilisateur » → règle « table seulement » choisie ; « au lieu de dire le rouge tu devrais préciser la couleur de soustraction » ; choisir la couleur sur la ligne SP plutôt que sur la Base ; la couleur de soustraction ne doit pas être proposée ; palette ouverte sans objet sélectionné → la fermer par un clic dans le vide ; montrer la couleur actuelle encadrée.
+- **solid_progress/procedural.rb** — `painted?` (remplace `adoptable?`) ; `sync_colors` retire aussitôt toute peinture autre que la couleur de soustraction d'un groupe Solid Progress du contexte actif (couleur de la table gardée ; un groupe d'avant 2.2.0 prend sa peinture comme couleur) et d'un volume simple d'un groupe ouvert (`orig_material` posé s'il manque), message dans la barre d'état ; `neutralize` : un groupe imbriqué peint garde sa couleur de table.
+- **solid_progress/procedural_table.rb** — `group_color`, `group_color_name` (en-tête), `color_group`, `chosen_color` (ligne SP), `subtract_color`, `rgb_hex` ; la ligne Base n'est plus la case de couleur.
+- **solid_progress/html/procedural_table.html** — pastille de couleur dans l'en-tête, case Color de la ligne SP en bouton ; palette : couleur de soustraction retirée du nuancier et refusée dans le champ, couleur actuelle encadrée (la plus proche en pointillé, `closest`), champ prérempli, fermée par `blur` de la fenêtre et quand son groupe n'est plus affiché.
+- **tools/tests/run_tests.rb** — **T27** (peinture à la main dans un groupe ouvert, 2021) ; T24 (groupes peints à la main → couleur de table gardée), T25 (couleur dans l'en-tête, `subtract_color`), T26 (ligne SP, couleur choisie sur la ligne SP).
+- **Docs** — Manuels, README, SKETCHUCATION : mise en garde « la couleur se choisit uniquement dans la table », « couleur de soustraction (Set Subtract Color, rouge par défaut) » au lieu de « rouge », pastille de l'en-tête et ligne SP, palette ; FSD, PRD (EF-44 complétée, CA-42, décision, historique), TACHES, PUBLICATION. **solid_progress/version.rb**, **solid_progress.rb** — 2.2.1.
+- **Tests** : SketchUp 2021 Pro 65/65 (459 vérifications) ; Make 2017 43 OK, T07, T21 et T27 sautés (308 vérifications). Validé par l'utilisateur (« parfait, livraison »).
+
 ### Couleur par Solid Progress (2.2.0)
 
 - **Demande de l'utilisateur** : « il est déconseillé d'attribuer des couleurs à la main dans les solides progress » ; une couleur par Solid Progress, choisie dans la table sur les lignes Base, gardée au Finalize ; en édition, deux couleurs seulement (neutre, rouge). Choix : case Color de la Base, matières du modèle, volume peint à la main remis en neutre, livraison de 2.1.2 d'abord.
