@@ -10,6 +10,8 @@ Text for the SketchUcation PluginStore listing: copy each section into the match
 >
 > **2026-10-28**: version **2.0.3** delivered, without a GitHub release (replaced by 2.0.4 the same day).
 >
+> **2026-10-28**: PluginStore entry updated to **2.0.5** (Claude through Chrome, at the author's request): version, Overview (warning, second video `RZWHk87HUmk`, "Where it fails"), Quick Start, Documentation and Release Notes v2.0.2 to v2.0.5, checked after reloading; `Solid_Progress.rbz` 2.0.5 uploaded by the author (the browser tool cannot upload files from the project drive). A new `.rbz` unpublishes the entry until the SketchUcation administrators approve it again: **awaiting re-approval**.
+>
 > **2026-10-28**: version **2.0.5** delivered (release `v2.0.5`, which replaces 2.0.2 to 2.0.4, never released on GitHub): the author uploads the new `Solid_Progress.rbz`, adds the v2.0.2 to v2.0.5 release notes below and pastes the updated Description, Quick Start and Documentation (warning about volumes that only touch).
 
 ---
