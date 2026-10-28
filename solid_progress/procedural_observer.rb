@@ -130,7 +130,10 @@ module SolidProcedural
         sync_all(model)
         Highlight.repair(model)
       end
-      release_orphans(model) if kinds.include?(:commit)
+      if kinds.include?(:commit)
+        release_orphans(model)
+        sync_colors(model)
+      end
     rescue => e
       puts "[Solid Progress] Synchronization error: #{e.message}"
       e.backtrace.first(10).each { |line| puts "  #{line}" }

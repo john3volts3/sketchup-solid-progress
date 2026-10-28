@@ -10,7 +10,8 @@
     --muted: #6a737d;
     --line: #d8dee4;
     --head: #f3f5f7;
-    --selected: #dbeafe;
+    --selected: #bfdbfe;
+    --selected-bar: #1d4ed8;
     --hover: #f6f8fa;
     --drop: #2563eb;
     --ok: #1a7f37;
@@ -83,7 +84,6 @@
     white-space: nowrap;
   }
   tbody tr:hover td { background: var(--hover); }
-  tbody tr.selected td { background: var(--selected); }
   tbody tr.off td { color: var(--muted); }
   tbody tr.drop-before td { box-shadow: inset 0 2px 0 var(--drop); }
   tbody tr.drop-after td { box-shadow: inset 0 -2px 0 var(--drop); }
@@ -159,6 +159,16 @@
   tbody tr.d3 td { background: #e9eef4; }
   tbody tr.current td { background: var(--open-bg); }
   tbody tr.current:hover td { background: #ffecb3; }
+  /* The row of an open nested group: the path to the rows being edited. */
+  tbody tr.opened td { background: var(--open-bg); }
+  /* Where you are: the innermost volume or nested group opened. */
+  tbody tr.here td,
+  tbody tr.here:hover td { background: var(--selected); }
+  /* The volume selected in the model: above every other tint, the only
+     row with the bar. */
+  tbody tr.selected td,
+  tbody tr.selected:hover td { background: var(--selected); font-weight: 600; }
+  tbody tr.selected td:first-child { box-shadow: inset 4px 0 0 var(--selected-bar); }
   .badge {
     flex: none;
     font-size: 9px;
@@ -188,7 +198,17 @@
     cursor: pointer;
     text-decoration: underline;
   }
-  #crumbs .here { font-weight: 600; }
+  /* Where you are: the level open in the breadcrumb, and the header when
+     the group of the table is open with no row of its own opened. */
+  #crumbs .here,
+  #title.here {
+    font-weight: 600;
+    color: var(--fg);
+    background: var(--selected);
+    box-shadow: inset 3px 0 0 var(--selected-bar);
+    border-radius: 3px;
+    padding: 0 4px 0 7px;
+  }
   #close-all {
     flex: none;
     font: inherit;
@@ -264,7 +284,7 @@
   </header>
   <div id="crumbs" class="hidden">
     <span class="trail" id="trail"></span>
-    <button id="close-all" type="button" title="Close every open Solid Progress group (they are rebuilt, from the inside out)">⏏ Close</button>
+    <button id="close-all" type="button" title="Back one level: closes the Solid Progress group being edited (it is rebuilt); at the top level, closes it">⏏ Close</button>
   </div>
   <div id="list">
     <div id="empty">Select or open a Solid Progress group.</div>
@@ -305,6 +325,8 @@
   var dragRow = null;
   // Nested rows folded by the user (by row id), kept across refreshes.
   var collapsed = {};
+  // Rows selected at the last refresh: a new selection scrolls into view.
+  var shownSelection = '';
   // True while the rows are replaced: the blur of a removed input is not
   // a rename.
   var rendering = false;
@@ -423,6 +445,8 @@
     if (row.nested) tr.classList.add('nested');
     if (row.depth) tr.classList.add('d' + Math.min(row.depth, 3));
     if (row.current) tr.classList.add('current');
+    if (row.in_path) tr.classList.add('opened');
+    if (row.here) tr.classList.add('here');
 
     // # : drag handle, position, up / down; the base row is fixed.
     var order = element('td', 'order');
@@ -629,6 +653,7 @@
 
     if (!data || !data.group) {
       title.textContent = 'Progress Table';
+      title.classList.remove('here');
       mode.classList.add('hidden');
       document.getElementById('crumbs').classList.add('hidden');
       table.classList.add('hidden');
@@ -647,6 +672,7 @@
     }
 
     title.textContent = data.name;
+    title.classList.toggle('here', !!data.at_top);
     mode.textContent = data.open ? 'Open: ' + data.current + ' — applied on exit' : 'Closed — applied now';
     renderCrumbs();
     mode.className = 'mode ' + (data.open ? 'open' : 'closed');
@@ -665,6 +691,10 @@
     });
     data.rows.forEach(function (row) {
       if (row.in_path) delete collapsed[row.id];
+      // The selected volume is never hidden in a folded group.
+      if (row.selected) {
+        for (var p = byId[row.parent]; p; p = byId[p.parent]) delete collapsed[p.id];
+      }
     });
     data.rows.forEach(function (row) {
       if (folded(row, byId)) return;
@@ -678,6 +708,14 @@
       empty.textContent = 'This Solid Progress group has no volume.';
       empty.classList.remove('hidden');
     }
+    var selection = data.rows.filter(function (row) { return row.selected; })
+                             .map(function (row) { return row.id; }).join(' ');
+    var first = tbody.querySelector('tr.selected');
+    if (first && selection !== shownSelection) {
+      if (first.scrollIntoViewIfNeeded) first.scrollIntoViewIfNeeded(false);
+      else first.scrollIntoView(false);
+    }
+    shownSelection = selection;
     document.getElementById('formula').textContent = formula(null);
     // Finalize works on a closed procedural solid only (SketchUp 2017
     // cannot close it from a plugin).
@@ -720,7 +758,7 @@
   }
 
   document.getElementById('close-all').addEventListener('click', function () {
-    if (data && data.group) send({ type: 'close_all', group: data.group });
+    if (data && data.group) send({ type: 'close', group: data.group });
     releaseSoon(0);
   });
 

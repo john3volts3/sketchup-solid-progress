@@ -33,7 +33,7 @@ It derives from [Solid Batch](https://github.com/john3volts3/sketchup-solid-batc
 - **Green selection frame** — a selected Solid Progress group shows a green frame, so you know it is not finalized yet.
 - **Native circles** — circles and arcs broken by the booleans are rebuilt as native SketchUp circles and arcs on every Result (center inference), as in Solid Batch; fast even on a face with many holes (1.1.1).
 - **Explode releases the volumes** — exploding a Solid Progress group gives back the Result and all the source volumes as plain, visible objects.
-- **Nesting** — a Solid Progress group can be a volume of another one (its Result is used, as Union, Shell or Subtract); the Progress Table shows the levels as a tree, and changes are rebuilt from the inside out.
+- **Nesting** — a Solid Progress group can be a volume of another one (its Result is used, as Union, Shell or Subtract); the Progress Table shows the levels as a tree, with a breadcrumb and a Close button that goes back one level, and changes are rebuilt from the inside out. Levels stack without limit.
 - **Where it fails** — when volumes only touch and their combination is not a solid, the message names the volumes and says where, plane by plane; the edges at fault are shown in magenta until Escape.
 - **Set Subtract Color / Set Repair Options** — as in Solid Batch; the settings of Solid Batch are taken over until you change them.
 
@@ -123,7 +123,7 @@ Il est issu de [Solid Batch](https://github.com/john3volts3/sketchup-solid-batch
 - **Cadre de sélection vert** — un groupe Solid Progress sélectionné a un cadre vert : vous savez qu'il n'est pas encore finalisé.
 - **Cercles natifs** — les cercles et arcs cassés par les booléens sont reconstruits en vrais cercles et arcs SketchUp sur chaque Result (inférence du centre), comme dans Solid Batch ; rapide même sur une face percée de nombreux trous (1.1.1).
 - **Explode libère les volumes** — éclater un groupe Solid Progress rend le Result et tous les volumes sources en objets ordinaires visibles.
-- **Imbrication** — un groupe Solid Progress peut être le volume d'un autre (son Result est utilisé, en Union, Shell ou Subtract) ; la Progress Table montre les niveaux en arbre, et les changements sont recalculés de l'intérieur vers l'extérieur.
+- **Imbrication** — un groupe Solid Progress peut être le volume d'un autre (son Result est utilisé, en Union, Shell ou Subtract) ; la Progress Table montre les niveaux en arbre, avec un fil d'Ariane et un bouton Close qui revient d'un niveau, et les changements sont recalculés de l'intérieur vers l'extérieur. Les niveaux s'empilent sans limite.
 - **Où ça bloque** — quand des volumes ne font que se toucher et que leur combinaison n'est pas un solide, le message nomme les volumes et dit où, plan par plan ; les arêtes en défaut s'affichent en magenta jusqu'à Échap.
 - **Set Subtract Color / Set Repair Options** — comme dans Solid Batch ; les réglages de Solid Batch sont repris tant que vous ne les changez pas.
 

@@ -2,7 +2,7 @@
 
 *[English version](USER_MANUAL_EN.md)*
 
-Version 2.1.1 — SketchUp Pro 2021 et SketchUp Make 2017
+Version 2.1.2 — SketchUp Pro 2021 et SketchUp Make 2017
 
 ## Présentation
 
@@ -79,47 +79,105 @@ Sélectionnez un ou plusieurs groupes ou composants solides, puis cliquez sur **
 
 ### Groupes Solid Progress imbriqués
 
-Un groupe Solid Progress peut être le volume d'un autre : sélectionnez-le avec les autres volumes et cliquez sur **Create Solid Progress**, ou déplacez-le dans un groupe Solid Progress ouvert. C'est son **Result** qui est utilisé, avec l'opération de sa ligne : Union, Shell ou Subtract. Peint de la couleur de soustraction, il est retiré : un outil de perçage fait de plusieurs volumes, par exemple.
+Un groupe Solid Progress peut être le volume d'un autre : sélectionnez-le avec les autres volumes et cliquez sur **Create Solid Progress**, ou déplacez-le dans un groupe Solid Progress ouvert. C'est son **Result** qui est utilisé, avec l'opération de sa ligne : Union, Shell ou Subtract. Peint de la couleur de soustraction, il est retiré : un outil de perçage fait de plusieurs volumes, par exemple. Peint d'une couleur, il la montre aussitôt : son Result prend la couleur du groupe (sans couleur, celle de sa Base). Les niveaux s'empilent sans limite.
 
 - Les changements sont recalculés de l'intérieur vers l'extérieur : fermer le groupe intérieur le recalcule, fermer l'extérieur recalcule le Result extérieur. **Rebuild**, **Finalize** et la table recalculent d'abord un groupe intérieur périmé.
-- La **Progress Table** du groupe extérieur montre les volumes de chaque groupe imbriqué sous sa ligne, en arbre dans la colonne # (├─ └─ │, numéros 2.1, 2.2…) ; ▾ / ▸ replie un niveau ; chaque niveau a sa teinte et un groupe imbriqué est marqué **SP**. Dans un groupe imbriqué, la table montre toujours tout l'arbre : les lignes en cours de modification sont surlignées, et le **fil d'Ariane** en haut (par exemple *Assemblage › Prise*) ramène d'un clic à un niveau extérieur ; **⏏ Close** referme tous les groupes Solid Progress ouverts (ils sont recalculés comme à toute sortie ; SketchUp 2020 et suivants). Chaque ligne agit sur son propre groupe (opération, On, nom, ordre dans son niveau), et les groupes fermés qui le contiennent sont recalculés tout de suite. La formule montre les niveaux entre parenthèses, par exemple `1 ∪ (2.1 − 2.2)`. Double-cliquez une ligne imbriquée pour ouvrir les groupes jusqu'à ce volume (SketchUp 2020 et suivants).
+- La **Progress Table** du groupe extérieur montre les volumes de chaque groupe imbriqué sous sa ligne, en arbre dans la colonne # (├─ └─ │, numéros 2.1, 2.2…) ; ▾ / ▸ replie un niveau ; chaque niveau a sa teinte et un groupe imbriqué est marqué **SP**. Dans un groupe imbriqué, la table montre toujours tout l'arbre : les lignes en cours de modification sont surlignées, et le **fil d'Ariane** en haut (par exemple *Assemblage › Prise*) ramène d'un clic à un niveau extérieur ; **⏏ Close** revient d'un niveau, et referme le groupe au niveau le plus haut (les groupes refermés sont recalculés comme à toute sortie ; SketchUp 2020 et suivants). Chaque ligne agit sur son propre groupe (opération, On, nom, ordre dans son niveau), et les groupes fermés qui le contiennent sont recalculés tout de suite. La formule montre les niveaux entre parenthèses, par exemple `1 ∪ (2.1 − 2.2)`. Double-cliquez une ligne imbriquée pour ouvrir les groupes jusqu'à ce volume (SketchUp 2020 et suivants).
+- Un clic dans le modèle sur un groupe imbriqué fermé le sélectionne **entier** (règle de SketchUp) : c'est sa ligne, marquée **SP**, qui s'allume dans la table. Double-cliquez pour entrer dedans et atteindre un de ses volumes.
 - Pour faire passer un volume dans un autre niveau, déplacez-le dans SketchUp (en ouvrant le groupe), pas dans la table.
 - **Explode** du groupe extérieur rend le groupe intérieur, toujours Solid Progress ; **Finalize** du groupe extérieur donne un seul solide ordinaire.
 
 ### Progress Table
 
-Ouverte par le menu, le bouton de la barre d'outils (après *Create*) ou un clic droit sur un groupe Solid Progress (sélectionné ou ouvert). La fenêtre reste ouverte pendant que vous travaillez.
+Ouverte par le menu, le bouton de la barre d'outils (après *Create*) ou un clic droit sur un groupe Solid Progress (sélectionné ou ouvert). La fenêtre reste ouverte pendant que vous travaillez : elle suit le groupe sélectionné ou ouvert.
 
 ![Progress Table d'un groupe Solid Progress ouvert](images/table-open.png)
 
-La table montre le groupe Solid Progress **ouvert** (le plus extérieur quand plusieurs sont ouverts), sinon le groupe Solid Progress **sélectionné**. Son en-tête affiche le nom et le mode :
+#### Vue d'ensemble
 
-- **Closed — applied now** (vert) : le groupe Solid Progress est fermé ; chaque changement recalcule le Result tout de suite et le garde sélectionné.
-- **Open — applied on exit** (jaune) : vous modifiez le groupe Solid Progress ; les changements sont appliqués quand vous le fermez.
+La table est la **recette** du Result : la liste des volumes du groupe, dans l'ordre où ils sont combinés, et ce que fait chacun. Exemple d'un groupe qui contient un groupe imbriqué, ouvert :
 
-| Colonne | Usage |
-|---------|-------|
-| **#** | Position. Glissez une ligne par sa poignée ⋮⋮ ou utilisez ▲▼ pour la déplacer. La ligne 1 (Base) ne bouge pas et rien ne passe au-dessus d'elle |
-| **On** | Décochez pour ignorer un volume (il reste dans le groupe). La Base est toujours active |
-| **Color** | Matériau du volume (hachures = matériau par défaut) |
-| **Name** | Cliquez pour renommer ; Entrée valide, Échap annule |
-| **Operation** | *Base* sur la ligne 1 ; Union / Shell / Subtract sur les autres lignes. **Subtract** peint le volume de la couleur de soustraction (son ancien matériau revient quand il quitte Subtract). Choisir **Base** sur une autre ligne en fait la nouvelle Base (l'ancienne passe en ligne 2) |
-| **State** | `Solid`, `Not solid`, `Disabled`, `Base must be added` (la ligne 1 a la couleur de soustraction), `Solid Progress` ou `Solid Progress: to rebuild` (groupe imbriqué) |
+```
+ Assemblage                                   [Open: Prise — applied on exit]   ← (1) en-tête
+ Assemblage › Prise                                             [⏏ Close]       ← (2) fil d'Ariane
+ ──────────────────────────────────────────────────────────────────────────────
+  #                    On  Color  Name             Operation   State           ← (3) colonnes
+         1             ☑   ■      Plaque           Base        Solid
+  ⋮⋮   ▾ 2       ▲ ▼   ☑   ■      SP Prise         Union       Solid Progress
+       ├─  2.1         ☑   ■      Bloc             Base        Solid           ← en jaune : en cours
+  ⋮⋮   └─  2.2   ▲ ▼   ☑   ■      Trou             Subtract    Solid           ←   de modification
+  ⋮⋮     3       ▲ ▼   ☐   ■      Perçage          Subtract    Disabled
+ ──────────────────────────────────────────────────────────────────────────────
+  1 ∪ (2.1 − 2.2)                              [Unions first]  [Finalize]       ← (4) pied
+```
 
-Sous la table :
+#### La logique du calcul
 
-- la **formule** des opérations réellement calculées, lignes actives dans l'ordre, par exemple `(((1 ∪ 2) shell 3) − 4) ∪ 6` ;
-- **Unions first** : la Base, puis toutes les Union et Shell, puis toutes les Subtract, chacune dans son ordre actuel ;
-- **Finalize** : comme *Finalize Solid Progress* sur le groupe Solid Progress affiché. Grisé tant qu'il est ouvert : fermez-le d'abord. Un Ctrl+Z le remet.
+1. **La ligne 1 est la Base** : c'est le volume de départ. Elle est toujours active, ne bouge pas, et ne peut pas être soustraite (on ne peut rien retirer de rien).
+2. **Chaque ligne suivante s'applique, dans l'ordre, au résultat obtenu jusque-là** :
+   - **Union** ajoute le volume ;
+   - **Shell** l'ajoute aussi, mais garde seulement l'enveloppe extérieure (*Outer Shell* de SketchUp) : les faces et vides intérieurs disparaissent ;
+   - **Subtract** retire le volume.
+3. **L'ordre compte.** Un trou retiré avant d'ajouter un tenon au même endroit laisse le tenon entier ; retiré après, il perce aussi le tenon. Par défaut, *Create* place toutes les additions d'abord, puis toutes les soustractions.
+4. **Une ligne décochée (On) est ignorée** : le volume reste dans le groupe, mais ne compte plus.
+5. **Un groupe Solid Progress imbriqué** (ligne marquée **SP**) compte par son propre **Result**, calculé d'abord avec ses propres lignes (2.1, 2.2…), puis combiné avec l'opération de **sa** ligne (Union, Shell ou Subtract).
 
-**Sélection :**
+La **formule** en bas de la table écrit exactement ce calcul (voir plus bas).
 
-- dans un groupe Solid Progress ouvert, un clic sur une ligne sélectionne son volume, et sélectionner un volume met sa ligne en surbrillance ;
-- sur un groupe Solid Progress fermé, un double-clic sur une ligne l'ouvre et sélectionne le volume (pas avec SketchUp 2017 : voir [SketchUp Make 2017](#sketchup-make-2017)).
+#### (1) L'en-tête
 
-**Clavier :** après une action dans la table (et quand la souris en sort), le clavier revient à SketchUp : ses raccourcis (W, etc.) marchent sans cliquer dans le modèle. Pendant la saisie d'un nom, le champ garde le clavier jusqu'à Entrée ou Échap.
+- **Le nom** du groupe Solid Progress affiché : le groupe **ouvert** (le plus extérieur quand plusieurs sont ouverts), sinon le groupe **sélectionné**.
+- **Le mode**, à droite :
+  - **Closed — applied now** (vert) : le groupe est fermé ; chaque changement dans la table recalcule le Result tout de suite ;
+  - **Open: … — applied on exit** (jaune) : vous êtes en train de modifier ce groupe (son nom est indiqué) ; les changements sont appliqués quand vous le fermez.
 
-Chaque changement de la table s'annule en **un seul Ctrl+Z**, recalcul compris.
+#### (2) Le fil d'Ariane
+
+Visible seulement quand un groupe Solid Progress est ouvert. Il montre le chemin des groupes ouverts, du plus extérieur au plus intérieur : *Assemblage › Prise*.
+
+- **Cliquer sur un nom** referme les groupes ouverts à l'intérieur de celui-ci et vous y ramène ; les groupes refermés sont recalculés, comme à toute sortie.
+- **⏏ Close** revient d'un niveau : il referme le groupe en cours de modification (qui est recalculé). Au niveau le plus haut, il referme ce dernier groupe.
+- SketchUp 2020 et suivants (SketchUp 2017 ne permet pas à un plugin de fermer un groupe : cliquez à l'extérieur).
+
+#### (3) Les colonnes
+
+| Colonne | Élément | Rôle |
+|---------|---------|------|
+| **#** | **⋮⋮** (la poignée à petits points) | La « poignée » de la ligne : le symbole habituel pour dire « attrapez ici pour faire glisser ». Cliquez-glissez la ligne par cette poignée pour changer sa place dans l'ordre ; une ligne bleue montre où elle va tomber. Une ligne ne se déplace qu'à l'intérieur de son niveau. Absente sur la Base, qui ne bouge pas |
+| | **├─ └─ │** | Les traits de l'arbre : ils relient les volumes d'un groupe imbriqué à sa ligne. **├─** : un volume suivi d'autres du même groupe ; **└─** : le dernier ; **│** : le niveau continue plus bas |
+| | **▾ / ▸** | Sur la ligne d'un groupe imbriqué : **▾** ses volumes sont affichés en dessous, **▸** ils sont repliés. Cliquez pour basculer. Le groupe en cours de modification n'est jamais replié |
+| | **1, 2, 2.1…** | Le numéro de la ligne, celui de la formule. **2.1** = le 1er volume du groupe de la ligne 2 |
+| | **▲ ▼** | Monter ou descendre la ligne d'un cran dans son niveau (même effet que le glisser). Grisés quand ce n'est pas possible ; absents sur la Base |
+| **On** | case à cocher | Décochée : le volume est ignoré par le calcul (il reste dans le groupe, la ligne passe en gris). La Base est toujours cochée |
+| **Color** | carré de couleur | La matière du volume (hachuré = matière par défaut). Un volume peint de la couleur de soustraction est retiré |
+| **Name** | **SP** (badge bleu) | Marque un groupe Solid Progress imbriqué : c'est son Result qui est utilisé ici |
+| | nom | Cliquez pour renommer le volume ; Entrée valide, Échap annule. Vide, le nom de sa définition s'affiche en gris |
+| **Operation** | liste | *Base* sur la ligne 1. Ailleurs : **Union**, **Shell**, **Subtract**, ou **Base** pour faire de cette ligne la nouvelle Base (l'ancienne passe en 2). **Subtract** peint le volume de la couleur de soustraction ; il retrouve sa matière s'il quitte Subtract |
+| **State** | texte | `Solid` : prêt. `Not solid` : le volume doit être réparé. `Disabled` : décoché. `Base must be added` : la ligne 1 a la couleur de soustraction. `Solid Progress` : groupe imbriqué à jour ; `Solid Progress: to rebuild` : il sera recalculé avant d'être utilisé |
+
+**Couleurs des lignes :**
+
+- **bleu franc, barre bleu foncé à gauche, en gras** : le volume sélectionné dans le modèle. C'est la seule ligne marquée ainsi, et elle passe devant toutes les autres couleurs. Si la sélection est un groupe imbriqué entier, c'est sa ligne (**SP**) qui est marquée ;
+- **bleu, sans barre** : là où vous êtes, c'est-à-dire la ligne du volume ou du groupe imbriqué ouvert le plus intérieur. Quand seul le groupe de la table est ouvert, c'est son nom qui est en bleu, dans l'en-tête et dans le fil d'Ariane ;
+- **jaune** : les volumes du groupe en cours de modification, et la ligne de chaque groupe ouvert pour y arriver ;
+- **gris** : un volume désactivé ;
+- **teinte de plus en plus foncée** : un niveau plus profond (volumes d'un groupe imbriqué) ;
+- **gras** : la ligne d'un groupe imbriqué.
+
+#### (4) Le pied de la table
+
+- **La formule** : le calcul réellement fait, lignes actives seulement, de gauche à droite. `∪` = Union, `shell` = Shell, `−` = Subtract ; les parenthèses montrent l'ordre : `((1 ∪ 2) shell 3) − 4` se lit « 1 plus 2, puis l'enveloppe avec 3, puis moins 4 ». Un groupe imbriqué apparaît comme sa propre formule entre parenthèses : `1 ∪ (2.1 − 2.2)`.
+- **Unions first** : remet de l'ordre en un clic : la Base, puis toutes les Union et Shell, puis toutes les Subtract, chacune dans son ordre actuel.
+- **Finalize** : comme *Finalize Solid Progress* sur le groupe affiché (un seul solide ordinaire, sans ses sources). Grisé tant que le groupe est ouvert : fermez-le d'abord. Un Ctrl+Z le ramène.
+
+#### Souris et clavier
+
+- **Clic sur une ligne** : sélectionne son volume dans le modèle quand son groupe est ouvert. Sinon, un message sous la table indique comment l'atteindre (double-clic).
+- **Sélection dans le modèle** : la ligne du volume sélectionné est marquée ; son groupe se déplie s'il était replié, et la table défile jusqu'à elle.
+- **Double-clic sur une ligne** : ouvre les groupes nécessaires (jusqu'au groupe imbriqué de la ligne) et sélectionne le volume (pas avec SketchUp 2017 : voir [SketchUp Make 2017](#sketchup-make-2017)).
+- **Clavier** : après une action dans la table (et quand la souris en sort), le clavier revient à SketchUp, pour que ses raccourcis (W, etc.) marchent sans cliquer dans le modèle. Pendant la saisie d'un nom, le champ garde le clavier jusqu'à Entrée ou Échap.
+
+Chaque changement fait dans la table est **un seul Ctrl+Z**, recalcul compris.
 
 ### Rebuild Solid Progress
 

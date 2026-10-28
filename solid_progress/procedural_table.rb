@@ -143,7 +143,10 @@ module SolidProcedural
       opened = Procedural.open_groups(model)
       current = opened.last
       rows.each { |r| r[:current] = !current.nil? && r[:group] == current.entityID }
-      { group: group.entityID, name: Procedural.group_label(group), open: path.include?(group), rows: rows,
+      # Inside the group of the table with no row of its own being edited:
+      # the header and the breadcrumb say where you are.
+      at_top = path.include?(group) && here_of(path).nil?
+      { group: group.entityID, name: Procedural.group_label(group), open: path.include?(group), rows: rows, at_top: at_top,
         notice: notice, path: opened.map { |g| { group: g.entityID, name: Procedural.group_label(g) } },
         current: current && Procedural.group_label(current) }
     end
@@ -180,10 +183,20 @@ module SolidProcedural
           color: color_hex(s.material),
           state: state,
           level: level,
-          selected: model.selection.include?(s) || path.include?(s)
+          # Only the volume selected in the model: the open groups are in_path.
+          selected: model.selection.include?(s),
+          # Where you are: the innermost volume or nested group opened.
+          here: s == here_of(path)
         }
         [row] + (nested ? table_rows(model, s, path, depth + 1, "#{label}.", id) : [])
       end
+    end
+
+    # The innermost entity of +path+ that is a row of the table: a volume
+    # (plain or nested Solid Progress group) opened in a Solid Progress
+    # group; nil when only the Solid Progress groups themselves are open.
+    def self.here_of(path)
+      path.each_cons(2).map { |outer, inner| inner if Procedural.procedural?(outer) }.compact.last
     end
 
     # The groups from +group+ down to the Solid Progress group nested in it
@@ -232,7 +245,7 @@ module SolidProcedural
       group = chain.last
       case data['type']
       when 'select'
-        select_row(model, group, data['key'])
+        select_row(model, group, data['key'], table)
       when 'open'
         open_row(model, chain, data['key'])
       when 'toggle'
@@ -251,8 +264,11 @@ module SolidProcedural
         finalize_group(model, group)
       when 'close_to'
         close_to(model, chain.first, group)
-      when 'close_all'
-        close_to(model, chain.first, nil)
+      when 'close'
+        # One level back: the innermost open Solid Progress group closes;
+        # at the top level, the last one.
+        opened = Procedural.open_groups(model)
+        close_to(model, chain.first, opened.length > 1 ? opened[-2] : nil)
       end
       refresh_later
     rescue => e
@@ -263,12 +279,21 @@ module SolidProcedural
 
     # Selects the volume of a row when its procedural solid is open; when
     # a source of it is being edited, its context is closed first.
-    def self.select_row(model, group, key)
+    # Click: selects the volume when its group is open (the groups opened
+    # inside it close); else says how to reach it. +table+: the group of the
+    # table, which shows the notice.
+    def self.select_row(model, group, key, table = group)
       source = Procedural.row_lookup(group)[key]
       path = model.active_path || []
-      return unless source && path.include?(group)
+      return unless source
+      unless path.include?(group)
+        @notice = [table, active_path_settable?(model) ?
+          'Double-click the row to open its group and select the volume.' :
+          'Open its group in the model to select the volume.']
+        return
+      end
       unless path.last == group
-        return status_no_active_path(group, 'Close the edited volume first') unless active_path_settable?(model)
+        return status_no_active_path(table, 'Close the edited volume first') unless active_path_settable?(model)
         model.active_path = path[0..path.index(group)]
       end
       model.selection.clear
@@ -288,7 +313,7 @@ module SolidProcedural
         return status_no_active_path(chain.first, 'Double-click the Solid Progress group in the model to open it') unless active_path_settable?(model)
         model.active_path = path + missing
       end
-      select_row(model, group, key)
+      select_row(model, group, key, chain.first)
     end
 
     # Finalize button: the procedural solid shown, closed (the button is

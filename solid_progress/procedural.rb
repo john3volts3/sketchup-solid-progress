@@ -342,7 +342,7 @@ module SolidProcedural
           end
         end
 
-        result.material = active.first.material
+        result.material = result_material(group)
         # A single component volume gives a component instance, not a group.
         CircleRestore.inner_entities(result).grep(Sketchup::Face).each do |f|
           f.material = nil if subtract_material?(f.material)
@@ -1075,6 +1075,30 @@ module SolidProcedural
       return if outdated.empty?
       Sketchup.status_text = "Solid Progress — #{outdated.length} Solid Progress group(s) out of date: " \
                              'open and close them, or use Rebuild'
+    end
+
+    # Material of the Result: the one of the group when it is painted (the
+    # Result hides its group), else the one of the base.
+    def self.result_material(group)
+      base = sources_of(group).first
+      group.material || (base && base.material)
+    end
+
+    # After an operation: a Solid Progress group of the active context just
+    # painted shows its new color on its Result, in a transparent operation
+    # appended to the paint.
+    def self.sync_colors(model)
+      groups = model.active_entities.select do |g|
+        procedural?(g) && (result = result_of(g)) && result.material != result_material(g)
+      end
+      return if groups.empty?
+      model.start_operation('Solid Progress — Color', true, false, true)
+      groups.each do |g|
+        # A copied group shares its definition: the copy must not change too.
+        g.make_unique
+        result_of(g).material = result_material(g)
+      end
+      model.commit_operation
     end
 
     # After an operation: the volumes left by an Explode of a procedural

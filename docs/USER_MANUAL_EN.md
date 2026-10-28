@@ -2,7 +2,7 @@
 
 *[Version française](USER_MANUAL_FR.md)*
 
-Version 2.1.1 — SketchUp Pro 2021 and SketchUp Make 2017
+Version 2.1.2 — SketchUp Pro 2021 and SketchUp Make 2017
 
 ## Overview
 
@@ -79,47 +79,105 @@ Select one or more solid groups or components, then click **Create Solid Progres
 
 ### Nested Solid Progress groups
 
-A Solid Progress group can be a volume of another one: select it with the other volumes and click **Create Solid Progress**, or move it into an open Solid Progress group. Its **Result** is used, with the operation of its row: Union, Shell or Subtract. Painted with the subtract color, it is subtracted: a drilling tool made of several volumes, for example.
+A Solid Progress group can be a volume of another one: select it with the other volumes and click **Create Solid Progress**, or move it into an open Solid Progress group. Its **Result** is used, with the operation of its row: Union, Shell or Subtract. Painted with the subtract color, it is subtracted: a drilling tool made of several volumes, for example. Painted with a color, it shows it at once: its Result takes the color of the group (without one, the color of its Base). Levels stack without limit.
 
 - Changes are rebuilt from the inside out: closing the inner group rebuilds it, closing the outer one rebuilds the outer Result. **Rebuild**, **Finalize** and the table rebuild an out-of-date inner group first.
-- The **Progress Table** of the outer group shows the volumes of each nested group under its row, as a tree in the # column (├─ └─ │, numbers 2.1, 2.2…); ▾ / ▸ folds a level; each level has its own tint and a nested group is marked **SP**. Inside a nested group, the table still shows the whole tree: the rows being edited are highlighted, and the **breadcrumb** at the top (for example *Assembly › Socket*) takes you back to an outer level with a click; **⏏ Close** closes every open Solid Progress group (they are rebuilt as on any exit; SketchUp 2020 and later). Each row acts on its own group (operation, On, name, order within its level), and the closed groups that hold it are rebuilt at once. The formula shows the levels in parentheses, for example `1 ∪ (2.1 − 2.2)`. Double-click a nested row to open the groups down to that volume (SketchUp 2020 and later).
+- The **Progress Table** of the outer group shows the volumes of each nested group under its row, as a tree in the # column (├─ └─ │, numbers 2.1, 2.2…); ▾ / ▸ folds a level; each level has its own tint and a nested group is marked **SP**. Inside a nested group, the table still shows the whole tree: the rows being edited are highlighted, and the **breadcrumb** at the top (for example *Assembly › Socket*) takes you back to an outer level with a click; **⏏ Close** goes back one level, and closes the group at the top level (the groups closed are rebuilt as on any exit; SketchUp 2020 and later). Each row acts on its own group (operation, On, name, order within its level), and the closed groups that hold it are rebuilt at once. The formula shows the levels in parentheses, for example `1 ∪ (2.1 − 2.2)`. Double-click a nested row to open the groups down to that volume (SketchUp 2020 and later).
+- A click in the model on a closed nested group selects it **whole** (a SketchUp rule): its row, marked **SP**, lights up in the table. Double-click to enter it and reach one of its volumes.
 - To move a volume to another level, move it in SketchUp (open the group), not in the table.
 - **Explode** of the outer group gives back the inner group, still a Solid Progress group; **Finalize** of the outer group gives one plain solid.
 
 ### Progress Table
 
-Opened by the menu, the toolbar button (after *Create*) or a right-click on a Solid Progress group (selected or open). The window stays open while you work.
+Opened by the menu, the toolbar button (after *Create*) or a right-click on a Solid Progress group (selected or open). The window stays open while you work: it follows the selected or open group.
 
 ![Progress Table of an open Solid Progress group](images/table-open.png)
 
-The table shows the **open** Solid Progress group (the outermost one when several are open), or else the **selected** one. Its header shows the name and the mode:
+#### Overview
 
-- **Closed — applied now** (green): the Solid Progress group is closed; every change rebuilds the Result at once and keeps it selected.
-- **Open — applied on exit** (yellow): you are editing the Solid Progress group; changes are applied when you close it.
+The table is the **recipe** of the Result: the list of the volumes of the group, in the order they are combined, and what each one does. Example of a group holding a nested group, open:
 
-| Column | Use |
-|--------|-----|
-| **#** | Position. Drag a row by its handle ⋮⋮ or use ▲▼ to move it. Row 1 (Base) cannot move and nothing can go above it |
-| **On** | Uncheck to ignore a volume (it stays in the group). The Base is always enabled |
-| **Color** | Material of the volume (hatched = default material) |
-| **Name** | Click to rename; Enter validates, Escape cancels |
-| **Operation** | *Base* on row 1; Union / Shell / Subtract on the other rows. **Subtract** paints the volume with the subtract color (its former material comes back when it leaves Subtract). Choosing **Base** on another row makes it the new Base (the former Base goes to row 2) |
-| **State** | `Solid`, `Not solid`, `Disabled`, `Base must be added` (row 1 has the subtract color), `Solid Progress` or `Solid Progress: to rebuild` (nested group) |
+```
+ Assembly                                     [Open: Socket — applied on exit]  ← (1) header
+ Assembly › Socket                                              [⏏ Close]       ← (2) breadcrumb
+ ──────────────────────────────────────────────────────────────────────────────
+  #                    On  Color  Name             Operation   State           ← (3) columns
+         1             ☑   ■      Plate            Base        Solid
+  ⋮⋮   ▾ 2       ▲ ▼   ☑   ■      SP Socket        Union       Solid Progress
+       ├─  2.1         ☑   ■      Block            Base        Solid           ← yellow: being
+  ⋮⋮   └─  2.2   ▲ ▼   ☑   ■      Hole             Subtract    Solid           ←   edited
+  ⋮⋮     3       ▲ ▼   ☐   ■      Drilling         Subtract    Disabled
+ ──────────────────────────────────────────────────────────────────────────────
+  1 ∪ (2.1 − 2.2)                              [Unions first]  [Finalize]       ← (4) footer
+```
 
-Below the table:
+#### How the Result is computed
 
-- the **formula** of the operations actually computed, enabled rows in order, for example `(((1 ∪ 2) shell 3) − 4) ∪ 6`;
-- **Unions first**: the Base, then every Union and Shell, then every Subtract, each in its current order;
-- **Finalize**: the same as *Finalize Solid Progress* on the Solid Progress group shown. Greyed while it is open: close it first. One Ctrl+Z brings it back.
+1. **Row 1 is the Base**: the starting volume. It is always enabled, never moves, and cannot be subtracted (nothing can be removed from nothing).
+2. **Each next row is applied, in order, to the result so far**:
+   - **Union** adds the volume;
+   - **Shell** adds it too, but keeps only the outer envelope (SketchUp's *Outer Shell*): inner faces and enclosed voids disappear;
+   - **Subtract** removes the volume.
+3. **The order matters.** A hole removed before a pin is added at the same place leaves the pin whole; removed after, it drills the pin too. By default, *Create* puts every addition first, then every subtraction.
+4. **An unchecked row (On) is ignored**: the volume stays in the group but no longer counts.
+5. **A nested Solid Progress group** (row marked **SP**) counts through its own **Result**, computed first with its own rows (2.1, 2.2…), then combined with the operation of **its** row (Union, Shell or Subtract).
 
-**Selection:**
+The **formula** at the bottom of the table writes exactly this computation (see below).
 
-- in an open Solid Progress group, clicking a row selects its volume, and selecting a volume highlights its row;
-- on a closed Solid Progress group, double-clicking a row opens it and selects the volume (not with SketchUp 2017: see [SketchUp Make 2017](#sketchup-make-2017)).
+#### (1) Header
 
-**Keyboard:** after an action in the table (and when the mouse leaves it), the keyboard goes back to SketchUp, so its shortcuts (W, etc.) work without clicking in the model. While you type a name, the field keeps the keyboard until Enter or Escape.
+- **The name** of the Solid Progress group shown: the **open** one (the outermost one when several are open), or else the **selected** one.
+- **The mode**, on the right:
+  - **Closed — applied now** (green): the group is closed; every change in the table rebuilds the Result at once;
+  - **Open: … — applied on exit** (yellow): you are editing this group (its name is shown); changes are applied when you close it.
 
-Every change of the table is **one Ctrl+Z**, its rebuild included.
+#### (2) Breadcrumb
+
+Shown only while a Solid Progress group is open. It shows the path of the open groups, outermost first: *Assembly › Socket*.
+
+- **Click a name** to close the groups opened inside it and go back to it; the groups closed are rebuilt, as on any exit.
+- **⏏ Close** goes back one level: it closes the group being edited (which is rebuilt). At the top level, it closes that last group.
+- SketchUp 2020 and later (SketchUp 2017 does not let a plugin close a group: click outside it).
+
+#### (3) Columns
+
+| Column | Element | Use |
+|--------|---------|-----|
+| **#** | **⋮⋮** (the dotted grip) | The "handle" of the row: the usual sign for "grab here to drag". Drag the row by this handle to change its place in the order; a blue line shows where it will land. A row moves only within its own level. Not on the Base, which never moves |
+| | **├─ └─ │** | The tree lines: they link the volumes of a nested group to its row. **├─**: a volume followed by others of the same group; **└─**: the last one; **│**: the level goes on below |
+| | **▾ / ▸** | On the row of a nested group: **▾** its volumes are shown below, **▸** they are folded. Click to switch. The group being edited is never folded |
+| | **1, 2, 2.1…** | The number of the row, the one used in the formula. **2.1** = the 1st volume of the group of row 2 |
+| | **▲ ▼** | Move the row one step up or down within its level (same as dragging). Greyed when not possible; not on the Base |
+| **On** | check box | Unchecked: the volume is ignored by the computation (it stays in the group, the row turns grey). The Base is always checked |
+| **Color** | color square | The material of the volume (hatched = default material). A volume painted with the subtract color is subtracted |
+| **Name** | **SP** (blue badge) | Marks a nested Solid Progress group: its Result is used here |
+| | name | Click to rename the volume; Enter validates, Escape cancels. When empty, the name of its definition shows in grey |
+| **Operation** | list | *Base* on row 1. Elsewhere: **Union**, **Shell**, **Subtract**, or **Base** to make this row the new Base (the former one goes to row 2). **Subtract** paints the volume with the subtract color; its material comes back when it leaves Subtract |
+| **State** | text | `Solid`: ready. `Not solid`: the volume must be repaired. `Disabled`: unchecked. `Base must be added`: row 1 has the subtract color. `Solid Progress`: nested group up to date; `Solid Progress: to rebuild`: it will be rebuilt before it is used |
+
+**Row colors:**
+
+- **strong blue, dark blue bar on the left, bold**: the volume selected in the model. It is the only row marked this way, and it shows above every other color. When the selection is a whole nested group, its row (**SP**) is marked;
+- **blue, without the bar**: where you are, that is the row of the innermost volume or nested group opened. When only the group of the table is open, its name is in blue, in the header and in the breadcrumb;
+- **yellow**: the volumes of the group being edited, and the row of each open group on the way to it;
+- **grey**: a disabled volume;
+- **darker and darker tint**: a deeper level (volumes of a nested group);
+- **bold**: the row of a nested group.
+
+#### (4) Footer
+
+- **The formula**: the computation actually made, enabled rows only, from left to right. `∪` = Union, `shell` = Shell, `−` = Subtract; the parentheses show the order: `((1 ∪ 2) shell 3) − 4` reads "1 plus 2, then the envelope with 3, then minus 4". A nested group shows as its own formula in parentheses: `1 ∪ (2.1 − 2.2)`.
+- **Unions first**: puts the order straight in one click: the Base, then every Union and Shell, then every Subtract, each in its current order.
+- **Finalize**: the same as *Finalize Solid Progress* on the group shown (one plain solid, without its sources). Greyed while the group is open: close it first. One Ctrl+Z brings it back.
+
+#### Mouse and keyboard
+
+- **Click a row**: selects its volume in the model when its group is open. Otherwise, a message under the table says how to reach it (double-click).
+- **Selection in the model**: the row of the selected volume is marked; its group unfolds if it was folded, and the table scrolls to it.
+- **Double-click a row**: opens the groups needed (down to the nested group of the row) and selects the volume (not with SketchUp 2017: see [SketchUp Make 2017](#sketchup-make-2017)).
+- **Keyboard**: after an action in the table (and when the mouse leaves it), the keyboard goes back to SketchUp, so its shortcuts (W, etc.) work without clicking in the model. While you type a name, the field keeps the keyboard until Enter or Escape.
+
+Every change made in the table is **one Ctrl+Z**, its rebuild included.
 
 ### Rebuild Solid Progress
 

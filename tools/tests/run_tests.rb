@@ -1645,8 +1645,8 @@ module SolidProcedural
         end
 
         # Rebuild on exit (2021): hole back to 4 x 4 from inside the inner
-        # group; the table keeps the whole tree; its breadcrumb goes back to
-        # the outer group (inner rebuilt), then closes it (outer rebuilt).
+        # group; the table keeps the whole tree; Close goes back one level
+        # (inner rebuilt), then closes the outer group (outer rebuilt).
         if tests.path_settable?(model)
           c.later do
             model.active_path = [outer, inner]
@@ -1665,17 +1665,26 @@ module SolidProcedural
             hole.transform!(Geom::Transformation.scaling(hole.bounds.min, 0.5, 1, 1))
             model.commit_operation
             tests.messages.clear
-            ProceduralTable.on_action(JSON.generate(type: 'close_to', group: outer.entityID))
+            ProceduralTable.on_action(JSON.generate(type: 'close', group: outer.entityID))
           end
           c.later do
             c.check(model.active_path == [outer] && near[Procedural.result_of(inner).volume, 3840] &&
-                    tests.messages.empty?, 'breadcrumb: back to the outer group, inner rebuilt (3840)',
+                    tests.messages.empty?, 'Close: back one level to the outer group, inner rebuilt (3840)',
                     "path=#{(model.active_path || []).length} #{tests.messages.join(' / ')}")
-            ProceduralTable.on_action(JSON.generate(type: 'close_all', group: outer.entityID))
+            model.active_path = [outer, inner]
+          end
+          # The breadcrumb goes back to the outer group too.
+          c.later do
+            ProceduralTable.on_action(JSON.generate(type: 'close_to', group: outer.entityID))
+          end
+          c.later do
+            c.check(model.active_path == [outer], 'breadcrumb: back to the outer group',
+                    "path=#{(model.active_path || []).length}")
+            ProceduralTable.on_action(JSON.generate(type: 'close', group: outer.entityID))
           end
           c.later do
             c.check((model.active_path || []).empty? && tests.messages.empty? &&
-                    near[Procedural.result_of(outer).volume, 17856], 'Close: outer rebuilt on exit (17856)',
+                    near[Procedural.result_of(outer).volume, 17856], 'Close at the top level: outer rebuilt (17856)',
                     "#{tests.messages.join(' / ')} #{Procedural.result_of(outer).volume.round(3)}")
           end
         else
@@ -1691,6 +1700,210 @@ module SolidProcedural
           solid = model.selection.first
           c.check(solid && !Procedural.procedural?(solid) && !inner.valid? && near[solid.volume, volume],
                   'Finalize: one plain solid, same volume', tests.messages.join(' / '))
+          model.start_operation('Solid Procedural tests — clean up', true)
+          model.entities.erase_entities([solid].compact.select(&:valid?))
+          model.commit_operation
+        end
+      end
+
+      # Three levels: core (block 10 x 10 x 10 with a 2 x 2 hole, 960) in mid
+      # (slab 24 x 14 x 4 under it, wider, overlapping it by 1:
+      # 1344 + 864 = 2208) in top (plate 40 x 30 x 4 under mid, overlapping it
+      # by 1: 4800 + 2208 - 336 = 6672). No face of one lies on a face of another.
+      test 'T24 Three levels of nesting' do |c, model|
+        near = ->(a, b) { (a - b).abs < 0.01 }
+        volumes = ->(*groups) { groups.map { |g| Procedural.result_of(g).volume.round(3) } }
+        block = tests.box(model.entities, 0, 800, 0, 10, 10, 10, tests.base_material(model))
+        hole = tests.box(model.entities, 4, 804, -1, 2, 2, 12, tests.red(model))
+        tests.select(model, block, hole)
+        tests.messages.clear
+        Procedural.do_create
+        core = model.selection.find { |e| Procedural.procedural?(e) }
+        next unless c.check(core && near[Procedural.result_of(core).volume, 960], 'core group: Result 960',
+                            tests.messages.join(' / '))
+        slab = tests.box(model.entities, -2, 798, -3, 24, 14, 4)
+        tests.select(model, slab, core)
+        Procedural.do_create
+        mid = model.selection.find { |e| Procedural.procedural?(e) }
+        plate = tests.box(model.entities, -10, 790, -6, 40, 30, 4)
+        tests.select(model, plate, mid)
+        Procedural.do_create
+        top = model.selection.find { |e| Procedural.procedural?(e) }
+        mid = top && Procedural.sources_of(top).find { |s| Procedural.procedural?(s) }
+        core = mid && Procedural.sources_of(mid).find { |s| Procedural.procedural?(s) }
+        hole = core && Procedural.sources_of(core).find { |s| s.get_attribute(Procedural::DICT, 'op') == 'subtract' }
+        next unless c.check(top && mid && core && hole && tests.messages.empty?,
+                            'Create of three nested levels', tests.messages.join(' / '))
+        c.check(volumes.call(core, mid, top) == [960, 2208, 6672], 'Results: core 960, mid 2208, top 6672',
+                volumes.call(core, mid, top).inspect)
+
+        # Table of the top group: the whole tree, numbered down to "2.2.2".
+        tests.select(model, top)
+        rows = ProceduralTable.payload(model)[:rows] || []
+        deepest = rows.select { |r| r[:depth] == 2 }
+        c.check(rows.length == 6 && deepest.length == 2 &&
+                deepest.all? { |r| r[:group] == core.entityID && r[:label].count('.') == 2 },
+                'table: three levels, the core rows at depth 2 ("x.y.z")',
+                rows.map { |r| "#{r[:label]}:#{r[:depth]}" }.join(' '))
+        # Closed: no row is selected; a click on a row says how to reach it.
+        ProceduralTable.on_action(JSON.generate(type: 'select', group: core.entityID, key: deepest.first[:key]))
+        notice = ProceduralTable.payload(model)[:notice].to_s
+        c.check(rows.none? { |r| r[:selected] } && notice.include?('select the volume') &&
+                model.selection.to_a == [top], 'table: a click on a row of a closed group says how to select it',
+                notice)
+
+        # Hole twice as wide, changed without opening: Rebuild of the top
+        # group rebuilds core, then mid, then top (920, 2172, 6636).
+        model.start_operation('Solid Procedural tests — wider hole', true)
+        hole.transform!(Geom::Transformation.scaling(hole.bounds.min, 2, 1, 1))
+        model.commit_operation
+        c.check([core, mid, top].all? { |g| Procedural.stale?(g) }, 'the three groups out of date')
+        tests.select(model, top)
+        tests.messages.clear
+        Procedural.do_rebuild
+        c.check(tests.messages.empty? && volumes.call(core, mid, top) == [920, 2172, 6636] &&
+                [core, mid, top].none? { |g| Procedural.stale?(g) }, 'Rebuild: core, mid, then top (920, 2172, 6636)',
+                "#{tests.messages.join(' / ')} #{volumes.call(core, mid, top).inspect}")
+
+        # Hole row of the core set to Union from the table of the top group:
+        # core, mid, then top rebuilt (1016, 2252, 6716), then Subtract again.
+        hole_row = deepest.find { |r| r[:op] == 'subtract' }
+        if c.check(hole_row, 'table: the hole row at depth 2')
+          act = ->(op) do
+            tests.messages.clear
+            ProceduralTable.on_action(JSON.generate(type: 'op', group: core.entityID, key: hole_row[:key], op: op))
+            [volumes.call(core, mid, top), tests.messages.join(' / ')]
+          end
+          union = act.call('union')
+          back = act.call('subtract')
+          c.check(union == [[1016, 2252, 6716], ''] && back == [[920, 2172, 6636], ''] && !Procedural.stale?(top),
+                  'table: a row at depth 2 changes core, then mid, then top', [union, back].inspect)
+        end
+
+        # The top group painted: its Result shows the color at once, and
+        # after a Rebuild; unpainted, the color of its base again.
+        green = model.materials['Solid Progress tests green'] || model.materials.add('Solid Progress tests green')
+        green.color = Sketchup::Color.new(0, 160, 0)
+        model.start_operation('Solid Procedural tests — paint top', true)
+        top.material = green
+        model.commit_operation
+        painted = kept = nil
+        c.later do
+          painted = Procedural.result_of(top).material == green
+          tests.select(model, top)
+          Procedural.do_rebuild
+          kept = Procedural.result_of(top).material == green
+          model.start_operation('Solid Procedural tests — unpaint top', true)
+          top.material = nil
+          model.commit_operation
+        end
+        c.later do
+          base = Procedural.sources_of(top).first.material
+          c.check(painted && kept && Procedural.result_of(top).material == base,
+                  'a painted group shows its color on its Result, after a Rebuild too; unpainted, the base color',
+                  "painted=#{painted} kept=#{kept}")
+        end
+
+
+        # Rebuild on exit (2021): inside the core, hole back to 2 x 2; Close
+        # goes back one level at a time (core, then mid, then top rebuilt).
+        if tests.path_settable?(model)
+          c.later do
+            model.active_path = [top]
+          end
+          # Where you are: the header at the top level, then the row of the
+          # plain volume opened.
+          c.later do
+            payload = ProceduralTable.payload(model)
+            c.check(payload[:at_top] && (payload[:rows] || []).none? { |r| r[:here] },
+                    'where you are: the header when only the top group is open')
+            model.active_path = [top, mid, core, hole]
+          end
+          c.later do
+            payload = ProceduralTable.payload(model)
+            here = (payload[:rows] || []).select { |r| r[:here] }
+            c.check(!payload[:at_top] && here.length == 1 && here.first[:group] == core.entityID &&
+                    here.first[:op] == 'subtract', 'where you are: the row of the plain volume opened',
+                    here.map { |r| r[:label] }.join(','))
+            model.active_path = [top, mid, core]
+          end
+          c.later do
+            payload = ProceduralTable.payload(model)
+            current = (payload[:rows] || []).select { |r| r[:current] }
+            c.check(payload[:group] == top.entityID && (payload[:path] || []).length == 3 &&
+                    current.length == 2 && current.all? { |r| r[:group] == core.entityID },
+                    'table: the whole tree from the top group, the core rows marked as edited',
+                    "group=#{payload[:group] == top.entityID} path=#{(payload[:path] || []).length} " \
+                    "current=#{current.length}")
+            # Only the selected volume is marked selected, not the open groups.
+            model.selection.clear
+            model.selection.add(hole)
+            rows = ProceduralTable.payload(model)[:rows] || []
+            selected = rows.select { |r| r[:selected] }
+            here = rows.select { |r| r[:here] }
+            c.check(selected.length == 1 && selected.first[:group] == core.entityID &&
+                    selected.first[:op] == 'subtract' && rows.count { |r| r[:in_path] } == 2 &&
+                    here.length == 1 && here.first[:nested] && here.first[:group] == mid.entityID,
+                    'table: only the selected volume marked, open groups apart, the core row where you are',
+                    "selected=#{selected.map { |r| r[:label] }.join(',')} in_path=#{rows.count { |r| r[:in_path] }}")
+            model.start_operation('Solid Procedural tests — narrower hole', true)
+            hole.transform!(Geom::Transformation.scaling(hole.bounds.min, 0.5, 1, 1))
+            model.commit_operation
+            tests.messages.clear
+            ProceduralTable.on_action(JSON.generate(type: 'close', group: top.entityID))
+          end
+          c.later do
+            c.check(model.active_path == [top, mid] && near[Procedural.result_of(core).volume, 960] &&
+                    tests.messages.empty?, 'Close: back to mid, core rebuilt (960)',
+                    "path=#{(model.active_path || []).length} #{tests.messages.join(' / ')}")
+            # The core selected whole (a click on it from mid): its row only.
+            model.selection.clear
+            model.selection.add(core)
+            selected = (ProceduralTable.payload(model)[:rows] || []).select { |r| r[:selected] }
+            c.check(selected.length == 1 && selected.first[:nested] && selected.first[:group] == mid.entityID,
+                    'table: the nested group selected whole, its row only', selected.map { |r| r[:label] }.join(','))
+            # Painted from mid: the core shows the color at once.
+            model.start_operation('Solid Procedural tests — paint core', true)
+            core.material = green
+            model.commit_operation
+          end
+          c.later do
+            c.check(Procedural.result_of(core).material == green, 'a nested group painted shows its color at once')
+            ProceduralTable.on_action(JSON.generate(type: 'close', group: top.entityID))
+          end
+          c.later do
+            c.check(model.active_path == [top] && near[Procedural.result_of(mid).volume, 2208] &&
+                    tests.messages.empty?, 'Close: back to top, mid rebuilt (2208)',
+                    "path=#{(model.active_path || []).length} #{tests.messages.join(' / ')}")
+            model.active_path = [top, mid, core]
+          end
+          # The breadcrumb jumps two levels up at once.
+          c.later do
+            ProceduralTable.on_action(JSON.generate(type: 'close_to', group: top.entityID))
+          end
+          c.later do
+            c.check(model.active_path == [top], 'breadcrumb: from the core straight back to top',
+                    "path=#{(model.active_path || []).length}")
+            ProceduralTable.on_action(JSON.generate(type: 'close', group: top.entityID))
+          end
+          c.later do
+            c.check((model.active_path || []).empty? && tests.messages.empty? &&
+                    near[Procedural.result_of(top).volume, 6672], 'Close at the top level: top rebuilt (6672)',
+                    "#{tests.messages.join(' / ')} #{Procedural.result_of(top).volume.round(3)}")
+          end
+        else
+          c.note('rebuild on exit not tested: no Model#active_path=')
+        end
+
+        # Finalize of the top group: one plain solid, the nested groups gone.
+        c.later do
+          volume = Procedural.result_of(top).volume
+          tests.select(model, top)
+          tests.messages.clear
+          Procedural.do_finalize
+          solid = model.selection.first
+          c.check(solid && !Procedural.procedural?(solid) && !mid.valid? && !core.valid? &&
+                  near[solid.volume, volume], 'Finalize: one plain solid, same volume', tests.messages.join(' / '))
           model.start_operation('Solid Procedural tests — clean up', true)
           model.entities.erase_entities([solid].compact.select(&:valid?))
           model.commit_operation

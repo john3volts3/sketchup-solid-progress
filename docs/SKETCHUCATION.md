@@ -17,6 +17,8 @@ Text for the SketchUcation PluginStore listing: copy each section into the match
 > **2026-10-28**: version **2.1.0** delivered, without a GitHub release (replaced by 2.1.1 the same day).
 >
 > **2026-10-28**: version **2.1.1** delivered (release `v2.1.1`, which replaces 2.0.2 to 2.1.0): nesting, hierarchical Progress Table with breadcrumb. PluginStore entry updated to 2.1.1 (version, release notes, "Nesting" in Features), `.rbz` replaced by the author (checked after reloading): approval again. GitHub release `v2.1.1` created by the author.
+>
+> **2026-10-28**: version **2.1.2** delivered, without a GitHub release; the PluginStore entry stays at 2.1.1 (awaiting approval).
 
 ---
 
@@ -102,6 +104,10 @@ Find and fix SketchUp's own boolean errors on aligned faces: https://youtu.be/RZ
 ---
 
 ## Release Notes
+
+**v2.1.2** (2026-10-28)
+- Progress Table: Close goes back one level; the selected row is clearly marked, both ways (click in the table or in the model); every element of the window explained in the manual
+- A painted Solid Progress group shows its color at once
 
 **v2.1.1** (2026-10-28)
 - Progress Table: the whole tree stays in view inside a nested group, a breadcrumb takes you back to an outer level, and the levels are easier to tell apart
