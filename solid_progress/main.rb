@@ -87,7 +87,7 @@ module SolidProcedural
   DEFAULT_MIN_ARC_SEGMENTS = 6
 
   REGISTRY_SECTION = 'SolidProcedural'.freeze
-  # An option not set yet in Solid Procedural is read from Solid Batch v2,
+  # An option not set yet in Solid Progress is read from Solid Batch v2,
   # so that its current settings carry over.
   LEGACY_REGISTRY_SECTION = 'SolidBatch'.freeze
 

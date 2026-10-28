@@ -11,7 +11,7 @@ module SolidProcedural
   # Ported from Re-Cercle v2.0.0 (re_cercle/main.rb: restore_circles,
   # restore_chain), applied to every edge of the solid instead of the
   # selection. The engine is a copy of Re-Cercle's files under this module
-  # (Solid Procedural does not depend on Re-Cercle):
+  # (Solid Progress does not depend on Re-Cercle):
   #   circle_restore/detector.rb   chain detection and classification
   #   circle_restore/rebuilder.rb  planar native rebuild, weld fallback
   #   circle_restore/volume.rb     Push/Pull rebuild of cylinders and cones

@@ -1,6 +1,6 @@
 # encoding: UTF-8
 # Ported from Re-Cercle v2.0.0 (re_cercle/volume.rb), unchanged except the
-# namespace: SolidProcedural::CircleRestore instead of ReCercle. Solid Procedural does
+# namespace: SolidProcedural::CircleRestore instead of ReCercle. Solid Progress does
 # not depend on Re-Cercle.
 #
 # Since Solid Procedural 1.1.1, repair_holes finds the hole edges through

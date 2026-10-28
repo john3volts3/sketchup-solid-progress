@@ -1,9 +1,9 @@
 #-------------------------------------------------------------------------------
 #
-#  Solid Procedural - boolean engine for SketchUp without native booleans
+#  Solid Progress - boolean engine for SketchUp without native booleans
 #  (SketchUp Make): copy of solid_operations.rb of Solid for Maker 1.0.1
 #  (commit 2b2a596), module SolidForMaker renamed to SolidProcedural; no other
-#  change. Solid Procedural does not depend on Solid for Maker.
+#  change. Solid Progress does not depend on Solid for Maker.
 #
 #  Solid for Maker ported it from Eneroth Solid Tools 3.0.0
 #  (src/ene_solids/solid_operations.rb).

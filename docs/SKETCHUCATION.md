@@ -29,7 +29,7 @@ Text for the SketchUcation PluginStore listing: copy each section into the match
 ## Metadata
 
 - **Plugin name:** Solid Progress
-- **Version:** 2.2.1
+- **Version:** 2.2.2
 - **Author:** DRO
 - **Category:** Construction, Modification
 - **Compatibility:** SU 2017, 2018, 2019, 2020, 2021/22, 2023, 2024, 2025, 2026, 2027 — tested with SketchUp Make 2017 and SketchUp Pro 2021 on Windows; the other versions checked against the Ruby API release notes, not tested; macOS not tested
@@ -111,6 +111,9 @@ Find and fix SketchUp's own boolean errors on aligned faces: https://youtu.be/RZ
 ---
 
 ## Release Notes
+
+**v2.2.2** (2026-10-28)
+- Fixed: SketchUp could crash on Ctrl+Z after Finalize of a Solid Progress group that had to be rebuilt (for example made with a former version); the rebuild is now a separate step, undone by a second Ctrl+Z
 
 **v2.2.1** (2026-10-28)
 - Colors are set in the Progress Table only: the swatch next to the name in the header, or the Color box of the SP row of a nested group; any paint applied by hand, but the subtract color, is taken off at once

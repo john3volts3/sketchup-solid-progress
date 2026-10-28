@@ -1,6 +1,6 @@
 # Solid Progress — Tâches (reprise de session)
 
-Créé le 2026-10-26 depuis la session Solid Batch, à la demande de l'utilisateur (le plugin s'appelait alors Solid Procedural). Version actuelle : **2.2.1**. À lire au démarrage d'une session Solid Procedural, avec `JOURNAL.md` et `PRD.md`.
+Créé le 2026-10-26 depuis la session Solid Batch, à la demande de l'utilisateur (le plugin s'appelait alors Solid Procedural). Version actuelle : **2.2.2**. À lire au démarrage d'une session Solid Procedural, avec `JOURNAL.md` et `PRD.md`.
 
 ## Décision du 2026-10-26 (les trois plugins Solid)
 
@@ -34,6 +34,7 @@ Créé le 2026-10-26 depuis la session Solid Batch, à la demande de l'utilisate
   - *Fait le 2026-10-28* : livraison 2.0.5 (tous les volumes en cause nommés), sans release GitHub ; page SketchUcation mise à jour en 2.0.5 par Claude (textes) et l'utilisateur (`.rbz`), en attente d'approbation.
   - *Fait le 2026-10-28* : livraison 2.1.0 (imbrication, table hiérarchique), sans release GitHub.
   - *Fait le 2026-10-28* : livraison 2.1.1 (table : arbre complet, fil d'Ariane, niveaux distincts) ; page SketchUcation mise à jour en 2.1.1 (textes par Claude, `.rbz` par l'utilisateur). Release `v2.1.1` créée par l'utilisateur ; page SketchUcation en 2.1.1 (vérifiée), en attente d'approbation.
+  - *Fait le 2026-10-28* : livraison 2.2.2 (plantage au Ctrl+Z de Finalize corrigé, test T28) ; release GitHub `v2.2.2` à créer par l'utilisateur (ligne donnée) ; SketchUcation à mettre à jour (version, notes de version : Claude ; `.rbz` : l'utilisateur).
   - *Fait le 2026-10-28* : livraison 2.2.1 (couleur choisie uniquement dans la table, pastille de l'en-tête et ligne SP, palette), release GitHub `v2.2.1` ; page SketchUcation mise à jour en 2.2.1 (textes par Claude, `.rbz` par l'utilisateur), en attente d'approbation.
   - *Fait le 2026-10-28* : livraison 2.2.0 (couleur par Solid Progress), sans release GitHub ; SketchUcation encore en 2.1.1 (en attente d'approbation) : à mettre à jour avec la description (mise en garde contre la peinture à la main) et le `.rbz`.
   - *Fait le 2026-10-28* : livraison 2.1.2 (Close d'un niveau, peinture d'un groupe visible, sélection marquée, explication de la table), sans release GitHub ; SketchUcation encore en 2.1.1 (en attente d'approbation).

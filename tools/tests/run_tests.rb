@@ -2166,6 +2166,123 @@ module SolidProcedural
         end
       end
 
+      # Ctrl+Z and Ctrl+Y after each command on nested groups (2.2.2). The
+      # undo of a Finalize that rebuilt out-of-date nested groups in the
+      # same operation crashed SketchUp 2021: a crash ends the battery
+      # without a report. Groups are found again after each undo (an erased
+      # entity comes back as another Ruby object).
+      test 'T28 Undo and redo on nested groups' do |c, model|
+        undo = -> { Sketchup.respond_to?(:undo) ? Sketchup.undo : Sketchup.send_action('editUndo:') }
+        redo_last = -> { Sketchup.send_action('editRedo:') }
+        blue = tests.material(model, 'SP Test Blue', [40, 90, 200])
+        # Three levels as T24, at y = 1200: 960, 2208, 6672.
+        block = tests.box(model.entities, 0, 1200, 0, 10, 10, 10, tests.base_material(model))
+        hole = tests.box(model.entities, 4, 1204, -1, 2, 2, 12, tests.red(model))
+        tests.select(model, block, hole)
+        Procedural.do_create
+        slab = tests.box(model.entities, -2, 1198, -3, 24, 14, 4)
+        tests.select(model, slab, model.selection.first)
+        Procedural.do_create
+        plate = tests.box(model.entities, -10, 1190, -6, 40, 30, 4)
+        tests.select(model, plate, model.selection.first)
+        Procedural.do_create
+        top = -> { tests.procedural_groups(Sketchup.active_model).find { |g| (g.bounds.min.y - 1190).abs < 0.5 } }
+        mid = -> { (t = top.call) && Procedural.sources_of(t).find { |s| Procedural.procedural?(s) } }
+        core = -> { (m = mid.call) && Procedural.sources_of(m).find { |s| Procedural.procedural?(s) } }
+        volumes = -> { [core.call, mid.call, top.call].map { |g| g && Procedural.result_of(g) ? Procedural.result_of(g).volume.round(3) : nil } }
+        solid = -> { Sketchup.active_model.entities.grep(Sketchup::Group).find { |g| !Procedural.procedural?(g) && (g.bounds.min.y - 1190).abs < 0.5 } }
+        next unless c.check(volumes.call == [960, 2208, 6672], 'three levels made (960, 2208, 6672)', volumes.call.inspect)
+
+        # A color chosen in the table: Ctrl+Z, Ctrl+Y.
+        tests.select(model, top.call)
+        ProceduralTable.on_action(JSON.generate(type: 'color', group: core.call.entityID, material: blue.name))
+        colored = Procedural.result_of(core.call).material == blue
+        undo.call
+        back = nil
+        c.later do
+          back = Procedural.result_of(core.call).material != blue
+          redo_last.call
+        end
+
+        # Rebuild of out-of-date nested groups (hole made wider): Ctrl+Z.
+        c.later do
+          c.check(colored && back && Procedural.result_of(core.call).material == blue, 'color: Ctrl+Z, then Ctrl+Y')
+          m = Sketchup.active_model
+          h = Procedural.sources_of(core.call).find { |s| Procedural.op_of(s) == 'subtract' }
+          m.start_operation('Solid Procedural tests \u2014 wider hole', true)
+          h.transform!(Geom::Transformation.scaling(h.bounds.min, 2, 1, 1))
+          m.commit_operation
+          tests.select(m, top.call)
+          tests.messages.clear
+          Procedural.do_rebuild
+          c.check(volumes.call == [920, 2172, 6636] && tests.messages.empty?, 'Rebuild in cascade (920, 2172, 6636)',
+                  volumes.call.inspect)
+          undo.call
+        end
+        c.later do
+          c.check(volumes.call == [960, 2208, 6672] && Procedural.stale?(top.call),
+                  'Ctrl+Z: the former Results back, out of date again', volumes.call.inspect)
+          # Finalize of out-of-date groups: rebuilt in a first operation,
+          # finalized in a second one.
+          tests.select(Sketchup.active_model, top.call)
+          tests.messages.clear
+          Procedural.do_finalize
+          c.check(top.call.nil? && solid.call && (solid.call.volume - 6636).abs < 0.01 && tests.messages.empty?,
+                  'Finalize of out-of-date groups: one solid (6636)', tests.messages.join(' / '))
+          undo.call
+        end
+        c.later do
+          c.check(top.call && volumes.call == [920, 2172, 6636] && !Procedural.stale?(top.call),
+                  '1st Ctrl+Z: the group back, rebuilt', volumes.call.inspect)
+          undo.call
+        end
+        c.later do
+          c.check(top.call && volumes.call == [960, 2208, 6672] && Procedural.stale?(top.call),
+                  '2nd Ctrl+Z: the rebuild undone', volumes.call.inspect)
+          redo_last.call
+        end
+        c.later { redo_last.call }
+        c.later do
+          c.check(top.call.nil? && solid.call, 'Ctrl+Y twice: rebuilt and finalized again')
+          undo.call
+        end
+
+        # Operation of a nested row from the table of the top group: Ctrl+Z.
+        c.later do
+          t = top.call
+          next c.check(false, 'Ctrl+Z: the group back for the next steps') unless t
+          keys = Procedural.row_keys(Procedural.sources_of(t))
+          plate_key = keys[Procedural.sources_of(t).index { |s| !Procedural.procedural?(s) }]
+          Procedural.table_set_base(Sketchup.active_model, t, plate_key)
+          t = top.call
+          key = Procedural.row_keys(Procedural.sources_of(t))[Procedural.sources_of(t).index(mid.call)]
+          Procedural.table_operation(Sketchup.active_model, t, key, 'subtract')
+          @t28_subtracted = Procedural.op_of(mid.call) == 'subtract'
+          undo.call
+        end
+        c.later do
+          c.check(@t28_subtracted && Procedural.op_of(mid.call) != 'subtract' && volumes.call == [920, 2172, 6636],
+                  'table: Subtract on a nested row, then Ctrl+Z', volumes.call.inspect)
+          # Create, then Ctrl+Z: the volumes back, no group.
+          m = Sketchup.active_model
+          a = tests.box(m.entities, 200, 1200, 0, 10, 10, 10)
+          b = tests.box(m.entities, 205, 1205, 0, 10, 10, 10)
+          tests.select(m, a, b)
+          Procedural.do_create
+          @t28_created = tests.procedural_groups(m).any? { |g| (g.bounds.min.x - 200).abs < 0.5 }
+          undo.call
+        end
+        c.later do
+          m = Sketchup.active_model
+          boxes = m.entities.grep(Sketchup::Group).select { |g| g.bounds.min.x > 199 && g.bounds.min.y > 1199 }
+          c.check(@t28_created && boxes.length == 2 && boxes.none? { |g| Procedural.procedural?(g) },
+                  'Create, then Ctrl+Z: the two volumes back, no group')
+          m.start_operation('Solid Procedural tests \u2014 clean up', true)
+          m.entities.erase_entities(m.entities.select { |e| e.valid? && e.bounds.min.y > 1180 && e.bounds.min.y < 1300 })
+          m.commit_operation
+        end
+      end
+
       test 'T11 No unused definition left' do |c, model|
         left = tests.unused_new_definitions(model)
         c.check(left.empty?, 'no unused component definition after all the tests',

@@ -1,4 +1,4 @@
-Boolean engine of Solid Procedural (solid_operations.rb), from Solid for Maker,
+Boolean engine of Solid Progress (solid_operations.rb), from Solid for Maker,
 itself ported from Eneroth Solid Tools.
 
 MIT License

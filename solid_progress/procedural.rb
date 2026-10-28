@@ -823,15 +823,22 @@ module SolidProcedural
         UI.messagebox('Select one or more Solid Progress groups to finalize.', MB_OK)
         return
       end
-      run_command(model, 'Finalize Solid Progress') do
-        outcomes = []
-        solids = groups.map do |g|
-          outcomes << rebuild_in_operation(model, g) if stale?(g) || result_of(g).nil?
-          finalize(g)
+      # Out-of-date groups are rebuilt first, in an operation of their own:
+      # SketchUp 2021 crashes when it undoes a rebuild of nested groups and
+      # their Finalize made in the same operation.
+      outdated = groups.select { |g| stale?(g) || result_of(g).nil? }
+      unless outdated.empty?
+        run_command(model, 'Rebuild Solid Progress') do
+          outdated.map { |g| rebuild_in_operation(model, g) }
         end
+        # Rebuild failed (message shown, nothing changed): no Finalize.
+        return if outdated.any? { |g| !g.valid? || stale?(g) || result_of(g).nil? }
+      end
+      run_command(model, 'Finalize Solid Progress') do
+        solids = groups.map { |g| finalize(g) }
         model.selection.clear
         model.selection.add(solids)
-        outcomes
+        []
       end
     end
 

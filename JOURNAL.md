@@ -12,6 +12,16 @@
 
 ## Session du 2026-10-28
 
+### Plantage au Ctrl+Z de Finalize corrigé, tests Ctrl+Z (2.2.2)
+
+- **Retour de l'utilisateur** : deux plantages de SketchUp 2021, après un Ctrl+Z puis en annulant Finalize ; « le plantage se produit quand je fais un ctrl+z sur une version du fichier d'avant la dernière version du plugin » ; « dans ta batterie de tests tu devrais ajouter des ctrl+Z ».
+- **Diagnostic** : rapport de plantage BugSplat (`%TEMP%`) lu par un petit script Python sans dépendance : exception dans le fil principal, dans le code d'annulation de SketchUp ; journal `SketchUpLog-…` : « Undo(Solid Progress — Finalize Solid Progress) ». Test provisoire (non commité) : recalcul en cascade puis Ctrl+Z → pas de plantage ; Finalize d'un groupe à jour puis Ctrl+Z → pas de plantage ; Finalize d'un groupe à recalculer (recalcul dans la même opération) puis Ctrl+Z → **plantage**, aussi avec la sauvegarde ancienne du fichier de l'utilisateur. Cause du déclenchement : l'empreinte avec les couleurs (2.2.0) rend « à recalculer » les groupes des fichiers plus anciens.
+- **solid_progress/procedural.rb** — `do_finalize` : les groupes à recalculer le sont d'abord dans une opération « Rebuild Solid Progress » à part ; recalcul refusé → pas de Finalize.
+- **tools/tests/run_tests.rb** — **T28** (Ctrl+Z et Ctrl+Y sur trois niveaux : couleur, Rebuild en cascade, Finalize de groupes à recalculer, Ctrl+Y, ligne imbriquée, Create ; 10 vérifications) ; vérifié : l'ancienne version fait planter SketchUp sur T28.
+- **Vocabulaire** — « Solid Progress » au lieu de « procédural » : manuel FR, FSD, PRD (exigences et critères ; décisions datées et JOURNAL gardés), en-têtes livrés (`LICENSE-solid-operations.txt`, `solid_operations.rb`, `circle_restore`), commentaire de `main.rb` ; exemple de message de progression du FSD corrigé. Identifiants du code (`SolidProcedural`, `procedural.rb`) inchangés.
+- **Docs** — Manuels (Finalize : deux Ctrl+Z après un recalcul, version), FSD (EF-11, T28, historique), PRD (EF-45, CA-43, décision, historique), SKETCHUCATION, PUBLICATION, TACHES. **solid_progress/version.rb**, **solid_progress.rb** — 2.2.2.
+- **Tests** : SketchUp 2021 Pro 66/66 (469 vérifications) ; Make 2017 44 OK, T07, T21 et T27 sautés (318 vérifications). Validé par l'utilisateur (« test ok, livraison »).
+
 ### Couleur choisie uniquement dans la table, pastille de l'en-tête et ligne SP, palette (2.2.1)
 
 - **Retours de l'utilisateur** sur la 2.2.0 : préciser que les couleurs appliquées à la main sont écrasées par la table ; puis « je ne sais plus ce qui est le mieux et le plus clair pour l'utilisateur » → règle « table seulement » choisie ; « au lieu de dire le rouge tu devrais préciser la couleur de soustraction » ; choisir la couleur sur la ligne SP plutôt que sur la Base ; la couleur de soustraction ne doit pas être proposée ; palette ouverte sans objet sélectionné → la fermer par un clic dans le vide ; montrer la couleur actuelle encadrée.

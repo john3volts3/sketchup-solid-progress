@@ -2,7 +2,7 @@
 
 *[English version](USER_MANUAL_EN.md)*
 
-Version 2.2.1 — SketchUp Pro 2021 et SketchUp Make 2017
+Version 2.2.2 — SketchUp Pro 2021 et SketchUp Make 2017
 
 ## Présentation
 
@@ -189,9 +189,9 @@ Recalcule les groupes Solid Progress **sélectionnés**, même si rien n'a chang
 
 ### Finalize Solid Progress
 
-Remplace chaque groupe Solid Progress sélectionné par son Result : un groupe solide simple qui garde le nom, la balise et la couleur du groupe Solid Progress ; les sources sont supprimées. Le Result est d'abord recalculé si besoin. Un Ctrl+Z remet le groupe Solid Progress.
+Remplace chaque groupe Solid Progress sélectionné par son Result : un groupe solide simple qui garde le nom, la balise et la couleur du groupe Solid Progress ; les sources sont supprimées. Si le groupe est à recalculer (par exemple un fichier fait avec une version précédente), il est d'abord recalculé, dans une étape séparée : un premier Ctrl+Z annule Finalize et remet le groupe Solid Progress, un second annule le recalcul. Sinon, un Ctrl+Z remet le groupe Solid Progress.
 
-**Finalisez toujours avant un export STL** : l'export contiendrait aussi les sources cachées d'un groupe Solid Progress. Le cadre de sélection vert vous rappelle quels objets sont encore procéduraux.
+**Finalisez toujours avant un export STL** : l'export contiendrait aussi les sources cachées d'un groupe Solid Progress. Le cadre de sélection vert vous rappelle quels objets sont encore des groupes Solid Progress, pas encore finalisés.
 
 ### Set Subtract Color
 

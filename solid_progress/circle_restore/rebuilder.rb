@@ -1,6 +1,6 @@
 # encoding: UTF-8
 # Ported from Re-Cercle v2.0.0 (re_cercle/rebuilder.rb), unchanged except the
-# namespace: SolidProcedural::CircleRestore instead of ReCercle. Solid Procedural does
+# namespace: SolidProcedural::CircleRestore instead of ReCercle. Solid Progress does
 # not depend on Re-Cercle.
 #
 # Rebuild of planar chains as native arcs/circles, and weld fallback.

@@ -2,7 +2,7 @@
 
 *[Version française](USER_MANUAL_FR.md)*
 
-Version 2.2.1 — SketchUp Pro 2021 and SketchUp Make 2017
+Version 2.2.2 — SketchUp Pro 2021 and SketchUp Make 2017
 
 ## Overview
 
@@ -189,7 +189,7 @@ Rebuilds the **selected** Solid Progress groups, even if nothing changed (for ex
 
 ### Finalize Solid Progress
 
-Replaces each selected Solid Progress group by its Result: a plain solid group that keeps the name, the tag and the color of the Solid Progress group; the sources are deleted. The Result is rebuilt first if needed. One Ctrl+Z brings the Solid Progress group back.
+Replaces each selected Solid Progress group by its Result: a plain solid group that keeps the name, the tag and the color of the Solid Progress group; the sources are deleted. When the group is out of date (for example a file made with a former version), it is rebuilt first, in a separate step: a first Ctrl+Z undoes Finalize and brings the Solid Progress group back, a second one undoes the rebuild. Otherwise, one Ctrl+Z brings the Solid Progress group back.
 
 **Always finalize before an STL export**: the export would also include the hidden sources of a Solid Progress group. The green selection frame reminds you which objects are not finalized yet.
 
